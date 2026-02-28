@@ -1,0 +1,8 @@
+# 1. Initialize Git (in the root folder)
+git init
+git add .
+git commit -m "chore: prepare for production deployment"
+
+# 2. Push to your repo (replace with your URL)
+git remote add origin https://github.com/yourusername/yourrepo.git
+git push -u origin main
