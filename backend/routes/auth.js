@@ -19,7 +19,7 @@ const sendTokenResponse = async (user, statusCode, res, req) => {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
   };
 
   // Track session in DB
@@ -405,8 +405,13 @@ router.post('/logout', protect, async (req, res) => {
     }
 
     // Clear cookies
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    const clearCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+    };
+    res.clearCookie('accessToken', clearCookieOptions);
+    res.clearCookie('refreshToken', clearCookieOptions);
 
     res.json({ success: true, message: 'Logged out successfully.' });
   } catch (err) {
@@ -429,8 +434,13 @@ router.delete('/account', protect, async (req, res) => {
     ]);
 
     // Clear cookies
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    const clearCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+    };
+    res.clearCookie('accessToken', clearCookieOptions);
+    res.clearCookie('refreshToken', clearCookieOptions);
 
     res.json({ success: true, message: 'Account and all associated data deleted successfully.' });
   } catch (err) {
