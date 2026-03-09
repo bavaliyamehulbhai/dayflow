@@ -2,6 +2,8 @@
 
 A full-featured, production-ready time management application built with **MongoDB, Express, React, and Node.js**.
 
+🚀 **Live Demo:** [https://dayflow-inky.vercel.app](https://dayflow-inky.vercel.app)
+
 ---
 
 ## ✨ Features
