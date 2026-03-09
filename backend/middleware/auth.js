@@ -25,6 +25,12 @@ const protect = async (req, res, next) => {
     // Verify token with issuer claim
     const decoded = jwt.verify(token, JWT_SECRET, { issuer: JWT_ISSUER });
 
+    // Check if token is blacklisted
+    const isBlacklisted = await require('../models/Blacklist').findOne({ token });
+    if (isBlacklisted) {
+      return res.status(401).json({ error: 'Session invalidated. Please login again.' });
+    }
+
     // Fetch user including lockout fields
     const user = await User.findById(decoded.id).select('-password +lockUntil +loginAttempts');
     if (!user) {
@@ -56,13 +62,22 @@ const protect = async (req, res, next) => {
   }
 };
 
-// Generate JWT with issuer claim
+// Generate short-lived Access Token (15 minutes)
 const generateToken = (id) => {
   if (!JWT_SECRET) throw new Error('JWT_SECRET is not set');
   return jwt.sign({ id }, JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d',
+    expiresIn: '15m',
     issuer: JWT_ISSUER
   });
 };
 
-module.exports = { protect, generateToken };
+// Generate long-lived Refresh Token (7 days)
+const generateRefreshToken = (id) => {
+  if (!JWT_SECRET) throw new Error('JWT_SECRET is not set');
+  return jwt.sign({ id }, JWT_SECRET, {
+    expiresIn: '7d',
+    issuer: JWT_ISSUER
+  });
+};
+
+module.exports = { protect, generateToken, generateRefreshToken };

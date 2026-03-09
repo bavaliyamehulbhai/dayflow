@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { encrypt, decrypt } = require('../utils/cryptoUtils');
 
 const noteSchema = new mongoose.Schema({
   user: {
@@ -42,10 +43,28 @@ const noteSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// ─── Encryption Hooks ───────────────────────────────────────────────────────
+
+// Encrypt before saving
+noteSchema.pre('save', function (next) {
+  if (this.isModified('title')) {
+    this.title = encrypt(this.title);
+  }
+  if (this.isModified('content')) {
+    this.content = encrypt(this.content);
+  }
+  next();
+});
+
+// Decrypt after fetching
+noteSchema.post('init', function (doc) {
+  if (doc.title) doc.title = decrypt(doc.title);
+  if (doc.content) doc.content = decrypt(doc.content);
+});
+
 noteSchema.index({ user: 1, isPinned: -1, updatedAt: -1 });
 noteSchema.index({ user: 1, isArchived: 1 });
 
-// Text search
-noteSchema.index({ title: 'text', content: 'text', tags: 'text' });
+// Note: Text index removed to support encryption at rest (privacy first)
 
 module.exports = mongoose.model('Note', noteSchema);

@@ -3,15 +3,18 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Note = require('../models/Note');
 const { protect } = require('../middleware/auth');
+const { sanitizeFields } = require('../middleware/sanitizer');
 const { logActivity } = require('../services/activityService');
 
 router.use(protect);
 
 // ─── Validation rules ─────────────────────────────────────────────────────────
 const noteValidation = [
-  body('title').optional().trim().isLength({ max: 200 }).withMessage('Title too long'),
-  body('content').optional().trim().isLength({ max: 50000 }).withMessage('Content too long'),
-  body('tags').optional().isArray()
+  sanitizeFields(['title', 'content']),
+  body('title').optional().trim().isLength({ max: 200 }).withMessage('Title too long (max 200)'),
+  body('content').optional().trim().isLength({ max: 50000 }).withMessage('Content too long (max 50000)'),
+  body('tags').optional().isArray().withMessage('Tags must be an array'),
+  body('tags.*').optional().trim().isLength({ max: 30 }).withMessage('Tag too long (max 30)')
 ];
 
 // GET all notes

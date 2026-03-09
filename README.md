@@ -25,28 +25,19 @@ A full-featured, production-ready time management application built with **Mongo
 - Node.js 18+
 - MongoDB (local or Atlas)
 
-### Option 1: Manual Setup
-
+### Step 1: Backend
 ```bash
-# 1. Clone and install backend
 cd backend
 cp .env.example .env        # Edit with your MongoDB URI + JWT secret
 npm install
 npm run dev                 # Starts on http://localhost:5000
+```
 
-# 2. Install and run frontend (new terminal)
+### Step 2: Frontend
+```bash
 cd frontend
 npm install
 npm start                   # Opens http://localhost:3000
-```
-
-### Option 2: Docker Compose
-
-```bash
-docker-compose up --build
-# Frontend: http://localhost:3000
-# Backend:  http://localhost:5000
-# MongoDB:  localhost:27017
 ```
 
 ---

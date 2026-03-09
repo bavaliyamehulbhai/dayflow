@@ -1,36 +1,59 @@
 const express = require('express');
 const router = express.Router();
+const { body, validationResult, query } = require('express-validator');
 const Schedule = require('../models/Schedule');
 const { protect } = require('../middleware/auth');
+const { sanitizeFields } = require('../middleware/sanitizer');
 const { logActivity } = require('../services/activityService');
 
 router.use(protect);
 
+// ─── Validation ──────────────────────────────────────────────────────────────
+const eventValidation = [
+  sanitizeFields(['title', 'description', 'category']),
+  body('title').trim().isLength({ min: 1, max: 100 }).withMessage('Title 1-100 characters'),
+  body('date').isISO8601().withMessage('Valid date required'),
+  body('startTime').matches(/^([01]\d|2[0-3]):?([0-5]\d)$/).withMessage('Start time HH:mm required'),
+  body('endTime').matches(/^([01]\d|2[0-3]):?([0-5]\d)$/).withMessage('End time HH:mm required')
+];
+
 // GET schedule for date range
-router.get('/', async (req, res) => {
-  try {
-    const { date, startDate, endDate } = req.query;
-    const filter = { user: req.user._id };
+router.get('/',
+  [
+    query('date').optional().isISO8601(),
+    query('startDate').optional().isISO8601(),
+    query('endDate').optional().isISO8601()
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
-    if (date) {
-      filter.date = date;
-    } else if (startDate && endDate) {
-      filter.date = { $gte: startDate, $lte: endDate };
-    } else {
-      // Default: today
-      filter.date = new Date().toISOString().split('T')[0];
+      const { date, startDate, endDate } = req.query;
+      const filter = { user: req.user._id };
+
+      if (date) {
+        filter.date = date;
+      } else if (startDate && endDate) {
+        filter.date = { $gte: startDate, $lte: endDate };
+      } else {
+        // Default: today
+        filter.date = new Date().toISOString().split('T')[0];
+      }
+
+      const events = await Schedule.find(filter).sort({ startTime: 1 }).populate('linkedTask', 'title status priority');
+      res.json({ success: true, events });
+    } catch (err) {
+      res.status(500).json({ error: 'Error fetching schedule.' });
     }
-
-    const events = await Schedule.find(filter).sort({ startTime: 1 }).populate('linkedTask', 'title status priority');
-    res.json({ success: true, events });
-  } catch (err) {
-    res.status(500).json({ error: 'Error fetching schedule.' });
-  }
-});
+  });
 
 // CREATE event
-router.post('/', async (req, res) => {
+router.post('/', eventValidation, async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+
     const event = await Schedule.create({ ...req.body, user: req.user._id });
     const populated = await event.populate('linkedTask', 'title status priority');
     res.status(201).json({ success: true, event: populated });
@@ -40,8 +63,11 @@ router.post('/', async (req, res) => {
 });
 
 // UPDATE event
-router.put('/:id', async (req, res) => {
+router.put('/:id', eventValidation, async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+
     const updates = { ...req.body };
     delete updates.user;
     const event = await Schedule.findOneAndUpdate(

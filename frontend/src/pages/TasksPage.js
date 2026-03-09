@@ -93,10 +93,11 @@ function TaskModal({ task, onClose, onSave }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="modal"
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
+        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={`modal ${isMobile ? 'bottom-sheet' : ''}`}
       >
         <div className="modal-header">
           <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -105,8 +106,8 @@ function TaskModal({ task, onClose, onSave }) {
           </div>
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100% - 60px)' : 'auto' }}>
+          <div className="modal-body" style={{ flex: 1, overflowY: 'auto' }}>
             <div className="form-group">
               <label className="form-label">Title</label>
               <input className="input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="What needs to be done?" autoFocus required />
@@ -114,7 +115,7 @@ function TaskModal({ task, onClose, onSave }) {
 
             <div className="form-group">
               <label className="form-label">Description</label>
-              <textarea className="textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Add more details..." rows={3} />
+              <textarea className="textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Add more details..." rows={2} />
             </div>
 
             <div className="grid-2">
@@ -152,7 +153,7 @@ function TaskModal({ task, onClose, onSave }) {
               </div>
               <div className="form-group">
                 <label className="form-label">Tags</label>
-                <input className="input" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="design, review, api" />
+                <input className="input" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="design, review" />
               </div>
             </div>
 
@@ -173,14 +174,33 @@ function TaskModal({ task, onClose, onSave }) {
             </div>
           </div>
 
-          <div className="modal-footer" style={{ gap: 12, padding: '20px 24px' }}>
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ minWidth: 120 }}>
+          <div className="modal-footer" style={{ gap: 12, padding: isMobile ? '16px 20px 32px' : '20px 24px', borderTop: '1px solid var(--border)' }}>
+            <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: isMobile ? 1 : 'none' }}>Cancel</button>
+            <button type="submit" className="btn btn-primary" style={{ flex: isMobile ? 2 : 'none', minWidth: 120 }}>
               {task ? 'Save Changes' : 'Create Task'}
             </button>
           </div>
         </form>
       </motion.div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .modal.bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            max-width: none;
+            border-radius: 24px 24px 0 0;
+            max-height: 92vh;
+            margin: 0;
+          }
+          .modal-overlay {
+            align-items: flex-end;
+          }
+        }
+      `}</style>
     </div>
   );
 }

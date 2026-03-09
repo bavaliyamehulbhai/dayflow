@@ -17,6 +17,12 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
   },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationToken: String,
+  verificationTokenExpire: Date,
   password: {
     type: String,
     required: [true, 'Password is required'],
@@ -56,6 +62,19 @@ const userSchema = new mongoose.Schema({
   lastLoginIp: {
     type: String,
     default: null,
+    select: false
+  },
+  // ─── 2FA Fields ─────────────────────────────────────────────────────────
+  twoFactorSecret: {
+    type: String,
+    select: false
+  },
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false
+  },
+  twoFactorRecoveryCodes: {
+    type: [String],
     select: false
   },
   // ─── User Preferences ───────────────────────────────────────────────────

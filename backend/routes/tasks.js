@@ -4,6 +4,7 @@ const { body, validationResult, query } = require('express-validator');
 const Task = require('../models/Task');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const { sanitizeFields } = require('../middleware/sanitizer');
 const { awardBadges } = require('../services/badgeService');
 const { logActivity } = require('../services/activityService');
 
@@ -63,12 +64,14 @@ router.get('/:id', async (req, res) => {
 // ─── CREATE task ──────────────────────────────────────────────────────────────
 router.post('/',
   [
-    body('title').trim().isLength({ min: 1, max: 200 }).withMessage('Title is required (max 200 chars)'),
-    body('description').optional().trim().isLength({ max: 2000 }).withMessage('Description too long'),
-    body('priority').optional().isIn(['low', 'medium', 'high', 'urgent']),
-    body('status').optional().isIn(['pending', 'in-progress', 'completed', 'cancelled']),
-    body('tags').optional().isArray(),
-    body('tags.*').optional().trim().isLength({ max: 50 })
+    protect,
+    sanitizeFields(['title', 'description']),
+    body('title').trim().isLength({ min: 1, max: 200 }).withMessage('Title is required (1-200 characters)'),
+    body('description').optional().trim().isLength({ max: 2000 }).withMessage('Description too long (max 2000)'),
+    body('priority').optional().isIn(['low', 'medium', 'high', 'urgent']).withMessage('Invalid priority value'),
+    body('status').optional().isIn(['pending', 'in-progress', 'completed', 'cancelled']).withMessage('Invalid status value'),
+    body('tags').optional().isArray().withMessage('Tags must be an array'),
+    body('tags.*').optional().trim().isLength({ max: 50 }).withMessage('Tag too long (max 50)')
   ],
   async (req, res) => {
     try {
@@ -94,12 +97,14 @@ router.post('/',
 // ─── UPDATE task ──────────────────────────────────────────────────────────────
 router.put('/:id',
   [
-    body('title').optional().trim().isLength({ min: 1, max: 200 }),
-    body('description').optional().trim().isLength({ max: 2000 }),
-    body('priority').optional().isIn(['low', 'medium', 'high', 'urgent']),
-    body('status').optional().isIn(['pending', 'in-progress', 'completed', 'cancelled']),
-    body('tags').optional().isArray(),
-    body('tags.*').optional().trim().isLength({ max: 50 })
+    protect,
+    sanitizeFields(['title', 'description']),
+    body('title').optional().trim().isLength({ min: 1, max: 200 }).withMessage('Title 1-200 characters'),
+    body('description').optional().trim().isLength({ max: 2000 }).withMessage('Description max 2000'),
+    body('priority').optional().isIn(['low', 'medium', 'high', 'urgent']).withMessage('Invalid priority'),
+    body('status').optional().isIn(['pending', 'in-progress', 'completed', 'cancelled']).withMessage('Invalid status'),
+    body('tags').optional().isArray().withMessage('Tags must be array'),
+    body('tags.*').optional().trim().isLength({ max: 50 }).withMessage('Tag max 50')
   ],
   async (req, res) => {
     try {

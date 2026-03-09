@@ -168,7 +168,7 @@ export default function PomodoroPage() {
   };
 
   // Responsive SVG timer size
-  const timerSize = isMobile ? Math.min(width - 80, 260) : isTablet ? 250 : 280;
+  const timerSize = isMobile ? Math.min(width - 60, 240) : isTablet ? 250 : 280;
   const radius = timerSize * 0.39;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
@@ -309,7 +309,7 @@ export default function PomodoroPage() {
             </div>
 
             {/* SVG Circular Timer — fully responsive */}
-            <div style={{ position: 'relative', display: 'inline-block', marginBottom: isMobile ? 28 : 44 }}>
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: isMobile ? 16 : 44 }}>
               <svg
                 width={timerSize}
                 height={timerSize}
@@ -327,13 +327,13 @@ export default function PomodoroPage() {
                   </filter>
                 </defs>
                 {/* Track */}
-                <circle cx={timerSize / 2} cy={timerSize / 2} r={radius} fill="none" stroke="var(--border)" strokeWidth={isMobile ? 7 : 10} opacity={0.3} />
+                <circle cx={timerSize / 2} cy={timerSize / 2} r={radius} fill="none" stroke="var(--border)" strokeWidth={isMobile ? 6 : 10} opacity={0.3} />
                 {/* Progress */}
                 <motion.circle
                   cx={timerSize / 2} cy={timerSize / 2} r={radius}
                   fill="none"
                   stroke="url(#pomoGradient)"
-                  strokeWidth={isMobile ? 7 : 10}
+                  strokeWidth={isMobile ? 6 : 10}
                   strokeDasharray={circumference}
                   animate={{ strokeDashoffset }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -352,9 +352,9 @@ export default function PomodoroPage() {
                     transition={{ duration: 0.15 }}
                     style={{
                       fontFamily: 'Syne, sans-serif',
-                      fontSize: 'clamp(2.5rem, 4vw + 1rem, 4.5rem)',
+                      fontSize: 'clamp(2.5rem, 12vw, 4.5rem)',
                       fontWeight: 800,
-                      letterSpacing: -3,
+                      letterSpacing: isMobile ? -1 : -3,
                       lineHeight: 1,
                       background: modeInfo.gradient,
                       WebkitBackgroundClip: 'text',

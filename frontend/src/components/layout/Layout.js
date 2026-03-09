@@ -129,34 +129,37 @@ export default function Layout({ children }) {
         </aside>
       )}
 
-      {/* ─── Mobile Top Header ─────────────────────────────────────────────── */}
-      {isMobile && (
-        <header className="mobile-header glass">
-          <div className="mobile-header-logo">DayFlow</div>
-          <button
-            className="mobile-header-avatar"
-            onClick={() => navigate('/profile')}
-          >
-            {initials}
-          </button>
-        </header>
-      )}
+      {/* ─── Main Content Area ─────────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, marginLeft: isMobile ? 0 : 'var(--sidebar-w)' }}>
+        {/* ─── Mobile Top Header ─────────────────────────────────────────────── */}
+        {isMobile && (
+          <header className="mobile-header glass" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
+            <div className="mobile-header-logo">DayFlow</div>
+            <button
+              className="mobile-header-avatar"
+              onClick={() => navigate('/profile')}
+            >
+              {initials}
+            </button>
+          </header>
+        )}
 
-      {/* ─── Main Content ──────────────────────────────────────────────────── */}
-      <main className="main-content">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="page-content"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+        {/* ─── Main Content ──────────────────────────────────────────────────── */}
+        <main className="main-content" style={{ marginLeft: 0 }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="page-content"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
 
       {/* ─── Mobile Bottom Tab Bar ─────────────────────────────────────────── */}
       {
@@ -175,18 +178,20 @@ export default function Layout({ children }) {
                 >
                   <motion.div
                     className="bottom-tab-icon"
-                    animate={{ scale: isActive ? 1.12 : 1 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    whileTap={{ scale: 0.9 }}
+                    animate={{
+                      scale: isActive ? 1.1 : 1,
+                      y: isActive ? -2 : 0
+                    }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   >
                     {isActive && <div className="bottom-tab-glow" />}
-                    <Item.icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+                    <Item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                   </motion.div>
                   <span className="bottom-tab-label">{Item.label}</span>
                 </NavLink>
               );
             })}
-
-            {/* Quick logout: swipe-friendly long-press area not needed, just a thin profile link */}
           </nav>
         )
       }

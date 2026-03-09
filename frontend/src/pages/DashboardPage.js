@@ -279,7 +279,7 @@ export default function DashboardPage() {
       <Clock />
 
       {/* Stats Row */}
-      <div className="stats-grid stats-carousel mt-6">
+      <div className="stats-grid mt-6">
         {[
           { label: 'Tasks', value: d?.tasks?.summary?.completed || 0, color: 'var(--green)', icon: CheckCircle2 },
           { label: 'Pending', value: d?.tasks?.summary?.pending || 0, color: 'var(--yellow)', icon: Zap },
@@ -535,111 +535,82 @@ export default function DashboardPage() {
       )}
 
       <style>{`
+        /* Utility */
         .text-accent { color: var(--accent); }
         .clock-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at top right, rgba(130, 114, 255, 0.05), transparent 70%); pointer-events: none; }
         
+        .clock-time {
+          font-family: 'Syne', sans-serif;
+          font-weight: 800;
+          font-size: clamp(2rem, 8vw, 4rem);
+          line-height: 1.1;
+          letter-spacing: -0.05em;
+        }
+
+        .clock-date {
+          color: var(--muted);
+          font-weight: 700;
+          font-size: clamp(0.75rem, 3vw, 1rem);
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        /* Stats Grid Optimization */        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+        }
+
         /* Mobile Feed Styles */
         .mobile-feed {
           display: flex;
           flex-direction: column;
-          gap: 16px;
-          margin-top: 24px;
+          gap: 14px;
+          margin-top: 20px;
         }
 
         .feed-item {
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 20px;
-          padding: 20px;
+          border-radius: 18px;
+          padding: 16px 20px;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 6px;
           position: relative;
           box-shadow: var(--shadow-sm);
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .feed-item:active {
+          transform: scale(0.97);
+          background: var(--surface2);
         }
 
         .feed-label {
-          font-size: 10px;
+          font-size: clamp(9px, 2.5vw, 11px);
           font-weight: 800;
           color: var(--muted);
           text-transform: uppercase;
           letter-spacing: 1.5px;
         }
 
-        .feed-content {
-          display: flex;
-          align-items: baseline;
-          gap: 12px;
-        }
-
         .feed-title {
-          font-size: 18px;
+          font-size: clamp(15px, 4vw, 18px);
           font-weight: 700;
           color: var(--text);
-        }
-
-        .feed-time {
-          font-size: 18px;
-          font-weight: 800;
-          color: var(--accent);
-          font-family: 'Syne', sans-serif;
-        }
-
-        .feed-arrow {
-          position: absolute;
-          right: 20px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--muted);
-          opacity: 0.5;
-        }
-
-        .feed-priority-tag {
-          font-size: 10px;
-          font-weight: 800;
-          padding: 2px 8px;
-          border-radius: 50px;
-          background: rgba(0,0,0,0.2);
-        }
-
-        .feed-priority-tag.priority-urgent { color: var(--red); background: rgba(255,107,107,0.1); }
-        .feed-priority-tag.priority-high { color: var(--orange); background: rgba(255,154,109,0.1); }
-
-        .feed-habits-grid {
-          display: flex;
-          gap: 12px;
-          margin-top: 4px;
-        }
-
-        .feed-habit-dot {
-          width: 44px;
-          height: 44px;
-          border-radius: 12px;
-          border: 2px solid;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-          opacity: 0.5;
-          transition: all 0.3s;
-        }
-
-        .feed-habit-dot.done {
-          opacity: 1;
-          background: var(--habit-color);
-          color: white;
-          box-shadow: 0 4px 12px var(--habit-color);
-        }
-
-        .feed-habit-more {
-          align-self: center;
-          font-size: 12px;
-          font-weight: 700;
-          color: var(--muted);
+          line-height: 1.3;
         }
 
         .feed-note-title {
-          font-size: 15px;
+          font-size: clamp(13px, 3.5vw, 16px);
           font-weight: 600;
           color: var(--text2);
         }

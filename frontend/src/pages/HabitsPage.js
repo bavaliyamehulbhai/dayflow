@@ -44,10 +44,11 @@ function HabitModal({ habit, onClose, onSave }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="modal"
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
+        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={`modal ${isMobile ? 'bottom-sheet' : ''}`}
       >
         <div className="modal-header">
           <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -56,7 +57,7 @@ function HabitModal({ habit, onClose, onSave }) {
           </div>
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
-        <div className="modal-body">
+        <div className="modal-body" style={{ maxHeight: isMobile ? '70vh' : 'auto', overflowY: 'auto' }}>
           <div className="form-group">
             <label className="form-label">Objective Name</label>
             <input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Morning meditation" autoFocus />
@@ -71,7 +72,7 @@ function HabitModal({ habit, onClose, onSave }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {ICONS.map(icon => (
                 <button key={icon} type="button" onClick={() => setForm(f => ({ ...f, icon }))}
-                  style={{ width: 40, height: 40, borderRadius: 10, border: `2px solid ${form.icon === icon ? form.color : 'var(--border)'}`, background: form.icon === icon ? `${form.color}22` : 'var(--surface2)', fontSize: 20, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  style={{ width: isMobile ? 44 : 40, height: isMobile ? 44 : 40, borderRadius: 10, border: `2px solid ${form.icon === icon ? form.color : 'var(--border)'}`, background: form.icon === icon ? `${form.color}22` : 'var(--surface2)', fontSize: 20, cursor: 'pointer', transition: 'all 0.2s' }}>
                   {icon}
                 </button>
               ))}
@@ -80,16 +81,16 @@ function HabitModal({ habit, onClose, onSave }) {
 
           <div className="form-group">
             <label className="form-label">Signature Color</label>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {COLORS.map(c => (
                 <button key={c} type="button" onClick={() => setForm(f => ({ ...f, color: c }))}
-                  style={{ width: 32, height: 32, borderRadius: '50%', background: c, border: `2px solid ${form.color === c ? 'white' : 'transparent'}`, cursor: 'pointer', boxShadow: form.color === c ? `0 0 12px ${c}` : 'none', transition: 'all 0.2s' }} />
+                  style={{ width: 36, height: 36, borderRadius: '50%', background: c, border: `2px solid ${form.color === c ? 'white' : 'transparent'}`, cursor: 'pointer', boxShadow: form.color === c ? `0 0 12px ${c}` : 'none', transition: 'all 0.2s' }} />
               ))}
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
-            <div className="form-group" style={{ gridColumn: '1 / 3' }}>
+            <div className="form-group" style={{ gridColumn: isMobile ? 'span 2' : '1 / 3' }}>
               <label className="form-label">Frequency</label>
               <select className="select" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
                 {FREQ.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
@@ -99,29 +100,47 @@ function HabitModal({ habit, onClose, onSave }) {
               <label className="form-label">Target</label>
               <input type="number" className="input" value={form.targetCount} onChange={e => setForm(f => ({ ...f, targetCount: parseInt(e.target.value) || 1 }))} min={1} />
             </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Unit of Progress</label>
-            <input className="input" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} placeholder="times, minutes, pages..." />
+            <div className="form-group">
+              <label className="form-label">Unit</label>
+              <input className="input" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} placeholder="times" />
+            </div>
           </div>
 
           <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: '16px', display: 'flex', alignItems: 'center', gap: 16, marginTop: 8, border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 'var(--fs-2xl)' }}>{form.icon}</div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 'var(--fs-base)' }}>{form.name || 'Your new ritual'}</div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', fontWeight: 500 }}>{form.targetCount} {form.unit} • {form.frequency}</div>
+            <div style={{ fontSize: '28px' }}>{form.icon}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '15px' }}>{form.name || 'Your new ritual'}</div>
+              <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>{form.targetCount} {form.unit} • {form.frequency}</div>
             </div>
-            <div style={{ marginLeft: 'auto', width: 32, height: 32, borderRadius: '50%', background: form.color, boxShadow: `0 0 15px ${form.color}66` }} />
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: form.color, boxShadow: `0 0 15px ${form.color}66` }} />
           </div>
         </div>
-        <div className="modal-footer" style={{ gap: 12, padding: isMobile ? '16px' : '20px 24px' }}>
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" style={{ minWidth: 140, flex: isMobile ? 1 : 'none' }} onClick={() => { if (!form.name.trim()) return toast.error('Name required'); onSave(form); }}>
-            {habit ? 'Save' : 'Create'}
+        <div className="modal-footer" style={{ gap: 12, padding: isMobile ? '16px 20px 32px' : '20px 24px', borderTop: '1px solid var(--border)' }}>
+          <button className="btn btn-ghost" onClick={onClose} style={{ flex: isMobile ? 1 : 'none' }}>Cancel</button>
+          <button className="btn btn-primary" style={{ minWidth: 140, flex: isMobile ? 2 : 'none' }} onClick={() => { if (!form.name.trim()) return toast.error('Name required'); onSave(form); }}>
+            {habit ? 'Save Ritual' : 'Create Ritual'}
           </button>
         </div>
       </motion.div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .modal.bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            max-width: none;
+            border-radius: 24px 24px 0 0;
+            max-height: 92vh;
+            margin: 0;
+          }
+          .modal-overlay {
+            align-items: flex-end;
+          }
+        }
+      `}</style>
     </div>
   );
 }
