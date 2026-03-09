@@ -22,7 +22,7 @@ function useWindowWidth() {
   return w;
 }
 
-function EventModal({ event, date, onClose, onSave, tasks }) {
+function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
   const [form, setForm] = useState({
     title: event?.title || '',
     description: event?.description || '',
@@ -37,10 +37,12 @@ function EventModal({ event, date, onClose, onSave, tasks }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="modal glass-modal"
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={`modal glass-modal ${isMobile ? 'bottom-sheet' : ''}`}
+        style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100% - 60px)' : 'auto' }}
       >
         <div className="modal-header">
           <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -90,9 +92,9 @@ function EventModal({ event, date, onClose, onSave, tasks }) {
             </div>
           </div>
         </div>
-        <div className="modal-footer" style={{ gap: 12 }}>
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={() => { if (!form.title.trim() || !form.startTime || !form.date) return toast.error('Title, date and start time required'); onSave({ ...form, linkedTask: form.linkedTask || null }); }}>
+        <div className="modal-footer" style={{ gap: 12, padding: isMobile ? '16px 20px 32px' : '20px 24px', borderTop: '1px solid var(--border)' }}>
+          <button className="btn btn-ghost" onClick={onClose} style={{ flex: isMobile ? 1 : 'none' }}>Cancel</button>
+          <button className="btn btn-primary" style={{ flex: isMobile ? 2 : 'none' }} onClick={() => { if (!form.title.trim() || !form.startTime || !form.date) return toast.error('Title, date and start time required'); onSave({ ...form, linkedTask: form.linkedTask || null }); }}>
             {event ? 'Update Chronology' : 'Commit to Schedule'}
           </button>
         </div>
@@ -375,6 +377,7 @@ export default function SchedulePage() {
             onClose={() => setModal(null)}
             onSave={handleSave}
             tasks={tasks}
+            isMobile={isMobile}
           />
         )}
       </AnimatePresence>

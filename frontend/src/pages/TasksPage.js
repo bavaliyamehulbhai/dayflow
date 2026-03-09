@@ -8,6 +8,7 @@ import {
   X, ChevronRight, ClipboardList, Clock, Tag, Calendar, Layers, Zap, Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import useFeedback from '../hooks/useFeedback';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
@@ -208,6 +209,7 @@ function TaskModal({ task, onClose, onSave }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function TasksPage() {
   const qc = useQueryClient();
+  const feedback = useFeedback();
   const width = useWindowWidth();
   const isMobile = width <= 768;
   const [modal, setModal] = useState(null);
@@ -265,6 +267,7 @@ export default function TasksPage() {
 
   const toggleComplete = (task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+    if (newStatus === 'completed') feedback('success');
     updateMutation.mutate({ id: task._id, data: { status: newStatus } });
   };
 
@@ -419,13 +422,15 @@ export default function TasksPage() {
         isLoading ? (
           <TasksSkeleton />
         ) : tasks.length === 0 ? (
-          <div className="card" style={{ padding: '80px 40px', textAlign: 'center' }}>
-            <div className="empty-icon" style={{ fontSize: 48, opacity: 0.6 }}>✨</div>
-            <div className="empty-title" style={{ fontSize: 24, fontWeight: 700, marginTop: 16 }}>Clear skies ahead</div>
-            <div className="empty-desc" style={{ marginTop: 8, fontSize: 15 }}>You don't have any tasks matching these filters.</div>
-            <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={() => setModal('create')}>
-              <Plus size={18} /> Add Your First Task
-            </button>
+          <div className="card" style={{ padding: '100px 40px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(130,114,255,0.03), rgba(109,250,204,0.02))' }}>
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}>
+              <div className="empty-icon" style={{ fontSize: 64, marginBottom: 20, filter: 'drop-shadow(0 0 15px var(--accent))' }}>✨</div>
+              <div className="empty-title" style={{ fontSize: 28, fontWeight: 900, fontFamily: 'Syne, sans-serif' }}>Clear skies ahead</div>
+              <div className="empty-desc" style={{ marginTop: 12, fontSize: 16, color: 'var(--muted)', maxWidth: 400, margin: '12px auto' }}>All objectives secured. The path is clear for your next great achievement.</div>
+              <button className="btn btn-primary" style={{ marginTop: 32, padding: '12px 32px' }} onClick={() => setModal('create')}>
+                <Plus size={18} /> Add Your First Task
+              </button>
+            </motion.div>
           </div>
         ) : (
           <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
@@ -438,7 +443,7 @@ export default function TasksPage() {
               <span style={{ minWidth: 100 }}>Actions</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className={`tasks-list-container ${selected.length > 0 ? 'tasks-has-selection' : ''}`} style={{ display: 'flex', flexDirection: 'column' }}>
               {tasks.map((task, i) => {
                 const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
                 return (
@@ -446,7 +451,8 @@ export default function TasksPage() {
                     key={task._id}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.018 }}
+                    whileHover={{ x: 6, backgroundColor: 'rgba(130,114,255,0.02)' }}
+                    transition={{ delay: i * 0.018, type: 'spring', stiffness: 300, damping: 20 }}
                     className={`task-row-container ${selected.includes(task._id) ? 'selected' : ''}`}
                     style={{ opacity: task.status === 'cancelled' ? 0.4 : 1 }}
                   >
@@ -470,7 +476,7 @@ export default function TasksPage() {
                           else if (info.offset.x < -100) setConfirmState({ open: true, task });
                         }}
                         className="task-row-main"
-                        style={{ position: 'relative', zIndex: 2, background: 'var(--surface)' }}
+                        style={{ position: 'relative', zIndex: 2, background: 'var(--surface-solid)' }}
                       >
                         <div className="task-row-check">
                           <input type="checkbox" checked={selected.includes(task._id)} onChange={() => toggleSelect(task._id)} />
@@ -545,6 +551,23 @@ export default function TasksPage() {
         .hover-lift:hover { transform: translateY(-1px); }
         .text-accent { color: var(--accent); }
         .status-checkbox:hover { border-color: var(--accent) !important; transform: scale(1.1); }
+        
+        .task-row-check input[type="checkbox"] {
+          opacity: 0;
+          width: 0;
+          margin: 0;
+          pointer-events: none;
+          transition: all 0.2s ease;
+        }
+
+        .task-row-container:hover .task-row-check input[type="checkbox"],
+        .tasks-has-selection .task-row-check input[type="checkbox"],
+        .task-row-container.selected .task-row-check input[type="checkbox"] {
+          opacity: 1;
+          width: 16px;
+          margin-right: 4px;
+          pointer-events: auto;
+        }
       `}</style>
     </div >
   );

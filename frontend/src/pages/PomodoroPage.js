@@ -8,10 +8,37 @@ import { format } from 'date-fns';
 import {
   Target, Coffee, Trees, Play, Pause, RotateCcw,
   History, Zap, Trophy, Brain, Timer, Layers,
-  StickyNote, Award, ChevronDown
+  StickyNote, Award, ChevronDown, Volume2, VolumeX, Maximize2, Minimize2, CloudRain, Wind
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import useFeedback from '../hooks/useFeedback';
 import ConfirmDialog from '../components/ConfirmDialog';
+
+// ─── Sound Engine ─────────────────────────────────────────────────────────────
+const createRainSound = (ctx) => {
+  const bufferSize = 2 * ctx.sampleRate,
+    noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate),
+    output = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    output[i] = Math.random() * 2 - 1;
+  }
+  const whiteNoise = ctx.createBufferSource();
+  whiteNoise.buffer = noiseBuffer;
+  whiteNoise.loop = true;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 400;
+
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+
+  whiteNoise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  return { source: whiteNoise, gain, filter };
+};
 
 const MODES = {
   work: { label: 'Focus', color: 'var(--accent)', icon: Brain, gradient: 'linear-gradient(135deg, #8272ff, #fa6d8a)' },
@@ -33,6 +60,7 @@ function useWindowWidth() {
 export default function PomodoroPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const feedback = useFeedback();
   const width = useWindowWidth();
   const isMobile = width <= 768;
   const isTablet = width <= 1024 && width > 768;
@@ -50,10 +78,15 @@ export default function PomodoroPage() {
   const [sessions, setSessions] = useState(0);
   const [currentPomoId, setCurrentPomoId] = useState(null);
   const [startedAt, setStartedAt] = useState(null);
-  const [linkedTask, setLinkedTask] = useState('');
   const [note, setNote] = useState('');
+  const [linkedTask, setLinkedTask] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, action: null, message: '' });
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [soundType, setSoundType] = useState('none');
+  const [soundVolume, setSoundVolume] = useState(0.3);
   const intervalRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const rainRef = useRef(null);
 
   const { data: statsData } = useQuery({
     queryKey: ['pomo-stats'],
@@ -85,7 +118,8 @@ export default function PomodoroPage() {
 
   const playSound = useCallback(() => {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
+      if (!audioCtxRef.current) audioCtxRef.current = ctx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
@@ -96,10 +130,39 @@ export default function PomodoroPage() {
     } catch { }
   }, []);
 
+  const toggleSound = (type) => {
+    if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtxRef.current;
+
+    if (soundType === type) {
+      if (rainRef.current) {
+        rainRef.current.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1);
+        setTimeout(() => { if (rainRef.current) rainRef.current.source.stop(); rainRef.current = null; }, 1100);
+      }
+      setSoundType('none');
+    } else {
+      if (rainRef.current) rainRef.current.source.stop();
+      if (type === 'rain') {
+        const rain = createRainSound(ctx);
+        rain.source.start();
+        rain.gain.gain.exponentialRampToValueAtTime(soundVolume, ctx.currentTime + 1);
+        rainRef.current = rain;
+      }
+      setSoundType(type);
+    }
+  };
+
+  useEffect(() => {
+    if (rainRef.current) {
+      rainRef.current.gain.gain.setTargetAtTime(soundVolume, audioCtxRef.current.currentTime, 0.1);
+    }
+  }, [soundVolume]);
+
   const handleComplete = useCallback(() => {
     clearInterval(intervalRef.current);
     setRunning(false);
     playSound();
+    feedback('complete');
     if (currentPomoId && mode === 'work') {
       const actualDuration = startedAt ? Math.round((Date.now() - startedAt) / 1000) : DURATIONS.work;
       completeMutation.mutate({ id: currentPomoId, data: { actualDuration, note } });
@@ -180,7 +243,7 @@ export default function PomodoroPage() {
         <div className="card-title" style={{ marginBottom: 18 }}>
           <History size={15} className="text-accent" /> Mastery Statistics
         </div>
-        <div className="stats-grid mb-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
           {[
             { label: 'This Week', value: statsData?.periodPomos ?? 0, sub: `${statsData?.periodFocusMinutes || 0} min`, icon: Zap, color: 'var(--accent)' },
             { label: 'All Time', value: statsData?.totalPomos ?? 0, sub: 'sessions', icon: Layers, color: 'var(--accent2)' },
@@ -233,6 +296,37 @@ export default function PomodoroPage() {
         />
       </div>
 
+      {/* Soundscapes */}
+      <div className="card glass-card">
+        <div className="card-title" style={{ marginBottom: 14 }}>
+          <Volume2 size={15} className="text-accent" /> Ambient Sounds
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          <button
+            className={`btn btn-sm ${soundType === 'rain' ? 'btn-primary' : 'btn-ghost'}`}
+            style={{ flex: 1, borderRadius: 12, border: '1px solid var(--border)' }}
+            onClick={() => toggleSound('rain')}
+          >
+            <CloudRain size={14} style={{ marginRight: 6 }} /> Rain
+          </button>
+          <button
+            className={`btn btn-sm ${soundType === 'none' ? 'btn-primary' : 'btn-ghost'}`}
+            style={{ flex: 1, borderRadius: 12, border: '1px solid var(--border)' }}
+            onClick={() => toggleSound(soundType)}
+          >
+            <VolumeX size={14} style={{ marginRight: 6 }} /> Mute
+          </button>
+        </div>
+        {soundType !== 'none' && (
+          <input
+            type="range" min="0" max="1" step="0.01"
+            value={soundVolume}
+            onChange={e => setSoundVolume(parseFloat(e.target.value))}
+            style={{ width: '100%', accentColor: 'var(--accent)' }}
+          />
+        )}
+      </div>
+
       {/* Config */}
       <div className="card glass-card" style={{ padding: '18px 20px' }}>
         <div className="card-title" style={{ marginBottom: 14, opacity: 0.6 }}>Config</div>
@@ -264,16 +358,24 @@ export default function PomodoroPage() {
           </div>
           <p className="page-subtitle">Master your attention through intentional intervals</p>
         </div>
+        <button
+          className="btn btn-ghost"
+          onClick={() => setIsFocusMode(true)}
+          style={{ borderRadius: 12, border: '1px solid var(--border)', gap: 8 }}
+        >
+          <Maximize2 size={16} /> Focus Mode
+        </button>
       </div>
 
       {/* Main grid: on mobile stack vertically, tablet/desktop side-by-side */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: isMobile || isTablet ? '1fr' : '1fr 320px',
-        gap: isMobile ? 16 : 24
+        gap: isMobile ? 16 : 24,
+        minWidth: 0
       }}>
         {/* LEFT: Timer */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 20, minWidth: 0 }}>
 
           {/* Timer Card */}
           <div className="card glass-card" style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)', position: 'relative', overflow: 'hidden' }}>
@@ -447,7 +549,7 @@ export default function PomodoroPage() {
             <div className="card-title" style={{ marginBottom: 20 }}>
               <Award size={16} className="text-accent" /> 7-Day Focus Trend
             </div>
-            <div style={{ height: isMobile ? 180 : 220 }}>
+            <div style={{ height: isMobile ? 180 : 220, minWidth: 0, width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={statsData?.daily || []} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
                   <defs>
@@ -510,9 +612,102 @@ export default function PomodoroPage() {
         onCancel={() => setConfirmState({ open: false, action: null, message: '' })}
       />
 
+      <AnimatePresence>
+        {isFocusMode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              background: 'var(--bg)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20
+            }}
+          >
+            <div style={{ position: 'absolute', top: 30, right: 30 }}>
+              <button
+                className="btn btn-ghost"
+                onClick={() => setIsFocusMode(false)}
+                style={{ borderRadius: '50%', width: 50, height: 50, padding: 0 }}
+              >
+                <Minimize2 size={24} />
+              </button>
+            </div>
+
+            <div style={{ textAlign: 'center', maxWidth: 600, width: '100%' }}>
+              <motion.div
+                animate={{ scale: running ? [1, 1.02, 1] : 1 }}
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                style={{
+                  fontFamily: 'Syne, sans-serif',
+                  fontSize: 'clamp(5rem, 25vw, 12rem)',
+                  fontWeight: 800,
+                  letterSpacing: -8,
+                  lineHeight: 1,
+                  background: modeInfo.gradient,
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  marginBottom: 20
+                }}
+              >
+                {formatTime(timeLeft)}
+              </motion.div>
+
+              <div style={{ fontSize: 18, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 8, fontWeight: 700, marginBottom: 60 }}>
+                {modeInfo.label}
+              </div>
+
+              <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleStart}
+                  style={{
+                    padding: '20px 60px',
+                    fontSize: 20,
+                    fontWeight: 700,
+                    background: modeInfo.gradient,
+                    borderRadius: 20,
+                    border: 'none',
+                    boxShadow: `0 12px 40px ${modeInfo.color}44`
+                  }}
+                >
+                  {running ? <Pause size={24} /> : <Play size={24} />}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  onClick={handleReset}
+                  style={{ width: 72, height: 72, borderRadius: '50%', border: '1px solid var(--border)' }}
+                >
+                  <RotateCcw size={24} />
+                </button>
+              </div>
+
+              {linkedTask && (
+                <div style={{ marginTop: 60, padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Active Objective</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{tasksData?.find(t => t._id === linkedTask)?.title}</div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ position: 'absolute', bottom: 40, color: 'var(--muted)', fontSize: 14 }}>
+              Press Esc or click the close button to exit Focus Mode
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style>{`
         .glass-card { background: rgba(255,255,255,0.02); backdrop-filter: blur(12px); }
         .text-accent { color: var(--accent); }
+        .focus-immersion { filter: saturate(1.2); }
       `}</style>
     </div>
   );

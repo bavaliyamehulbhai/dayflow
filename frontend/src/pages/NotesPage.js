@@ -31,7 +31,7 @@ const NOTE_COLORS = [
   { value: '#1a2433', label: 'Ocean' }
 ];
 
-function NoteEditor({ note, onClose, onSave }) {
+function NoteEditor({ note, onClose, onSave, isMobile }) {
   const [title, setTitle] = useState(note?.title || '');
   const [content, setContent] = useState(note?.content || '');
   const [color, setColor] = useState(note?.color || '#1a1a26');
@@ -57,16 +57,20 @@ function NoteEditor({ note, onClose, onSave }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 30 }}
-        className="modal glass-modal"
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
+        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={`modal glass-modal ${isMobile ? 'bottom-sheet' : ''}`}
         style={{
           maxWidth: 720,
           background: `linear-gradient(180deg, ${color}, #0f1115)`,
           border: `1px solid ${color}44`,
           width: '100%',
-          margin: 'var(--space-4) auto'
+          margin: isMobile ? 0 : 'var(--space-4) auto',
+          display: 'flex',
+          flexDirection: 'column',
+          height: isMobile ? 'calc(100% - 60px)' : 'auto'
         }}
       >
         <div className="modal-header" style={{ border: 'none', padding: window.innerWidth <= 768 ? '16px' : '20px 24px 12px' }}>
@@ -81,7 +85,7 @@ function NoteEditor({ note, onClose, onSave }) {
           </div>
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
-        <div className="modal-body" style={{ paddingTop: 0 }}>
+        <div className="modal-body" style={{ paddingTop: 0, flex: 1, overflowY: 'auto' }}>
           <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
             <Tag size={14} className="text-muted" />
             <input
@@ -124,12 +128,12 @@ function NoteEditor({ note, onClose, onSave }) {
             </div>
           </div>
         </div>
-        <div className="modal-footer" style={{ border: 'none', gap: 12 }}>
+        <div className="modal-footer" style={{ border: 'none', gap: 12, paddingBottom: isMobile ? 32 : 24 }}>
           <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--green)', fontWeight: 700 }}>
             <div className="pulse-dot" style={{ background: 'var(--green)' }} /> Synchronized
           </div>
-          <button className="btn btn-ghost" onClick={onClose}>Dismiss</button>
-          <button className="btn btn-primary" onClick={() => onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, false)}>
+          <button className="btn btn-ghost" onClick={onClose} style={{ flex: isMobile ? 1 : 'none' }}>Dismiss</button>
+          <button className="btn btn-primary" style={{ flex: isMobile ? 1 : 'none' }} onClick={() => onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, false)}>
             <Save size={16} /> Preserve Note
           </button>
         </div>
@@ -445,6 +449,7 @@ export default function NotesPage() {
             note={modal}
             onClose={() => { setModal(null); invalidate(); }}
             onSave={handleSave}
+            isMobile={isMobile}
           />
         )}
       </AnimatePresence>
@@ -624,6 +629,17 @@ export default function NotesPage() {
 
         @media (max-width: 768px) {
           .note-actions { opacity: 1 !important; transform: translateY(0) !important; }
+          .modal.bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            max-width: none;
+            border-radius: 24px 24px 0 0;
+            max-height: 92vh;
+            margin: 0 !important;
+          }
         }
       `}</style>
     </div >

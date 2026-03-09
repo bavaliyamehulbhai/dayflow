@@ -14,6 +14,8 @@ import {
   User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CommandPalette from './CommandPalette';
+import ShortcutsHelp from './ShortcutsHelp';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
@@ -130,7 +132,7 @@ export default function Layout({ children }) {
       )}
 
       {/* ─── Main Content Area ─────────────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, marginLeft: isMobile ? 0 : 'var(--sidebar-w)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, marginLeft: isMobile ? 0 : (isTablet ? 68 : 'var(--sidebar-w)'), transition: 'margin-left 0.3s ease' }}>
         {/* ─── Mobile Top Header ─────────────────────────────────────────────── */}
         {isMobile && (
           <header className="mobile-header glass" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
@@ -149,10 +151,14 @@ export default function Layout({ children }) {
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 12, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -12, filter: 'blur(10px)' }}
+              transition={{
+                duration: 0.4,
+                ease: [0.16, 1, 0.3, 1],
+                filter: { duration: 0.3 }
+              }}
               className="page-content"
             >
               {children}
@@ -195,6 +201,8 @@ export default function Layout({ children }) {
           </nav>
         )
       }
+      <CommandPalette />
+      <ShortcutsHelp />
     </div >
   );
 }

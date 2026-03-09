@@ -9,6 +9,7 @@ import {
   RefreshCcw, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import useFeedback from '../hooks/useFeedback';
 
 const ICONS = ['⭐', '💪', '🏃', '📚', '💧', '🧘', '🍎', '😴', '✍️', '🎯', '💊', '🌿', '🎨', '🎵', '🧹', '💻'];
 const COLORS = ['#7c6dfa', '#fa6d8a', '#6dfacc', '#fad96d', '#fa9a6d', '#6daafa', '#e96dfa', '#6dfaed'];
@@ -147,6 +148,7 @@ function HabitModal({ habit, onClose, onSave }) {
 
 export default function HabitsPage() {
   const qc = useQueryClient();
+  const feedback = useFeedback();
   const [modal, setModal] = useState(null);
   const today = format(new Date(), 'yyyy-MM-dd');
   const width = useWindowWidth();
@@ -180,7 +182,10 @@ export default function HabitsPage() {
 
   const completeMutation = useMutation({
     mutationFn: ({ id, date }) => habitsAPI.complete(id, { date }),
-    onSuccess: () => { invalidate(); }
+    onSuccess: (_, variables) => {
+      feedback('success');
+      invalidate();
+    }
   });
 
   const habits = data || [];

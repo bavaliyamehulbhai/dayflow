@@ -40,7 +40,12 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   me: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
-  changePassword: (data) => api.put('/auth/password', data)
+  changePassword: (data) => api.put('/auth/password', data),
+  getSecurityHistory: () => api.get('/auth/security-history'),
+  getSessions: () => api.get('/auth/sessions'),
+  revokeSession: (id) => api.delete(`/auth/sessions/${id}`),
+  exportData: () => api.get('/auth/export', { responseType: 'blob' }),
+  deleteAccount: () => api.delete('/auth/account')
 };
 
 // ─── Tasks ────────────────────────────────────────────────────────────────────
@@ -97,12 +102,17 @@ export const notesAPI = {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export const dashboardAPI = {
   get: () => api.get('/dashboard'),
-  getActivity12m: () => api.get('/dashboard/activity/12m')
+  getActivity12m: () => api.get('/dashboard/activity/12m').then(r => ({ data: { activity: r.data.logs, analytics: r.data.analytics } }))
 };
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
 export const badgesAPI = {
   get: () => api.get('/badges'),
   check: () => api.post('/badges/check')
+};
+
+// ─── AI Coach ─────────────────────────────────────────────────────────────────
+export const aiAPI = {
+  getCoach: () => api.get('/ai/coach')
 };
 

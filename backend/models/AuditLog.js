@@ -18,7 +18,10 @@ const auditLogSchema = new mongoose.Schema({
             '2FA_DISABLE',
             'ACCOUNT_DELETE_INITIATED',
             'DATA_EXPORT',
-            'AVATAR_UPDATE'
+            'AVATAR_UPDATE',
+            'PROFILE_UPDATE',
+            'SETTINGS_CHANGE',
+            'SESSION_REVOKED'
         ]
     },
     status: {

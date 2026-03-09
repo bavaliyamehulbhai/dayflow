@@ -14,6 +14,7 @@ import SchedulePage from './pages/SchedulePage';
 import PomodoroPage from './pages/PomodoroPage';
 import NotesPage from './pages/NotesPage';
 import ProfilePage from './pages/ProfilePage';
+import { useZenTheme } from './hooks/useZenTheme';
 import './styles/globals.css';
 
 const queryClient = new QueryClient({
@@ -64,6 +65,8 @@ function AppRoutes() {
 }
 
 export default function App() {
+  useZenTheme(); // Initialize theme
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

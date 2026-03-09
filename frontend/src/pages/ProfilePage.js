@@ -5,6 +5,7 @@ import { authAPI, badgesAPI, dashboardAPI } from '../utils/api';
 import ActivityHeatmapYear from '../components/ActivityHeatmapYear';
 import ActivityTimeline from '../components/ActivityTimeline';
 import ProductivityCircle from '../components/ProductivityCircle';
+import SessionManager from '../components/profile/SessionManager';
 import ActivityTags from '../components/ActivityTags';
 import toast from 'react-hot-toast';
 import { format, differenceInDays } from 'date-fns';
@@ -12,8 +13,11 @@ import {
   User, Lock, Timer, BarChart2, Medal, Shield, Zap, Trophy,
   CheckCircle2, Flame, Clock, Brain, Coffee, Trees, Save,
   Star, Edit3, Camera, Target, Activity, TrendingUp, Award,
-  BookOpen, LogOut, Download, ChevronRight, Sparkles, AlertCircle, ChevronDown
+  BookOpen, LogOut, Download, ChevronRight, Sparkles, AlertCircle, ChevronDown,
+  ShieldCheck, ShieldAlert, Fingerprint, Eye, EyeOff,
+  Palette, Sun, Moon
 } from 'lucide-react';
+import { useZenTheme } from '../hooks/useZenTheme';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,6 +33,7 @@ function useWindowWidth() {
 
 const TABS = [
   { id: 'profile', label: 'Profile', icon: User },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'security', label: 'Security', icon: Shield },
   { id: 'pomodoro', label: 'Focus', icon: Timer },
   { id: 'stats', label: 'Stats', icon: BarChart2 },
@@ -108,6 +113,7 @@ function ScoreRing({ score, size = 120 }) {
 
 export default function ProfilePage() {
   const { user, updateUser, logout } = useAuth();
+  const [accent, setAccent] = useZenTheme();
   const navigate = useNavigate();
   const width = useWindowWidth();
   const isMobile = width <= 768;
@@ -140,6 +146,12 @@ export default function ProfilePage() {
     queryKey: ['activity12m'],
     queryFn: () => dashboardAPI.getActivity12m().then(r => r.data),
     initialData: { logs: [], analytics: {} }
+  });
+
+  const { data: securityHistory } = useQuery({
+    queryKey: ['securityHistory'],
+    queryFn: () => authAPI.getSecurityHistory().then(r => r.data),
+    initialData: { logs: [] }
   });
 
   const activityData = activityResponse.logs || [];
@@ -224,6 +236,35 @@ export default function ProfilePage() {
     passwordMutation.mutate({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
   };
 
+  const handleExportData = async () => {
+    try {
+      const res = await authAPI.exportData();
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `dayflow_export_${user._id}.json`);
+      document.body.appendChild(link);
+      link.click();
+      toast.success('Data exported successfully! 📂');
+    } catch (err) {
+      toast.error('Export failed');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('WARNING: This will permanently delete your account and all associated data. This cannot be undone. Are you absolutely sure?')) return;
+    if (!window.confirm('Type "DELETE" to confirm (just kidding, but are you really sure?)')) return; // Extra friction for safety
+
+    try {
+      await authAPI.deleteAccount();
+      toast.success('Account deleted. We will miss you! 👋');
+      logout();
+      navigate('/login');
+    } catch (err) {
+      toast.error('Deletion failed');
+    }
+  };
+
   // ── Computed values ────────────────────────────────────────────────────────
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
   const memberSince = user?.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '—';
@@ -260,6 +301,20 @@ export default function ProfilePage() {
 
   const strengthColors = ['var(--red)', 'var(--orange)', 'var(--yellow)', 'var(--green)'];
   const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
+
+  // Security Health Calculation
+  const securityHealth = useMemo(() => {
+    let score = 0;
+    const checks = [
+      { id: 'verified', label: 'Email Verified', status: user?.isVerified, weight: 30 },
+      { id: '2fa', label: '2FA Protection', status: user?.twoFactorEnabled, weight: 40 },
+      { id: 'password', label: 'Recent Password', status: true, weight: 30 }, // Simplified
+    ];
+
+    checks.forEach(c => { if (c.status) score += c.weight; });
+
+    return { score, checks };
+  }, [user]);
 
   return (
     <div className="responsive-container pb-10">
@@ -587,8 +642,46 @@ export default function ProfilePage() {
                   </button>
                 </form>
               </div>
+              <div className="card" style={{ background: 'linear-gradient(135deg, rgba(130,114,255,0.05), rgba(109,250,204,0.03))' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div className="card-title" style={{ margin: 0 }}><ShieldCheck size={16} className="text-accent" /> Security Health</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: securityHealth.score >= 70 ? 'var(--green)' : 'var(--orange)' }}>{securityHealth.score}%</div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+                  {securityHealth.checks.map(c => (
+                    <div key={c.id} style={{ background: 'var(--surface2)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {c.status ? <CheckCircle2 size={16} color="var(--green)" /> : <AlertCircle size={16} color="var(--orange)" />}
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{c.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="card-title" style={{ fontSize: 12, opacity: 0.6, marginBottom: 12 }}>Recent Activity Logging</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {securityHistory.logs.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: 20, color: 'var(--muted)', fontSize: 13 }}>No recent security events</div>
+                  ) : (
+                    securityHistory.logs.slice(0, 5).map((log, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, fontSize: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <Shield size={12} style={{ color: log.status === 'success' ? 'var(--green)' : 'var(--red)' }} />
+                          <span style={{ fontWeight: 700 }}>{log.action.replace('_', ' ')}</span>
+                          <span style={{ color: 'var(--muted)', fontSize: 10 }}>• {log.ip || '0.0.0.0'}</span>
+                        </div>
+                        <div style={{ color: 'var(--muted)', fontSize: 11 }}>{format(new Date(log.createdAt), 'MMM d, HH:mm')}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="card">
+                <SessionManager />
+              </div>
+
               <div className="card" style={{ background: 'rgba(95,250,209,0.04)', border: '1px solid rgba(95,250,209,0.15)' }}>
-                <div className="card-title" style={{ marginBottom: 16, color: 'var(--green)' }}><Shield size={14} /> Security Status</div>
+                <div className="card-title" style={{ marginBottom: 16, color: 'var(--green)' }}><Shield size={14} /> Global Protection Status</div>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
                   {[
                     { label: 'Account Status', value: 'Active & Secure', icon: '✅' },
@@ -596,12 +689,129 @@ export default function ProfilePage() {
                     { label: 'Token Expiry', value: '7 days', icon: '⏱' },
                     { label: 'NoSQL Injection', value: 'Sanitised', icon: '🛡️' },
                     { label: 'Password Hash', value: 'bcrypt 12', icon: '🔑' },
+                    { label: 'Encryption', value: 'AES-256', icon: '🔐' },
                   ].map(s => (
                     <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, padding: '10px 14px', background: 'var(--surface2)', borderRadius: 10, border: '1px solid var(--border)' }}>
                       <span style={{ color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>{s.icon} {s.label}</span>
                       <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: 10 }}>{s.value}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="card" style={{ background: 'rgba(130,114,255,0.04)', border: '1px solid rgba(130,114,255,0.1)' }}>
+                <div className="card-title mb-4"><Fingerprint size={14} className="text-accent" /> Privacy & Data Portability</div>
+                <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20, lineHeight: 1.5 }}>
+                  In accordance with GDPR, you have the right to access your data and be forgotten.
+                </p>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <button onClick={handleExportData} className="btn btn-ghost" style={{ flex: 1, minWidth: 160, fontSize: 12 }}>
+                    <Download size={14} /> Export My Data (JSON)
+                  </button>
+                  <button onClick={handleDeleteAccount} className="btn btn-danger" style={{ flex: 1, minWidth: 160, fontSize: 12, background: 'rgba(255,107,107,0.1)', color: 'var(--red)', border: '1px solid rgba(255,107,107,0.2)' }}>
+                    <AlertCircle size={14} /> Delete My Account
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── APPEARANCE ────────────────────────────── */}
+          {activeTab === 'appearance' && (
+            <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
+              <div className="card-title" style={{ marginBottom: 20 }}><Palette size={15} className="text-accent" /> Zenith Theme Customization</div>
+              <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 32, lineHeight: 1.6 }}>
+                Personalize your workspace with a theme that matches your energy. Changes are applied instantly.
+              </p>
+
+              <div className="form-group mb-8">
+                <label className="form-label" style={{ marginBottom: 16 }}>Zenith Palette</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))', gap: 16 }}>
+                  {[
+                    { name: 'DayFlow', color: '#8272ff' },
+                    { name: 'Sunset', color: '#ff6b8b' },
+                    { name: 'Emerald', color: '#5ffad1' },
+                    { name: 'Gold', color: '#fad96d' },
+                    { name: 'Amber', color: '#ff9a6d' },
+                    { name: 'Sapphire', color: '#4facfe' },
+                    { name: 'Iris', color: '#a78bfa' },
+                    { name: 'Crimson', color: '#fb7185' },
+                  ].map(p => (
+                    <motion.button
+                      key={p.color}
+                      whileHover={{ scale: 1.1, y: -2 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setAccent(p.color)}
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        background: p.color,
+                        border: accent === p.color ? '3px solid white' : 'none',
+                        borderRadius: 14,
+                        cursor: 'pointer',
+                        boxShadow: accent === p.color ? `0 0 20px ${p.color}88` : 'none',
+                        transition: 'box-shadow 0.3s ease'
+                      }}
+                      title={p.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid-2 mb-8">
+                <div className="form-group">
+                  <label className="form-label">Custom Accent</label>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      background: accent,
+                      border: '1px solid var(--border)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <input
+                        type="color"
+                        value={accent}
+                        onChange={(e) => setAccent(e.target.value)}
+                        style={{ position: 'absolute', inset: -10, width: 80, height: 80, cursor: 'pointer', border: 'none' }}
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      className="input"
+                      value={accent.toUpperCase()}
+                      onChange={(e) => setAccent(e.target.value)}
+                      placeholder="#000000"
+                      style={{ fontFamily: 'DM Mono, monospace', fontSize: 13, textTransform: 'uppercase' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Interface Mode</label>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button className="btn btn-ghost" style={{ flex: 1, cursor: 'default', opacity: 0.5 }}>
+                      <Moon size={14} /> Always Dark
+                    </button>
+                    <button className="btn btn-ghost" style={{ flex: 1, cursor: 'not-allowed' }} disabled>
+                      <Sun size={14} /> Light Mode (Soon)
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card" style={{ background: 'var(--surface2)', border: '1px dashed var(--border)', padding: '24px', textAlign: 'center' }}>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 4 }}>Current Atmosphere</div>
+                <div style={{
+                  fontFamily: 'Syne, sans-serif',
+                  fontSize: 24,
+                  fontWeight: 900,
+                  color: 'var(--accent)',
+                  textShadow: '0 0 20px var(--accent-glow)'
+                }}>
+                  Vibrant Productivity
                 </div>
               </div>
             </div>

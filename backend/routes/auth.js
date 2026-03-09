@@ -216,7 +216,10 @@ router.get('/verify-email/:token', async (req, res) => {
 // ─── List Active Sessions ─────────────────────────────────────────────────────
 router.get('/sessions', protect, async (req, res) => {
   try {
-    const sessions = await Session.find({ user: req.user._id }).sort({ lastActive: -1 });
+    const sessions = await Session.find({
+      user: req.user._id,
+      expiresAt: { $gt: new Date() }
+    }).sort({ lastActive: -1 });
     res.json({ success: true, sessions });
   } catch (err) {
     res.status(500).json({ error: 'Error fetching sessions.' });
@@ -241,6 +244,7 @@ router.delete('/sessions/:id', protect, async (req, res) => {
     }
 
     await session.deleteOne();
+    await logSecurityEvent({ userId: req.user._id, action: 'SESSION_REVOKED', req });
     res.json({ success: true, message: 'Session revoked successfully.' });
   } catch (err) {
     res.status(500).json({ error: 'Error revoking session.' });
@@ -469,6 +473,16 @@ router.put('/profile', protect, async (req, res) => {
     if (preferences) updates.preferences = { ...req.user.preferences, ...preferences };
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true, runValidators: true });
+
+    // Log the event based on what changed
+    let action = 'PROFILE_UPDATE';
+    if (preferences && !name && !bio && !avatarGradient) {
+      action = 'SETTINGS_CHANGE';
+    } else if (avatarGradient && !name && !bio && !preferences) {
+      action = 'AVATAR_UPDATE';
+    }
+    await logSecurityEvent({ userId: req.user._id, action, req });
+
     res.json({ success: true, user });
   } catch (err) {
     res.status(500).json({ error: 'Server error updating profile.' });
@@ -507,6 +521,8 @@ router.put('/password', protect,
         token,
         expiresAt: new Date(decoded.exp * 1000)
       });
+
+      await logSecurityEvent({ userId: req.user._id, action: 'PASSWORD_CHANGE', req });
 
       res.json({ success: true, message: 'Password updated successfully. Please login again.' });
     } catch (err) {
@@ -562,6 +578,30 @@ router.get('/export', protect, async (req, res) => {
   } catch (err) {
     console.error('Export error:', err);
     res.status(500).json({ error: 'Error exporting your data.' });
+  }
+});
+
+// ─── Account Management (GDPR Deletion) ───────────────────────────────────────
+router.delete('/account', protect, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Delete all user related data
+    await Promise.all([
+      require('../models/Task').deleteMany({ user: userId }),
+      require('../models/Note').deleteMany({ user: userId }),
+      require('../models/Habit').deleteMany({ user: userId }),
+      require('../models/Schedule').deleteMany({ user: userId }),
+      require('../models/Pomodoro').deleteMany({ user: userId }),
+      require('../models/AuditLog').deleteMany({ user: userId }),
+      require('../models/Session').deleteMany({ user: userId }),
+      require('../models/User').findByIdAndDelete(userId)
+    ]);
+
+    res.json({ success: true, message: 'Account and all data deleted permanentely.' });
+  } catch (err) {
+    console.error('Account deletion error:', err);
+    res.status(500).json({ error: 'Error deleting account.' });
   }
 });
 

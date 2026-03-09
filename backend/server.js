@@ -214,6 +214,7 @@ app.use('/api/pomodoro', require('./routes/pomodoro'));
 app.use('/api/notes', require('./routes/notes'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/badges', require('./routes/badges'));
+app.use('/api/ai', require('./routes/ai'));
 
 
 // ─── Health Check ─────────────────────────────────────────────────────────────

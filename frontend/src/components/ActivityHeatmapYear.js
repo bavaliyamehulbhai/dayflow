@@ -7,7 +7,7 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
     const [selectedDay, setSelectedDay] = useState(null);
 
     const intensityColors = [
-        '#f3f4f6',              // level 0 (empty)
+        '#1a1a26',              // level 0 (subtle dark for empty cells)
         '#dcfce7',              // level 1 (light green)
         '#86efac',              // level 2 
         '#22c55e',              // level 3
