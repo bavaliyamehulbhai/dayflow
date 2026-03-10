@@ -8,6 +8,7 @@ import {
   CheckCircle2, Trash2, Sparkles, MapPin, X, Pencil, Activity, Target
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const CATEGORIES = ['work', 'personal', 'health', 'learning', 'social', 'other'];
 const CAT_COLORS = { work: '#7c6dfa', personal: '#fa6d8a', health: '#6dfacc', learning: '#fad96d', social: '#fa9a6d', other: '#a3a3a3' };
@@ -107,6 +108,7 @@ export default function SchedulePage() {
   const qc = useQueryClient();
   const [currentDate, setCurrentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [modal, setModal] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false });
   const width = useWindowWidth();
   const isMobile = width <= 768;
 
@@ -344,7 +346,15 @@ export default function SchedulePage() {
                       </button>
                       <button
                         className="btn btn-icon btn-ghost btn-sm"
-                        onClick={() => { if (window.confirm('Vanish event?')) deleteMutation.mutate(ev._id); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDialog({
+                            open: true,
+                            title: 'Vanish Event',
+                            message: 'Are you sure you want to completely banish this event from your timeline?',
+                            onConfirm: () => { deleteMutation.mutate(ev._id); setConfirmDialog({ open: false }); }
+                          });
+                        }}
                         style={{ color: 'var(--red)', width: 32, height: 32 }}
                       >
                         <Trash2 size={16} />
@@ -381,6 +391,8 @@ export default function SchedulePage() {
           />
         )}
       </AnimatePresence>
+
+      <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
 
       <style>{`
         .glass-card { background: var(--glass-bg); backdrop-filter: blur(10px); }

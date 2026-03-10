@@ -232,6 +232,16 @@ body {
   width: 100%;
 }
 
+::selection {
+  background: var(--accent-glow);
+  color: var(--text);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -636,11 +646,18 @@ body {
 .page-content {
   flex: 1;
   padding: 28px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
   position: relative;
   z-index: 1;
   width: 100%;
   min-width: 0;
-  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 20px 16px;
+    padding-bottom: calc(85px + env(safe-area-inset-bottom, 20px));
+  }
 }
 
 @media (max-width: 768px) {
@@ -727,6 +744,38 @@ body {
   font-weight: 600;
   letter-spacing: 0.3px;
   line-height: 1;
+}
+
+/* ─── Responsive Application Grids ─────────────────────────────────────── */
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+}
+
+.schedule-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-main-grid {
+    grid-template-columns: 1fr 300px;
+  }
+
+  .schedule-main-grid {
+    grid-template-columns: 1fr 300px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .dashboard-main-grid,
+  .schedule-main-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @keyframes tabGlow {

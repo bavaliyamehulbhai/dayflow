@@ -20,6 +20,7 @@ import {
 import { useZenTheme } from '../hooks/useZenTheme';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
@@ -134,6 +135,7 @@ export default function ProfilePage() {
   const [showGradientPicker, setShowGradientPicker] = useState(false);
 
   const [selectedDayData, setSelectedDayData] = useState({ date: null, log: null });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false });
 
   // Fetch badges
   const { data: badgeData, refetch: refetchBadges } = useQuery({
@@ -252,17 +254,22 @@ export default function ProfilePage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm('WARNING: This will permanently delete your account and all associated data. This cannot be undone. Are you absolutely sure?')) return;
-    if (!window.confirm('Type "DELETE" to confirm (just kidding, but are you really sure?)')) return; // Extra friction for safety
-
-    try {
-      await authAPI.deleteAccount();
-      toast.success('Account deleted. We will miss you! 👋');
-      logout();
-      navigate('/login');
-    } catch (err) {
-      toast.error('Deletion failed');
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Danger Zone',
+      message: 'WARNING: This will permanently delete your account and ALL associated data. This action CANNOT BE UNDONE. Are you absolutely sure?',
+      confirmText: 'Permanently Delete',
+      onConfirm: async () => {
+        try {
+          await authAPI.deleteAccount();
+          toast.success('Account deleted. We will miss you! 👋');
+          logout();
+          navigate('/login');
+        } catch (err) {
+          toast.error('Deletion failed');
+        }
+      }
+    });
   };
 
   // ── Computed values ────────────────────────────────────────────────────────
@@ -1061,6 +1068,7 @@ export default function ProfilePage() {
 
         </motion.div>
       </AnimatePresence>
+      <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
     </div>
   );
 }

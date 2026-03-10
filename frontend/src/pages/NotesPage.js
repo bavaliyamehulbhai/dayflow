@@ -21,6 +21,7 @@ import {
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const NOTE_COLORS = [
   { value: '#1a1a26', label: 'Basalt' },
@@ -148,6 +149,7 @@ export default function NotesPage() {
   const [search, setSearch] = useState('');
   const [view, setView] = useState('grid');
   const [selectedNoteId, setSelectedNoteId] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false });
   const width = window.innerWidth;
   const isDesktopSplit = width > 1024;
   const isMobile = width <= 768;
@@ -236,7 +238,15 @@ export default function NotesPage() {
           whileHover={{ scale: 1.1, color: 'var(--red)' }}
           whileTap={{ scale: 0.9 }}
           className="btn btn-icon btn-ghost btn-sm card-action-btn"
-          onClick={e => { e.stopPropagation(); if (window.confirm('Vanish note?')) deleteMutation.mutate(note._id); }}
+          onClick={e => {
+            e.stopPropagation();
+            setConfirmDialog({
+              open: true,
+              title: 'Vanish Note',
+              message: 'Are you sure you want to permanently delete this manifestation?',
+              onConfirm: () => { deleteMutation.mutate(note._id); setConfirmDialog({ open: false }); }
+            });
+          }}
         >
           <Trash2 size={14} />
         </motion.button>
@@ -321,7 +331,14 @@ export default function NotesPage() {
                 </button>
                 <button
                   className="btn btn-icon btn-ghost text-red"
-                  onClick={() => { if (window.confirm('Vanish note?')) deleteMutation.mutate(selectedNote._id); }}
+                  onClick={() => {
+                    setConfirmDialog({
+                      open: true,
+                      title: 'Vanish Note',
+                      message: 'Are you sure you want to permanently delete this manifestation?',
+                      onConfirm: () => { deleteMutation.mutate(selectedNote._id); setConfirmDialog({ open: false }); }
+                    });
+                  }}
                 >
                   <Trash2 size={18} />
                 </button>
@@ -453,6 +470,8 @@ export default function NotesPage() {
           />
         )}
       </AnimatePresence>
+
+      <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
 
       <style>{`
         .glass-card { background: var(--glass-bg); backdrop-filter: blur(12px); }

@@ -9,6 +9,7 @@ import {
   RefreshCcw, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmDialog from '../components/ConfirmDialog';
 import useFeedback from '../hooks/useFeedback';
 
 const ICONS = ['⭐', '💪', '🏃', '📚', '💧', '🧘', '🍎', '😴', '✍️', '🎯', '💊', '🌿', '🎨', '🎵', '🧹', '💻'];
@@ -150,6 +151,7 @@ export default function HabitsPage() {
   const qc = useQueryClient();
   const feedback = useFeedback();
   const [modal, setModal] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false });
   const today = format(new Date(), 'yyyy-MM-dd');
   const width = useWindowWidth();
   const isMobile = width <= 768;
@@ -293,7 +295,14 @@ export default function HabitsPage() {
                   dragConstraints={{ left: 0, right: 0 }}
                   onDragEnd={(_, info) => {
                     if (info.offset.x > 100) completeMutation.mutate({ id: habit._id, date: today });
-                    else if (info.offset.x < -100) { if (window.confirm('Vanish this ritual?')) deleteMutation.mutate(habit._id); }
+                    else if (info.offset.x < -100) {
+                      setConfirmDialog({
+                        open: true,
+                        title: 'Vanish Ritual',
+                        message: 'Are you sure you want to completely banish this ritual?',
+                        onConfirm: () => { deleteMutation.mutate(habit._id); setConfirmDialog({ open: false }); }
+                      });
+                    }
                   }}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -371,7 +380,15 @@ export default function HabitsPage() {
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: 4, marginLeft: isMobile ? 8 : 16, borderLeft: '1px solid var(--border)', paddingLeft: isMobile ? 8 : 16 }}>
                       <button className="btn btn-icon btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); setModal(habit); }} title="Refine"><Pencil size={16} /></button>
-                      <button className="btn btn-icon btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); if (window.confirm('Vanish this ritual?')) deleteMutation.mutate(habit._id); }} style={{ color: 'var(--red)' }} title="Banish"><Trash2 size={16} /></button>
+                      <button className="btn btn-icon btn-ghost btn-sm" onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDialog({
+                          open: true,
+                          title: 'Vanish Ritual',
+                          message: 'Are you sure you want to completely banish this ritual?',
+                          onConfirm: () => { deleteMutation.mutate(habit._id); setConfirmDialog({ open: false }); }
+                        });
+                      }} style={{ color: 'var(--red)' }} title="Banish"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 </motion.div>
@@ -391,6 +408,8 @@ export default function HabitsPage() {
           />
         )}
       </AnimatePresence>
+
+      <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
 
       <style>{`
         .habit-row:hover { background: var(--surface2) !important; }

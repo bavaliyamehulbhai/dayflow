@@ -114,6 +114,9 @@ app.use(cors({
 // NoSQL injection sanitization
 app.use(mongoSanitize());
 
+// HTTP Parameter Pollution Protection
+app.use(hpp());
+
 // ─── Rate Limiting & Speed Limiters ───────────────────────────────────────────
 // Speed Limiter: Delay responses after 100 requests (prevents aggressive bots)
 const speedLimiter = slowDown({

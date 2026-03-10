@@ -59,6 +59,8 @@ function TasksSkeleton() {
 
 // ─── Task modal ───────────────────────────────────────────────────────────────
 function TaskModal({ task, onClose, onSave }) {
+  const width = useWindowWidth();
+  const isMobile = width <= 768;
   const [form, setForm] = useState({
     title: task?.title || '',
     description: task?.description || '',

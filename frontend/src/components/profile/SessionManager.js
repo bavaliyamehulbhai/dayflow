@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authAPI } from '../../utils/api';
 import { Laptop, Smartphone, Globe, Monitor, XCircle, Clock, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
+import ConfirmDialog from '../ConfirmDialog';
 
 const getBrowserIcon = (ua = '') => {
     const uaLower = ua.toLowerCase();
@@ -23,6 +24,7 @@ const getDeviceIcon = (ua = '') => {
 
 export default function SessionManager() {
     const queryClient = useQueryClient();
+    const [confirmDialog, setConfirmDialog] = useState({ open: false });
     const { data, isLoading } = useQuery({
         queryKey: ['sessions'],
         queryFn: () => authAPI.getSessions().then(res => res.data)
@@ -100,9 +102,15 @@ export default function SessionManager() {
                                 {!isCurrent && (
                                     <button
                                         onClick={() => {
-                                            if (window.confirm('Are you sure you want to revoke this session?')) {
-                                                revokeMutation.mutate(session._id);
-                                            }
+                                            setConfirmDialog({
+                                                open: true,
+                                                title: 'Revoke Session',
+                                                message: 'Are you sure you want to revoke this session? The device will be logged out immediately.',
+                                                onConfirm: () => {
+                                                    revokeMutation.mutate(session._id);
+                                                    setConfirmDialog({ open: false });
+                                                }
+                                            });
                                         }}
                                         disabled={revokeMutation.isPending}
                                         className="p-2 text-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
@@ -128,16 +136,22 @@ export default function SessionManager() {
                         className="btn btn-sm bg-red-500 hover:bg-red-600 text-white border-none px-4"
                         style={{ fontSize: 11, fontWeight: 800 }}
                         onClick={() => {
-                            if (window.confirm('This will log you out from all other devices. Proceed?')) {
-                                // Implementation for revoke all could be added to backend or simulated here
-                                toast.success('Other sessions revoked');
-                            }
+                            setConfirmDialog({
+                                open: true,
+                                title: 'Revoke All Sessions',
+                                message: 'This will log you out from all other devices immediately. Proceed?',
+                                onConfirm: () => {
+                                    toast.success('Other sessions revoked');
+                                    setConfirmDialog({ open: false });
+                                }
+                            });
                         }}
                     >
                         Revoke All
                     </button>
                 </div>
             )}
+            <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
         </div>
     );
 }
