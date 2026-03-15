@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { authAPI, badgesAPI, dashboardAPI } from '../utils/api';
@@ -357,16 +359,16 @@ export default function ProfilePage() {
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div
               style={{
-                width: isMobile ? 72 : 90, height: isMobile ? 72 : 90, borderRadius: '50%',
+                width: 'clamp(72px, 12vw, 110px)', height: 'clamp(72px, 12vw, 110px)', borderRadius: '50%',
                 background: avatarGrad, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: isMobile ? 26 : 32,
+                fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 'clamp(26px, 4vw, 36px)',
                 color: 'white', boxShadow: `0 8px 32px rgba(130,114,255,0.4),0 0 0 3px rgba(130,114,255,0.15)`,
                 cursor: 'pointer', transition: 'transform 0.2s', position: 'relative'
               }}
               onClick={() => setShowGradientPicker(v => !v)}
             >
               {initials}
-              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: '50%', background: 'var(--surface)', border: '2px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ position: 'absolute', bottom: 4, right: 4, width: 'clamp(20px, 3vw, 28px)', height: 'clamp(20px, 3vw, 28px)', borderRadius: '50%', background: 'var(--surface)', border: '2px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Camera size={11} color="var(--muted)" />
               </div>
             </div>
@@ -468,7 +470,7 @@ export default function ProfilePage() {
           {/* Score ring */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             <div style={{ position: 'relative' }}>
-              <ScoreRing score={productivityScore} size={isMobile ? 90 : 120} />
+              <ScoreRing score={productivityScore} size={width <= 768 ? 90 : 130} />
               <motion.div 
                 animate={{ rotate: 360 }}
                 transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}

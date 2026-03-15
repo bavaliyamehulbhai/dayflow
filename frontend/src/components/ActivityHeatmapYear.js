@@ -127,18 +127,23 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
 
             {/* Heatmap Grid Container */}
             <div style={{ overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
-                <div style={{ display: 'flex', gap: 6, minWidth: 'max-content' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    gap: isMobile ? 8 : 6, 
+                    minWidth: 'max-content',
+                    padding: isMobile ? '0 4px' : 0 
+                }}>
                     {monthsData.map((month, mIdx) => (
-                        <div key={mIdx} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div key={mIdx} style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 10 : 8 }}>
                             <div style={{
                                 display: 'grid',
-                                gridTemplateRows: 'repeat(7, 10px)',
-                                gap: 3,
+                                gridTemplateRows: `repeat(7, ${isMobile ? '12px' : '10px'})`,
+                                gap: isMobile ? 4 : 3,
                                 gridAutoFlow: 'column'
                             }}>
                                 {/* Offset cells */}
                                 {Array.from({ length: month.startOffset }).map((_, i) => (
-                                    <div key={`offset-${i}`} style={{ width: 10, height: 10, visibility: 'hidden' }} />
+                                    <div key={`offset-${i}`} style={{ width: isMobile ? 12 : 10, height: isMobile ? 12 : 10, visibility: 'hidden' }} />
                                 ))}
 
                                 {month.days.map((day) => {
@@ -157,8 +162,8 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
                                                 onMouseEnter={() => setHoveredDay({ date: day, log, id: dateStr })}
                                                 onMouseLeave={() => setHoveredDay(null)}
                                                 style={{
-                                                    width: 10,
-                                                    height: 10,
+                                                    width: isMobile ? 12 : 10,
+                                                    height: isMobile ? 12 : 10,
                                                     borderRadius: 2,
                                                     background: intensityColors[intensity],
                                                     opacity: isFuture ? 0.2 : 1,

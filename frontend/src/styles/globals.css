@@ -57,24 +57,22 @@
   --desktop-pad: 48px;
 
   /* Fluid Typography & Spacing (Scales with Viewport Width) */
-  /* Fluid Typography Scale */
-  --fs-xs: clamp(0.7rem, 0.65rem + 0.25vw, 0.75rem);
-  --fs-sm: clamp(0.8rem, 0.75rem + 0.3vw, 0.875rem);
-  --fs-base: clamp(0.9rem, 0.85rem + 0.4vw, 1rem);
-  --fs-md: clamp(1rem, 0.9rem + 0.6vw, 1.15rem); /* Kept original as it was not in the new list */
-  --fs-lg: clamp(1.1rem, 1rem + 0.5vw, 1.25rem);
-  --fs-xl: clamp(1.4rem, 1.2rem + 1vw, 2rem);
-  --fs-2xl: clamp(2rem, 1.5rem + 2vw, 3.5rem);
-  --fs-3xl: clamp(2rem, 1.7rem + 2vw, 3.5rem); /* Kept original as it was not in the new list */
-  --fs-display: clamp(3rem, 2rem + 5vw, 6rem);
+  --fs-xs: clamp(0.7rem, 0.6rem + 0.3vw, 0.8rem);
+  --fs-sm: clamp(0.8rem, 0.7rem + 0.4vw, 0.95rem);
+  --fs-base: clamp(0.95rem, 0.85rem + 0.5vw, 1.1rem);
+  --fs-md: clamp(1.1rem, 1rem + 0.6vw, 1.3rem);
+  --fs-lg: clamp(1.25rem, 1.1rem + 0.8vw, 1.6rem);
+  --fs-xl: clamp(1.6rem, 1.4rem + 1.2vw, 2.4rem);
+  --fs-2xl: clamp(2.2rem, 1.8rem + 2.5vw, 4rem);
+  --fs-display: clamp(3.5rem, 2.5rem + 6vw, 7.5rem);
 
-  --space-1: clamp(0.25rem, 0.2rem + 0.25vw, 0.5rem);
-  --space-2: clamp(0.5rem, 0.4rem + 0.5vw, 0.75rem);
-  --space-3: clamp(0.75rem, 0.6rem + 0.75vw, 1rem);
-  --space-4: clamp(1rem, 0.8rem + 1vw, 1.5rem);
-  --space-6: clamp(1.5rem, 1.25rem + 1.5vw, 2.25rem);
-  --space-8: clamp(2rem, 1.75rem + 2vw, 3rem);
-  --space-12: clamp(3rem, 2.5rem + 3vw, 4.5rem);
+  --space-1: clamp(0.25rem, 0.2rem + 0.3vw, 0.6rem);
+  --space-2: clamp(0.5rem, 0.4rem + 0.6vw, 0.9rem);
+  --space-3: clamp(0.75rem, 0.6rem + 0.8vw, 1.25rem);
+  --space-4: clamp(1.1rem, 0.9rem + 1.2vw, 1.8rem);
+  --space-6: clamp(1.6rem, 1.3rem + 1.8vw, 2.8rem);
+  --space-8: clamp(2.2rem, 1.8rem + 2.5vw, 3.8rem);
+  --space-12: clamp(3.5rem, 2.8rem + 4vw, 5.5rem);
 
   /* Aura Tokens */
   --aura-color: rgba(124, 109, 250, 0.15);
@@ -90,7 +88,13 @@
   padding: 0 var(--desktop-pad);
   transition: padding 0.3s ease;
   box-sizing: border-box;
-  overflow-x: hidden;
+}
+
+@media (min-width: 1800px) {
+    .responsive-container {
+        max-width: 1600px;
+        padding: 0 80px;
+    }
 }
 
 /* Privacy Curtain - Mobile Gesture UI */
@@ -165,10 +169,12 @@
 @media (max-width: 1024px) {
   .grid-4 {
     grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 
   .grid-3 {
     grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 }
 

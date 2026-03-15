@@ -16,6 +16,7 @@ import { AlertTriangle, X } from 'lucide-react';
  *   danger      - boolean (red confirm button)
  */
 export default function ConfirmDialog({ open, title, message, confirmText = 'Delete', onConfirm, onCancel, danger = true }) {
+    const isMobile = window.innerWidth <= 768;
     if (!open) return null;
 
     return (
@@ -27,16 +28,23 @@ export default function ConfirmDialog({ open, title, message, confirmText = 'Del
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="modal-overlay"
-                    style={{ zIndex: 1000 }}
+                    style={{ zIndex: 1000, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
                     onClick={(e) => e.target === e.currentTarget && onCancel()}
                 >
                     <motion.div
                         key="confirm-box"
-                        initial={{ opacity: 0, scale: 0.92, y: 16 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.92, y: 16 }}
+                        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.92, y: 16 }}
+                        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+                        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.92, y: 16 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
                         className="confirm-dialog"
+                        style={isMobile ? { 
+                            width: '100%', 
+                            borderRadius: '24px 24px 0 0', 
+                            padding: '24px 24px calc(24px + env(safe-area-inset-bottom))',
+                            maxWidth: 'none',
+                            margin: 0
+                        } : {}}
                     >
                         <button className="modal-close" onClick={onCancel} style={{ position: 'absolute', top: 16, right: 16 }}>
                             <X size={18} />

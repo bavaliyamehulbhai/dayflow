@@ -111,12 +111,22 @@ const AnimatedStat = React.memo(({ value, label, color, icon: Icon }) => {
   const animated = useCountUp(typeof value === 'number' ? value : 0);
   const display = typeof value === 'string' ? value : animated;
   return (
-    <div className="stat-card gpu-accel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <div style={{ color, opacity: 0.8 }}><Icon size={20} /></div>
+    <div className="stat-card gpu-accel haptic-tap" style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        gap: 'clamp(4px, 1vw, 8px)',
+        padding: 'clamp(12px, 2vw, 24px)'
+    }}>
+      <div style={{ color, opacity: 0.8 }}><Icon size={window.innerWidth <= 768 ? 16 : 20} /></div>
       <SensitivityShield>
-        <div className="stat-value" style={{ color }}>{display}</div>
+        <div className="stat-value" style={{ 
+            color, 
+            fontSize: 'clamp(1.2rem, 4vw, 1.8rem)',
+            fontWeight: 800
+        }}>{display}</div>
       </SensitivityShield>
-      <div className="stat-label">{label}</div>
+      <div className="stat-label" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.75rem)' }}>{label}</div>
     </div>
   );
 });
@@ -308,56 +318,48 @@ export default function DashboardPage() {
     });
 
     const topTask = d?.tasks?.today?.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2))[0];
-    const pendingHabits = d?.habits?.list?.filter(h => !h.completedToday);
-
+    
     return (
-      <div className="mobile-feed">
-        {/* Next Up Moment */}
-        {nextEvent && (
-          <div className="feed-item next-up" onClick={() => navigate('/schedule')}>
-            <div className="feed-label">Next Up</div>
-            <div className="feed-content">
-              <div className="feed-time">{nextEvent.startTime}</div>
-              <div className="feed-title">{nextEvent.title}</div>
+      <div className="mobile-feed" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 24 }}>
+        {/* Row 1: Key Items */}
+        <div style={{ display: 'grid', gridTemplateColumns: nextEvent ? '1.2fr 1fr' : '1fr', gap: 12 }}>
+          {nextEvent && (
+            <div className="feed-item next-up" onClick={() => navigate('/schedule')} style={{ padding: '16px', borderRadius: 20 }}>
+              <div className="feed-label" style={{ fontSize: 10 }}>NEXT UP</div>
+              <div className="feed-time" style={{ fontSize: 18, fontWeight: 800 }}>{nextEvent.startTime}</div>
+              <div className="feed-title" style={{ fontSize: 13, opacity: 0.9 }}>{nextEvent.title}</div>
             </div>
-            <ArrowRight size={18} className="feed-arrow" />
-          </div>
-        )}
-
-        {/* Top Objective */}
-        {topTask && (
-          <div className="feed-item priority-task" onClick={() => navigate('/tasks')}>
-            <div className="feed-label">Primary Objective</div>
-            <div className="feed-content">
-              <div className={`feed-priority-tag priority-${topTask.priority}`}>{topTask.priority.toUpperCase()}</div>
-              <div className="feed-title">{topTask.title}</div>
+          )}
+          {topTask && (
+            <div className="feed-item priority-task" onClick={() => navigate('/tasks')} style={{ padding: '16px', borderRadius: 20 }}>
+              <div className="feed-label" style={{ fontSize: 10 }}>TOP FOCUS</div>
+              <div className={`feed-priority-tag priority-${topTask.priority}`} style={{ fontSize: 9 }}>{topTask.priority}</div>
+              <div className="feed-title" style={{ fontSize: 13, fontWeight: 600 }}>{topTask.title}</div>
             </div>
-          </div>
-        )}
-
-        {/* Rituals Progress */}
-        <div className="feed-item habits-glance" onClick={() => navigate('/habits')}>
-          <div className="feed-label">Rituals for Today</div>
-          <div className="feed-habits-grid">
-            {d?.habits?.list?.slice(0, 4).map(h => (
-              <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done' : ''}`} style={{ borderColor: h.color, '--habit-color': h.color }}>
-                {h.icon}
-              </div>
-            ))}
-            {d?.habits?.total > 4 && <div className="feed-habit-more">+{d.habits.total - 4}</div>}
-          </div>
+          )}
         </div>
 
-        {/* Quick Knowledge */}
-        {d?.notes?.recent?.length > 0 && (
-          <div className="feed-item recent-note" onClick={() => navigate('/notes')}>
-            <div className="feed-label">Refine Knowledge</div>
-            <div className="feed-content">
-              <FileText size={16} className="text-muted" />
-              <div className="feed-note-title">{d.notes.recent[0].title}</div>
+        {/* Row 2: Rituals & Habits */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="feed-item habits-glance" onClick={() => navigate('/habits')} style={{ padding: '16px', borderRadius: 20 }}>
+            <div className="feed-label" style={{ fontSize: 10, marginBottom: 8 }}>RITUALS</div>
+            <div className="feed-habits-grid" style={{ gap: 6 }}>
+              {d?.habits?.list?.slice(0, 3).map(h => (
+                <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done' : ''}`} style={{ width: 24, height: 24, fontSize: 12 }}>
+                  {h.icon}
+                </div>
+              ))}
             </div>
           </div>
-        )}
+          {d?.notes?.recent?.length > 0 && (
+            <div className="feed-item recent-note" onClick={() => navigate('/notes')} style={{ padding: '16px', borderRadius: 20 }}>
+              <div className="feed-label" style={{ fontSize: 10, marginBottom: 4 }}>NOTES</div>
+              <div style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {d.notes.recent[0].title}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -366,9 +368,21 @@ export default function DashboardPage() {
     <div className="responsive-container">
       <div className="page-header mb-6">
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="page-title flex items-center gap-3" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: isMobile ? 'clamp(1.1rem, 5vw, 1.6rem)' : undefined }}>
-            <GreetingIcon className="text-accent" size={isMobile ? 20 : 32} style={{ flexShrink: 0 }} />
-            {greeting}, {user?.name?.split(' ')[0]}
+          <div className="page-title flex items-center gap-3" style={{ 
+            fontSize: 'clamp(1.2rem, 6vw, 3.5rem)', 
+            fontWeight: 800,
+            lineHeight: 1.1,
+            letterSpacing: '-0.04em'
+          }}>
+            <GreetingIcon className="text-accent" size={isMobile ? 24 : 48} style={{ flexShrink: 0 }} />
+            <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {greeting}, <span style={{ 
+                background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                display: 'inline-block'
+              }}>{user?.name?.split(' ')[0]}</span>
+            </div>
           </div>
           <p className="page-subtitle">Your productivity pulse for today</p>
         </div>
@@ -378,7 +392,11 @@ export default function DashboardPage() {
       <Clock />
 
       {/* Stats Row */}
-      <div className="stats-grid mt-6">
+      <div className="stats-grid mt-6" style={{ 
+          display: 'grid', 
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+          gap: 'clamp(12px, 2vw, 24px)'
+      }}>
         {[
           { label: 'Tasks', value: d?.tasks?.summary?.completed || 0, color: 'var(--green)', icon: CheckCircle2 },
           { label: 'Pending', value: d?.tasks?.summary?.pending || 0, color: 'var(--yellow)', icon: Zap },
@@ -395,8 +413,14 @@ export default function DashboardPage() {
         initial="hidden"
         animate="visible"
         className="dashboard-main-grid"
+        style={{
+            display: 'grid',
+            gridTemplateColumns: width <= 1100 ? '1fr' : '1fr 380px',
+            gap: 'clamp(24px, 4vw, 40px)',
+            marginTop: 24
+        }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(24px, 4vw, 40px)', minWidth: 0 }}>
 
           {/* Activity Consistency Grid (LeetCode Style) */}
           <motion.div variants={itemVariants} className="card aura-iridescent" style={{ padding: '24px' }}>
@@ -430,18 +454,22 @@ export default function DashboardPage() {
                 <span className="text-center">HABITS</span>
                 <span className="text-center">LEVEL</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {(Array.isArray(activityData) ? activityData : []).slice(-5).reverse().map((log, i) => (
                   <div key={log.date} style={{
                     display: 'grid',
                     gridTemplateColumns: isMobile ? '1fr auto' : '1fr 80px 80px 80px 80px',
-                    padding: '12px 16px',
+                    padding: isMobile ? '14px 16px' : '12px 16px',
                     background: 'var(--surface2)',
-                    borderRadius: 10,
+                    borderRadius: 14,
                     alignItems: 'center',
-                    border: '1px solid var(--border)'
+                    border: '1px solid var(--border)',
+                    boxShadow: isMobile ? 'var(--shadow-sm)' : 'none'
                   }}>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{format(new Date(log.date), 'MMM d, yyyy')}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ fontSize: isMobile ? 14 : 13, fontWeight: 700 }}>{format(new Date(log.date), isMobile ? 'EEEE, MMM d' : 'MMM d, yyyy')}</span>
+                        {isMobile && <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>{log.tasksCompleted} tasks • {log.focusMinutes}m focus</span>}
+                    </div>
                     {!isMobile && (
                       <>
                         <span className="text-center" style={{ fontSize: 12, fontWeight: 700 }}>{log.tasksCompleted}</span>
@@ -451,9 +479,9 @@ export default function DashboardPage() {
                     )}
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
                       <div style={{
-                        width: 14,
-                        height: 14,
-                        borderRadius: 3,
+                        width: isMobile ? 18 : 14,
+                        height: isMobile ? 18 : 14,
+                        borderRadius: 4,
                         background: ['var(--surface3)', '#2ecc7133', '#2ecc7166', '#27ae6099', '#27ae60'][log.intensity || 0],
                         border: '1px solid var(--border)'
                       }} />

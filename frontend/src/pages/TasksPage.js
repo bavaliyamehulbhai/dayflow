@@ -217,10 +217,17 @@ function TaskModal({ task, onClose, onSave }) {
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="modal-body">
+          <div className="modal-body" style={{ paddingBottom: isMobile ? 'calc(24px + env(safe-area-inset-bottom))' : 24 }}>
             <div className="form-group">
-              <label>Title</label>
-              <input className="input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Objective name" autoFocus />
+              <label style={{ fontSize: 12, fontWeight: 700 }}>Title</label>
+              <input 
+                className="input" 
+                style={{ height: 48, fontSize: 16 }}
+                value={form.title} 
+                onChange={e => setForm(f => ({ ...f, title: e.target.value }))} 
+                placeholder="Objective name" 
+                autoFocus 
+              />
             </div>
             <div className="grid-2">
               <div className="form-group">
@@ -339,6 +346,55 @@ export default function TasksPage() {
           </div>
         </div>
       )}
+
+      {/* Adaptive Filter Bar */}
+      <div className="card mb-6 p-4 aura-iridescent">
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: 12,
+          alignItems: 'center' 
+        }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+            <input 
+              className="input" 
+              style={{ paddingLeft: 40, width: '100%', height: 42 }} 
+              placeholder="Search objectives..." 
+              value={filters.search} 
+              onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} 
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <select className="select" style={{ height: 42 }} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
+              <option value="">Status</option>
+              {STATUSES.map(s => <option key={s} value={s}>{s.replace('-', ' ')}</option>)}
+            </select>
+            <select className="select" style={{ height: 42 }} value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
+              <option value="">Priority</option>
+              {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <select className="select" style={{ flex: 1, height: 42 }} value={filters.sortBy} onChange={e => setFilters(f => ({ ...f, sortBy: e.target.value }))}>
+              <option value="createdAt">Date Created</option>
+              <option value="dueDate">Due Date</option>
+              <option value="priority">Priority</option>
+              <option value="title">A-Z</option>
+            </select>
+            {(filters.search || filters.status || filters.priority) && (
+              <button 
+                className="btn btn-ghost btn-icon haptic-tap" 
+                onClick={() => setFilters({ status: '', priority: '', search: '', sortBy: 'createdAt' })}
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {isLoading ? <TasksSkeleton /> : (
         <div className="tasks-list">

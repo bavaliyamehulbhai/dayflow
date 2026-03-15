@@ -9,7 +9,10 @@ import { useRef } from 'react';
 const Magnetic = ({ children }) => {
   const ref = useRef(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const isMobile = window.innerWidth <= 768;
+
   const handleMouseMove = (e) => {
+    if (isMobile) return;
     const { clientX, clientY } = e;
     const { left, top, width, height } = ref.current.getBoundingClientRect();
     const x = clientX - (left + width / 2);
@@ -113,34 +116,42 @@ export default function LoginPage() {
       {/* Animated Background Orbs */}
       <div style={{
         position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none',
-        background: 'radial-gradient(circle at 50% 50%, rgba(124, 109, 250, 0.05), transparent 70%)'
+        background: 'radial-gradient(circle at 50% 50%, rgba(124, 109, 250, 0.08), transparent 70%)'
       }}>
         <motion.div 
           animate={{ 
-            x: [0, 100, 0], y: [0, 50, 0],
-            scale: [1, 1.2, 1],
-            rotate: [0, 90, 0]
+            x: [0, 150, 50, 0], y: [0, 100, -50, 0],
+            scale: [1, 1.3, 1.1, 1],
+            rotate: [0, 120, 240, 360]
           }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
           style={{
-            position: 'absolute', width: 600, height: 600, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(130,114,255,0.15), transparent 70%)',
-            top: '-200px', left: '-100px', filter: 'blur(80px)'
+            position: 'absolute', width: 800, height: 800, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(130,114,255,0.18), transparent 70%)',
+            top: '-300px', left: '-200px', filter: 'blur(120px)'
           }} 
         />
         <motion.div 
           animate={{ 
-            x: [0, -80, 0], y: [0, -100, 0],
-            scale: [1, 1.1, 1],
-            rotate: [0, -120, 0]
+            x: [0, -120, -40, 0], y: [0, -150, 80, 0],
+            scale: [1, 1.2, 1.4, 1],
+            rotate: [0, -180, -300, -360]
           }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
           style={{
-            position: 'absolute', width: 500, height: 500, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(255, 107, 139, 0.1), transparent 70%)',
-            bottom: '-150px', right: '-50px', filter: 'blur(100px)'
+            position: 'absolute', width: 700, height: 700, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255, 107, 139, 0.12), transparent 70%)',
+            bottom: '-250px', right: '-150px', filter: 'blur(140px)'
           }} 
         />
+        {/* Spatial Grid Layer */}
+        <div style={{
+            position: 'absolute', inset: 0,
+            backgroundImage: `radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+            opacity: 0.5,
+            maskImage: 'radial-gradient(circle at 50% 50%, black, transparent 80%)'
+        }} />
       </div>
 
       <motion.div
@@ -150,8 +161,8 @@ export default function LoginPage() {
           opacity: 1, 
           y: 0, 
           scale: 1,
-          rotateY: mousePos.x * 12,
-          rotateX: -mousePos.y * 12,
+          rotateY: (window.innerWidth <= 768) ? 0 : mousePos.x * 12,
+          rotateX: (window.innerWidth <= 768) ? 0 : -mousePos.y * 12,
         }}
         transition={{ 
           opacity: { duration: 0.8 },
@@ -170,7 +181,7 @@ export default function LoginPage() {
         }} />
 
         {/* Logo & Brand */}
-        <div style={{ textAlign: 'center', marginBottom: 40, transform: 'translateZ(60px)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(24px, 5vh, 48px)', transform: 'translateZ(60px)' }}>
           <Magnetic>
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
@@ -178,43 +189,60 @@ export default function LoginPage() {
               transition={{ delay: 0.3 }}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: 84, height: 84, borderRadius: 28,
+                width: 'clamp(64px, 10vw, 84px)', height: 'clamp(64px, 10vw, 84px)', borderRadius: 28,
                 background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
                 boxShadow: '0 20px 50px rgba(124,109,250,0.4), 0 0 100px rgba(124,109,250,0.2)',
                 marginBottom: 24,
                 border: '1.5px solid rgba(255,255,255,0.3)',
                 cursor: 'pointer'
               }}>
-              <Zap size={42} color="white" strokeWidth={2.5} fill="white" />
+              <Zap size={window.innerWidth <= 768 ? 32 : 42} color="white" strokeWidth={2.5} fill="white" />
             </motion.div>
           </Magnetic>
           <motion.div style={{
-            fontFamily: 'Syne, sans-serif', fontSize: 44, fontWeight: 800,
+            fontFamily: 'Syne, sans-serif', fontSize: 'clamp(32px, 5vw, 44px)', fontWeight: 800,
             color: 'var(--text)',
             letterSpacing: '-0.06em',
             marginBottom: 4,
             textShadow: '0 10px 30px rgba(0,0,0,0.5)'
           }}>DayFlow</motion.div>
-          <div style={{ color: 'var(--muted)', fontSize: 16, fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
+          <div style={{ color: 'var(--muted)', fontSize: 'clamp(14px, 2vw, 16px)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
             Architecting Your <span className="holographic-text" style={{ color: 'var(--accent)', fontWeight: 800 }}>Infinite Potential</span>
           </div>
         </div>
 
         {/* Card */}
-        <div className="card glass-card aura-iridescent" style={{
-          background: 'rgba(13, 13, 22, 0.45)',
-          backdropFilter: 'blur(50px) saturate(220%)',
-          border: '1.5px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 36,
-          padding: '48px 40px',
-          boxShadow: '0 50px 100px rgba(0,0,0,0.7), inset 0 0 40px rgba(255,255,255,0.02)',
-          transform: 'translateZ(40px)',
-          transformStyle: 'preserve-3d'
-        }}>
-          <div style={{ marginBottom: 32, transform: 'translateZ(30px)' }}>
-            <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: 'Syne', letterSpacing: '-0.02em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Welcome Back</h2>
-            <p style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 600 }}>Enter your essence to resume focus</p>
-          </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.8 }}
+          className="card glass-card aura-iridescent" 
+          style={{
+            background: 'rgba(13, 13, 22, 0.55)',
+            backdropFilter: 'blur(60px) saturate(250%)',
+            border: '2px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: 42,
+            padding: 'clamp(32px, 6vh, 48px) clamp(24px, 5vw, 40px)',
+            boxShadow: '0 50px 100px rgba(0,0,0,0.8), inset 0 0 40px rgba(255,255,255,0.03)',
+            transform: 'translateZ(40px)',
+            transformStyle: 'preserve-3d',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Internal Glow Orbs */}
+          <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '40%', height: '40%', background: 'var(--accent)', filter: 'blur(60px)', opacity: 0.08, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40%', height: '40%', background: 'var(--accent2)', filter: 'blur(60px)', opacity: 0.08, pointerEvents: 'none' }} />
+
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            style={{ marginBottom: 32, transform: 'translateZ(30px)' }}
+          >
+            <h2 style={{ fontSize: 26, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.03em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Welcome back, architect.</h2>
+            <p style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 600, marginTop: 4 }}>Enter your credentials to re-align with the flow.</p>
+          </motion.div>
 
           {error && (
             <motion.div
@@ -234,10 +262,17 @@ export default function LoginPage() {
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20, transform: 'translateZ(20px)' }}>
+          <motion.form 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            onSubmit={handleSubmit} 
+            style={{ display: 'flex', flexDirection: 'column', gap: 20, transform: 'translateZ(20px)' }}
+          >
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
-                Cognitive Portal (Email)
+              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ width: 12, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
+                Cognitive Portal
               </label>
               <input
                 type="email"
@@ -247,16 +282,18 @@ export default function LoginPage() {
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 required autoFocus autoComplete="email"
                 style={{ 
-                    height: 54, background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.08)',
+                    height: 54, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
                     borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, color: 'white',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
                 }}
               />
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
-                Security Cipher (Password)
+              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ width: 12, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
+                Security Cipher
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -267,20 +304,22 @@ export default function LoginPage() {
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   required autoComplete="current-password"
                   style={{ 
-                    height: 54, background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.08)',
+                    height: 54, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
                     borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
                   }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
                   style={{ 
-                    position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer'
+                    position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
@@ -288,27 +327,29 @@ export default function LoginPage() {
             <motion.button
               type="submit"
               disabled={loading}
-              whileHover={{ scale: 1.02, y: -2 }}
+              whileHover={{ scale: 1.02, y: -4, boxShadow: '0 25px 45px rgba(124,109,250,0.4)' }}
               whileTap={{ scale: 0.98 }}
               className="haptic-feedback"
               style={{
-                width: '100%', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16, fontWeight: 800, marginTop: 12, borderRadius: 18,
+                width: '100%', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: 800, marginTop: 12, borderRadius: 20,
                 background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
                 color: 'white', border: 'none', cursor: 'pointer',
-                letterSpacing: '0.05em',
-                boxShadow: '0 15px 35px rgba(124,109,250,0.3)'
+                letterSpacing: '0.08em',
+                boxShadow: '0 15px 35px rgba(124,109,250,0.3)',
+                position: 'relative', overflow: 'hidden'
               }}
             >
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', transform: 'skewX(-45deg) translateX(-150%)', transition: 'transform 0.5s ease' }} className="btn-glint" />
               {loading ? (
-                <div className="loading-spinner" style={{ width: 22, height: 22 }} />
+                <div className="loading-spinner" style={{ width: 24, height: 24 }} />
               ) : (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  Initiate Alignment <ArrowRight size={20} />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  INITIATE ALIGNMENT <ArrowRight size={22} strokeWidth={2.5} />
                 </span>
               )}
             </motion.button>
-          </form>
+          </motion.form>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '28px 0', opacity: 0.3, transform: 'translateZ(10px)' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--text)' }} />
@@ -338,7 +379,7 @@ export default function LoginPage() {
               Manifest Identity
             </Link>
           </div>
-        </div>
+        </motion.div>
 
         {/* Floating elements behind card */}
         <div style={{

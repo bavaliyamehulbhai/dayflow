@@ -62,7 +62,11 @@ function HabitModal({ habit, onClose, onSave }) {
           </div>
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
-        <div className="modal-body" style={{ maxHeight: isMobile ? '70vh' : 'auto', overflowY: 'auto' }}>
+        <div className="modal-body" style={{ 
+          maxHeight: isMobile ? '80vh' : 'auto', 
+          overflowY: 'auto',
+          paddingBottom: isMobile ? 'calc(24px + env(safe-area-inset-bottom))' : 24
+        }}>
           <div className="form-group">
             <label className="form-label">Objective Name</label>
             <input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Morning meditation" autoFocus />
@@ -304,6 +308,7 @@ export default function HabitsPage() {
                         open: true,
                         title: 'Vanish Ritual',
                         message: 'Are you sure you want to completely banish this ritual?',
+                        confirmText: 'Banish',
                         onConfirm: () => { deleteMutation.mutate(habit._id); setConfirmDialog({ open: false }); }
                       });
                     }
@@ -317,7 +322,7 @@ export default function HabitsPage() {
                     flexDirection: isMobile ? 'column' : 'row',
                     alignItems: isMobile ? 'flex-start' : 'center',
                     justifyContent: 'space-between',
-                    padding: 'var(--space-4) var(--space-6)',
+                    padding: isMobile ? '12px 16px' : 'var(--space-4) var(--space-6)',
                     borderBottom: idx < habits.length - 1 ? '1px solid var(--border)' : 'none',
                     position: 'relative',
                     zIndex: 2,

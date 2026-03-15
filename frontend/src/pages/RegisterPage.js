@@ -9,7 +9,10 @@ import { useRef } from 'react';
 const Magnetic = ({ children }) => {
   const ref = useRef(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const isMobile = window.innerWidth <= 768;
+
   const handleMouseMove = (e) => {
+    if (isMobile) return;
     const { clientX, clientY } = e;
     const { left, top, width, height } = ref.current.getBoundingClientRect();
     const x = clientX - (left + width / 2);
@@ -162,17 +165,25 @@ export default function RegisterPage() {
       }}
     >
       {/* Background Orbs */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', background: 'radial-gradient(circle at 50% 50%, rgba(124,109,250,0.05), transparent 70%)' }}>
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', background: 'radial-gradient(circle at 50% 50%, rgba(124,109,250,0.08), transparent 70%)' }}>
         <motion.div 
-          animate={{ x: [-80, 80, -80], y: [50, -50, 50], scale: [1, 1.2, 1] }}
-          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-          style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(130,114,255,0.12), transparent 70%)', top: '-150px', right: '-100px', filter: 'blur(80px)' }} 
+          animate={{ x: [-100, 100, -100], y: [80, -80, 80], scale: [1, 1.3, 1], rotate: [0, 180, 360] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          style={{ position: 'absolute', width: 800, height: 800, borderRadius: '50%', background: 'radial-gradient(circle, rgba(130,114,255,0.18), transparent 70%)', top: '-250px', right: '-150px', filter: 'blur(100px)' }} 
         />
         <motion.div 
-          animate={{ x: [60, -60, 60], y: [-40, 40, -40], scale: [1, 1.15, 1] }}
-          transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-          style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,107,139,0.08), transparent 70%)', bottom: '-100px', left: '-100px', filter: 'blur(90px)' }} 
+          animate={{ x: [80, -80, 80], y: [-60, 60, -60], scale: [1, 1.2, 1], rotate: [0, -180, -360] }}
+          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+          style={{ position: 'absolute', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,107,139,0.12), transparent 70%)', bottom: '-200px', left: '-150px', filter: 'blur(120px)' }} 
         />
+        {/* Spatial Grid Layer */}
+        <div style={{
+            position: 'absolute', inset: 0,
+            backgroundImage: `radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+            opacity: 0.5,
+            maskImage: 'radial-gradient(circle at 50% 50%, black, transparent 80%)'
+        }} />
       </div>
 
       <motion.div
@@ -182,17 +193,19 @@ export default function RegisterPage() {
             opacity: 1, 
             y: 0, 
             scale: 1,
-            rotateY: mousePos.x * 10,
-            rotateX: -mousePos.y * 10,
+            rotateY: (window.innerWidth <= 768) ? 0 : mousePos.x * 12,
+            rotateX: (window.innerWidth <= 768) ? 0 : -mousePos.y * 12,
         }}
         transition={{ 
             rotateY: { type: 'spring', stiffness: 100, damping: 30 },
-            rotateX: { type: 'spring', stiffness: 100, damping: 30 }
+            rotateX: { type: 'spring', stiffness: 100, damping: 30 },
+            opacity: { duration: 0.8 },
+            y: { duration: 0.8 }
         }}
-        style={{ width: '100%', maxWidth: 460, position: 'relative', zIndex: 1, transformStyle: 'preserve-3d' }}
+        style={{ width: '100%', maxWidth: 480, position: 'relative', zIndex: 1, transformStyle: 'preserve-3d' }}
       >
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32, transform: 'translateZ(60px)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(24px, 5vh, 40px)', transform: 'translateZ(60px)' }}>
           <Magnetic>
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
@@ -200,41 +213,58 @@ export default function RegisterPage() {
               transition={{ delay: 0.2 }}
               style={{ 
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', 
-                width: 72, height: 72, borderRadius: 24, 
+                width: 'clamp(64px, 10vw, 84px)', height: 'clamp(64px, 10vw, 84px)', borderRadius: 28, 
                 background: 'linear-gradient(135deg, var(--accent), var(--accent2))', 
-                boxShadow: '0 15px 40px rgba(124,109,250,0.3)', 
-                marginBottom: 16,
+                boxShadow: '0 20px 50px rgba(124,109,250,0.4), 0 0 100px rgba(124,109,250,0.2)',
+                marginBottom: 20,
                 border: '1.5px solid rgba(255,255,255,0.3)',
                 cursor: 'pointer'
               }}>
-              <Zap size={36} color="white" strokeWidth={2.5} fill="white" />
+              <Zap size={window.innerWidth <= 768 ? 32 : 42} color="white" strokeWidth={2.5} fill="white" />
             </motion.div>
           </Magnetic>
           <div style={{ 
-            fontFamily: 'Syne, sans-serif', fontSize: 36, fontWeight: 800, 
+            fontFamily: 'Syne, sans-serif', fontSize: 'clamp(32px, 5vw, 44px)', fontWeight: 800, 
             color: 'var(--text)', 
             letterSpacing: '-0.06em' 
           }}>DayFlow</div>
-          <div style={{ color: 'var(--muted)', fontSize: 16, marginTop: 4, fontWeight: 600, opacity: 0.8 }}>
+          <div style={{ color: 'var(--muted)', fontSize: 'clamp(14px, 2vw, 16px)', marginTop: 4, fontWeight: 600, opacity: 0.8 }}>
             Manifest your <span className="holographic-text" style={{ color: 'var(--accent)', fontWeight: 800 }}>Digital Identity</span>
           </div>
         </div>
 
         {/* Card */}
-        <div className="card glass-card aura-iridescent" style={{ 
-          background: 'rgba(13, 13, 22, 0.45)', 
-          backdropFilter: 'blur(50px) saturate(220%)', 
-          border: '1.5px solid rgba(255, 255, 255, 0.1)', 
-          borderRadius: 36, 
-          padding: '40px 32px', 
-          boxShadow: '0 50px 100px rgba(0,0,0,0.7), inset 0 0 30px rgba(255,255,255,0.02)',
-          transform: 'translateZ(40px)',
-          transformStyle: 'preserve-3d'
-        }}>
-          <div style={{ marginBottom: 28, transform: 'translateZ(30px)' }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, fontFamily: 'Syne', letterSpacing: '-0.02em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Begin Journey</h2>
-            <p style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 600 }}>Create your portal to higher focus</p>
-          </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.8 }}
+          className="card glass-card aura-iridescent" 
+          style={{ 
+            background: 'rgba(13, 13, 22, 0.55)', 
+            backdropFilter: 'blur(60px) saturate(250%)', 
+            border: '2px solid rgba(255, 255, 255, 0.08)', 
+            borderRadius: 42, 
+            padding: 'clamp(32px, 6vh, 48px) clamp(24px, 5vw, 40px)', 
+            boxShadow: '0 50px 100px rgba(0,0,0,0.8), inset 0 0 40px rgba(255,255,255,0.03)',
+            transform: 'translateZ(40px)',
+            transformStyle: 'preserve-3d',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Internal Glow Orbs */}
+          <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '40%', height: '40%', background: 'var(--accent)', filter: 'blur(60px)', opacity: 0.08, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40%', height: '40%', background: 'var(--accent2)', filter: 'blur(60px)', opacity: 0.08, pointerEvents: 'none' }} />
+
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            style={{ marginBottom: 32, transform: 'translateZ(30px)' }}
+          >
+            <h2 style={{ fontSize: 26, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.03em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Begin Journey</h2>
+            <p style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 600, marginTop: 4 }}>Create your portal to higher focus.</p>
+          </motion.div>
 
           {error && (
             <motion.div 
@@ -244,40 +274,84 @@ export default function RegisterPage() {
                 border: '1px solid rgba(248, 113, 113, 0.2)',
                 color: 'var(--red)',
                 padding: '12px 16px', borderRadius: 14, marginBottom: 24,
-                fontSize: 13, fontWeight: 700, transform: 'translateZ(20px)'
+                fontSize: 13, fontWeight: 700, transform: 'translateZ(20px)',
+                display: 'flex', alignItems: 'center', gap: 10
               }}
             >
-              {error}
+              <Zap size={14} style={{ transform: 'rotate(180deg)' }} />
+              <span>{error}</span>
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, transform: 'translateZ(20px)' }}>
-            <InputField
-              label="Full Manifestation (Name)" type="text" placeholder="Mehul Shah"
-              value={form.name} onChange={handleChange('name')} onBlur={() => handleBlur('name')}
-              error={getFieldError('name')} success={touched.name && form.name.length >= 2}
-              autoFocus autoComplete="name"
-              className="haptic-feedback"
-            />
-            <InputField
-              label="Cognitive Relay (Email)" type="email" placeholder="you@presence.app"
-              value={form.email} onChange={handleChange('email')} onBlur={() => handleBlur('email')}
-              error={getFieldError('email')} success={touched.email && /^\S+@\S+\.\S+$/.test(form.email)}
-              autoComplete="email"
-              className="haptic-feedback"
-            />
+          <motion.form 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            onSubmit={handleSubmit} 
+            style={{ display: 'flex', flexDirection: 'column', gap: 20, transform: 'translateZ(20px)' }}
+          >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>Security Cipher</label>
+              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <span style={{ width: 10, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
+                Full Manifestation
+              </label>
+              <input
+                type="text"
+                className="input haptic-feedback"
+                placeholder="Mehul Shah"
+                value={form.name}
+                onChange={handleChange('name')}
+                onBlur={() => handleBlur('name')}
+                required autoFocus autoComplete="name"
+                style={{ 
+                  height: 52, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
+                  transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+              />
+              {getFieldError('name') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('name')}</div>}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <span style={{ width: 10, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
+                Cognitive Relay
+              </label>
+              <input
+                type="email"
+                className="input haptic-feedback"
+                placeholder="you@presence.app"
+                value={form.email}
+                onChange={handleChange('email')}
+                onBlur={() => handleBlur('email')}
+                required autoComplete="email"
+                style={{ 
+                  height: 52, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
+                  transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+              />
+              {getFieldError('email') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('email')}</div>}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <span style={{ width: 10, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
+                Security Cipher
+              </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className={`input haptic-feedback ${getFieldError('password') ? 'input-error' : touched.password && strength.score >= 3 ? 'input-ok' : ''}`}
+                  className="input haptic-feedback"
                   placeholder="The complex key..."
-                  value={form.password} onChange={handleChange('password')} onBlur={() => handleBlur('password')}
+                  value={form.password}
+                  onChange={handleChange('password')}
+                  onBlur={() => handleBlur('password')}
                   autoComplete="new-password" 
                   style={{ 
-                    height: 52, background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.08)',
-                    borderRadius: 14, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white'
+                    height: 52, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
+                    borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
+                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
                 />
                 <EyeBtn show={showPassword} onToggle={() => setShowPassword(v => !v)} />
@@ -294,18 +368,25 @@ export default function RegisterPage() {
               )}
               {getFieldError('password') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('password')}</div>}
             </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>Affirm Cipher</label>
+              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <span style={{ width: 10, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
+                Affirm Cipher
+              </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showConfirm ? 'text' : 'password'}
-                  className={`input haptic-feedback ${getFieldError('confirm') ? 'input-error' : touched.confirm && form.password === form.confirm && form.confirm ? 'input-ok' : ''}`}
+                  className="input haptic-feedback"
                   placeholder="Repeat the key..."
-                  value={form.confirm} onChange={handleChange('confirm')} onBlur={() => handleBlur('confirm')}
+                  value={form.confirm}
+                  onChange={handleChange('confirm')}
+                  onBlur={() => handleBlur('confirm')}
                   autoComplete="new-password" 
                   style={{ 
-                    height: 52, background: 'rgba(255,255,255,0.03)', border: '1.5px solid rgba(255,255,255,0.08)',
-                    borderRadius: 14, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white'
+                    height: 52, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
+                    borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
+                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
                 />
                 <EyeBtn show={showConfirm} onToggle={() => setShowConfirm(v => !v)} />
@@ -315,30 +396,32 @@ export default function RegisterPage() {
 
             <motion.button
               type="submit" disabled={loading}
-              whileHover={{ scale: 1.02 }} 
+              whileHover={{ scale: 1.02, y: -4, boxShadow: '0 25px 45px rgba(124,109,250,0.4)' }} 
               whileTap={{ scale: 0.98 }}
               className="haptic-feedback"
               style={{ 
                 width: '100%', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                fontSize: 16, fontWeight: 800, marginTop: 12, borderRadius: 18, 
+                fontSize: 16, fontWeight: 800, marginTop: 12, borderRadius: 20, 
                 background: 'linear-gradient(135deg, var(--accent), var(--accent2))', 
                 color: 'white', border: 'none', cursor: 'pointer',
-                letterSpacing: '0.05em',
-                boxShadow: '0 15px 35px rgba(124,109,250,0.3)'
+                letterSpacing: '0.08em',
+                boxShadow: '0 15px 35px rgba(124,109,250,0.3)',
+                position: 'relative', overflow: 'hidden'
               }}
             >
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', transform: 'skewX(-45deg) translateX(-150%)', transition: 'transform 0.5s ease' }} className="btn-glint" />
               {loading
-                ? <div className="loading-spinner" style={{ width: 22, height: 22 }} />
-                : <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>Construct Identity <ArrowRight size={20} /></span>
+                ? <div className="loading-spinner" style={{ width: 24, height: 24 }} />
+                : <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>CONSTRUCT IDENTITY <ArrowRight size={22} strokeWidth={2.5} /></span>
               }
             </motion.button>
-          </form>
+          </motion.form>
 
           <div style={{ marginTop: 32, textAlign: 'center', fontSize: 14, color: 'var(--muted)', fontWeight: 600, transform: 'translateZ(10px)' }}>
             Already part of the ecosystem?{' '}
-            <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'none' }}>Sign in</Link>
+            <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'none' }}>Alignment Portal</Link>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
 
       <style>{`
@@ -352,6 +435,16 @@ export default function RegisterPage() {
         @keyframes holoFlow { to { background-position: 200% center; } }
         
         .password-eye:hover { color: var(--accent) !important; transform: scale(1.1) translateY(-50%) !important; }
+
+        .input:focus {
+            background: rgba(255,255,255,0.06) !important;
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 20px rgba(124,109,250,0.1);
+        }
+
+        .btn-glint:hover {
+            transform: skewX(-45deg) translateX(150%) !important;
+        }
       `}</style>
     </div>
   );

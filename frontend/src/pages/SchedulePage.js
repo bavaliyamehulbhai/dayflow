@@ -178,10 +178,11 @@ export default function SchedulePage() {
               animate={{ rotate: [0, 15, -15, 0] }}
               transition={{ repeat: Infinity, duration: 5 }}
               className="text-accent"
+              style={{ flexShrink: 0 }}
             >
-              <Sparkles size={isMobile ? 28 : 36} />
+              <Sparkles size={isMobile ? 24 : 36} />
             </motion.div>
-            <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em' }}>Temporal Nexus</span>
+            <span style={{ fontFamily: 'Syne, sans-serif', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em' }}>Temporal Nexus</span>
           </div>
           <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.8 }}>Architect your temporal alignment & flow</p>
         </div>
@@ -214,7 +215,7 @@ export default function SchedulePage() {
 
         {/* Timeline view */}
         <div className="card glass-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
-          <div style={{ position: 'relative', paddingLeft: isMobile ? 60 : 84, paddingRight: isMobile ? 8 : 24, paddingTop: 32, paddingBottom: 32 }}>
+          <div style={{ position: 'relative', paddingLeft: isMobile ? 54 : 84, paddingRight: isMobile ? 8 : 24, paddingTop: 32, paddingBottom: 32 }}>
             {hours.map(h => (
               <div key={h} style={{ position: 'relative', height: 64, borderBottom: '1px solid var(--border)', zIndex: 1 }}>
                 <div style={{ position: 'absolute', left: isMobile ? -50 : -70, top: -10, fontSize: 'var(--fs-xs)', color: 'var(--muted)', fontWeight: 700, width: isMobile ? 40 : 60, textAlign: 'right', fontFamily: 'Syne' }}>
@@ -269,7 +270,7 @@ export default function SchedulePage() {
                       border: `1.5px solid ${color}${status === 'current' ? '99' : '44'}`,
                       borderLeft: `6px solid ${color}`,
                       borderRadius: 14,
-                      padding: '12px 16px',
+                      padding: isMobile ? '8px 12px' : '12px 16px',
                       overflow: 'hidden',
                       cursor: 'pointer',
                       opacity: ev.isCompleted ? 0.3 : status === 'past' ? 0.5 : 1,

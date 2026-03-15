@@ -81,9 +81,15 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
       >
         <div className="modal-header" style={{ border: 'none', padding: isMobile ? '20px' : '32px 40px 12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
-            <div style={{ color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: 10, borderRadius: 12 }}><FileText size={20} /></div>
+            <div style={{ color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: 10, borderRadius: 12 }}><FileText size={window.innerWidth <= 768 ? 16 : 20} /></div>
             <input
-              style={{ flex: 1, background: 'none', border: 'none', fontFamily: 'Syne, sans-serif', fontSize: 32, fontWeight: 800, color: 'var(--text)', outline: 'none', letterSpacing: '-0.02em' }}
+              style={{ 
+                flex: 1, background: 'none', border: 'none', 
+                fontFamily: 'Syne, sans-serif', 
+                fontSize: 'clamp(20px, 4vw, 32px)', 
+                fontWeight: 800, color: 'var(--text)', 
+                outline: 'none', letterSpacing: '-0.02em' 
+              }}
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="Title of this Essence..."
@@ -92,7 +98,10 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
           <button className="modal-close" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: 40, height: 40 }}><X size={20} /></button>
         </div>
         
-        <div className="modal-body" style={{ paddingTop: 0, flex: 1, overflowY: 'auto', padding: isMobile ? '0 20px 20px' : '0 40px 40px' }}>
+        <div className="modal-body" style={{ 
+          paddingTop: 0, flex: 1, overflowY: 'auto', 
+          padding: isMobile ? '0 20px calc(24px + env(safe-area-inset-bottom))' : '0 40px 40px' 
+        }}>
           <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, opacity: 0.6 }}>
             <Tag size={14} />
             <input
@@ -106,8 +115,10 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
           <textarea
             style={{
               width: '100%', background: 'none', border: 'none', outline: 'none',
-              color: 'var(--text2)', fontFamily: 'Inter, sans-serif', fontSize: 18,
-              resize: 'none', lineHeight: 1.8, minHeight: '60vh',
+              color: 'var(--text2)', 
+              fontSize: 'clamp(16px, 2.5vw, 18px)',
+              fontFamily: 'Inter, sans-serif',
+              resize: 'none', lineHeight: 1.8, minHeight: '50vh',
               fontWeight: 400
             }}
             value={content}

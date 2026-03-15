@@ -13,10 +13,11 @@ const ProductivityCircle = ({ stats }) => {
     ];
 
     const total = tasks + habits + focus + schedule;
-    const size = 160;
+    const isMobile = window.innerWidth <= 768;
+    const size = isMobile ? 140 : 160;
     const center = size / 2;
-    const radius = 65;
-    const strokeWidth = 12;
+    const radius = isMobile ? 55 : 65;
+    const strokeWidth = isMobile ? 10 : 12;
     const circumference = 2 * Math.PI * radius;
 
     let currentOffset = 0;
@@ -28,10 +29,10 @@ const ProductivityCircle = ({ stats }) => {
             className="card glass-card"
             style={{
                 borderRadius: 24,
-                padding: '24px',
+                padding: 'var(--space-4)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 24,
+                gap: 20,
                 width: '100%',
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid var(--border)',
