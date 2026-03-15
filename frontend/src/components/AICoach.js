@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { aiAPI } from '../utils/api';
-import { Sparkles, AlertCircle, CheckCircle2, Zap, Brain, ChevronRight } from 'lucide-react';
+import { Sparkles, AlertCircle, CheckCircle2, Zap, Brain, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AICoach = () => {

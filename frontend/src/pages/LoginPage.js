@@ -76,8 +76,13 @@ export default function LoginPage() {
 
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const cardRef = useRef(null);
+  const lastMouseUpdate = useRef(0);
 
   const handleCardMouseMove = (e) => {
+    const now = performance.now();
+    if (now - lastMouseUpdate.current < 16) return; // Throttle to ~60fps
+    lastMouseUpdate.current = now;
+
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;

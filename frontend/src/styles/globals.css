@@ -183,6 +183,13 @@
 }
 
 /* ─── Premium Animation Utilities ───────────────────────────────── */
+.gpu-accel {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    will-change: transform, opacity;
+}
+
 .magnetic-wrap {
   display: inline-block;
   transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
@@ -471,6 +478,12 @@ body {
   50% {
     opacity: 0.5;
   }
+}
+
+.heavy-blur {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    will-change: backdrop-filter;
 }
 
 /* ─── Layout ─────────────────────────────────────────────────────────────── */

@@ -12,12 +12,12 @@ import {
   Sun, Moon, Sunrise, Sunset, Flame, Check, CheckCircle2,
   ArrowRight, Clock as ClockIcon, Zap, Target, Trophy,
   Activity, History, Timer, Calendar, RefreshCw, FileText,
-  Sparkles, MousePointer2
+  Sparkles, MousePointer2, Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AICoach from '../components/AICoach';
 import ProductivityCircle from '../components/ProductivityCircle';
-import { SensitivityShield } from '../context/SecurityGuard';
+import SensitivityShield from '../components/layout/SensitivityShield';
 
 // ─── Magnetic Effect Component ──────────────────────────────────────────────
 const MagneticButton = ({ children, className, onClick, style }) => {
@@ -107,11 +107,11 @@ function useCountUp(target, duration = 800) {
   return value;
 }
 
-function AnimatedStat({ value, label, color, icon: Icon }) {
+const AnimatedStat = React.memo(({ value, label, color, icon: Icon }) => {
   const animated = useCountUp(typeof value === 'number' ? value : 0);
   const display = typeof value === 'string' ? value : animated;
   return (
-    <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+    <div className="stat-card gpu-accel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
       <div style={{ color, opacity: 0.8 }}><Icon size={20} /></div>
       <SensitivityShield>
         <div className="stat-value" style={{ color }}>{display}</div>
@@ -119,7 +119,7 @@ function AnimatedStat({ value, label, color, icon: Icon }) {
       <div className="stat-label">{label}</div>
     </div>
   );
-}
+});
 
 // ─── Skeleton loader ──────────────────────────────────────────────────────────
 function DashboardSkeleton() {

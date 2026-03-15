@@ -1,20 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tasksAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import {
   Plus, Search, Pencil, Trash2, AlertCircle, Check, CheckCircle2,
-  X, ChevronRight, ClipboardList, Clock, Tag, Calendar, Layers, Zap, Trophy
+  X, ClipboardList, Clock, Tag, Calendar, Layers, Zap, Trophy, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import AICoach from '../components/AICoach';
-import ProductivityCircle from '../components/ProductivityCircle';
 import useFeedback from '../hooks/useFeedback';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
-import { useRef } from 'react';
 import SensitivityShield from '../components/layout/SensitivityShield';
+import { useNavigate } from 'react-router-dom';
 
 // ─── Magnetic Effect Component ──────────────────────────────────────────────
 const MagneticButton = ({ children, className, onClick, style, whileHover }) => {
@@ -62,30 +60,107 @@ function useWindowWidth() {
   return w;
 }
 
+// ─── Memoized Task Item Component ──────────────────────────────────────────
+const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, setModal, setConfirmState, isMobile }) => {
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`task-row-container aura-iridescent gpu-accel ${selected ? 'selected' : ''}`}
+      style={{ borderRadius: 20, opacity: task.status === 'cancelled' ? 0.4 : 1, marginBottom: 12 }}
+    >
+      <div className="task-row-swipe-wrapper" style={{ position: 'relative', overflow: 'hidden', borderRadius: 20 }}>
+        <motion.div
+          className="task-row-main"
+          style={{ 
+            position: 'relative', 
+            zIndex: 2, 
+            background: 'var(--surface)', 
+            borderRadius: 20, 
+            border: '1px solid var(--border)',
+            padding: isMobile ? '12px 16px' : '16px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? 12 : 20
+          }}
+        >
+          <div className="task-row-check" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <input type="checkbox" checked={selected} onChange={() => toggleSelect(task._id)} />
+            <button
+              onClick={() => toggleComplete(task)}
+              className="status-checkbox haptic-tap"
+              style={{
+                width: 24, height: 24, borderRadius: 8, border: '2px solid var(--border)',
+                background: task.status === 'completed' ? 'var(--green)' : 'transparent',
+                borderColor: task.status === 'completed' ? 'var(--green)' : 'var(--muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}
+            >
+              <AnimatePresence>
+                {task.status === 'completed' && (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                    <Check size={14} color="white" strokeWidth={3} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+          </div>
+
+          <div className="task-row-content" onClick={() => setModal(task)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
+            <div style={{ 
+              fontSize: isMobile ? 15 : 17, fontWeight: 700,
+              textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+              color: task.status === 'completed' ? 'var(--muted)' : 'var(--text)',
+              marginBottom: 4
+            }}>
+              <SensitivityShield>
+                {task.title}
+              </SensitivityShield>
+            </div>
+            <div className="task-row-meta" style={{ display: 'flex', gap: 12, fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {task.category && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Tag size={12} /> {task.category}</span>
+              )}
+              {task.dueDate && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isOverdue ? 'var(--red)' : 'inherit' }}>
+                  <Calendar size={12} /> {format(new Date(task.dueDate), 'MMM d')}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="task-row-actions" style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-icon btn-ghost btn-sm" onClick={() => setModal(task)}><Pencil size={18} /></button>
+            <button className="btn btn-icon btn-ghost btn-sm text-red" onClick={() => setConfirmState({ open: true, task })}><Trash2 size={18} /></button>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}, (prev, next) => {
+  return prev.task._id === next.task._id && 
+         prev.task.status === next.task.status && 
+         prev.task.title === next.task.title &&
+         prev.selected === next.selected &&
+         prev.isMobile === next.isMobile;
+});
+
 // ─── Skeleton loader rows ─────────────────────────────────────────────────────
 function TasksSkeleton() {
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', gap: 16, padding: '16px 24px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-        <div className="skeleton skeleton-text" style={{ width: 16, height: 16 }} />
-        <div className="skeleton skeleton-text" style={{ flex: 1, height: 14 }} />
-        <div className="skeleton skeleton-text" style={{ width: 80, height: 14 }} />
-        <div className="skeleton skeleton-text" style={{ width: 90, height: 14 }} />
-        <div className="skeleton skeleton-text" style={{ width: 80, height: 14 }} />
-      </div>
       {[...Array(6)].map((_, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 24px', borderBottom: '1px solid var(--border)' }}>
           <div className="skeleton" style={{ width: 16, height: 16, borderRadius: 4 }} />
           <div className="skeleton" style={{ width: 24, height: 24, borderRadius: 7 }} />
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div className="skeleton skeleton-text" style={{ height: 14, width: `${60 + Math.random() * 30}%` }} />
+            <div className="skeleton skeleton-text" style={{ height: 14, width: '60%' }} />
             <div className="skeleton skeleton-text" style={{ height: 10, width: '30%' }} />
           </div>
           <div className="skeleton" style={{ width: 72, height: 24, borderRadius: 20 }} />
-          <div className="skeleton" style={{ width: 82, height: 24, borderRadius: 20 }} />
-          <div className="skeleton skeleton-text" style={{ width: 64, height: 14 }} />
           <div style={{ display: 'flex', gap: 4 }}>
-            <div className="skeleton" style={{ width: 32, height: 32, borderRadius: 8 }} />
             <div className="skeleton" style={{ width: 32, height: 32, borderRadius: 8 }} />
           </div>
         </div>
@@ -96,8 +171,7 @@ function TasksSkeleton() {
 
 // ─── Task modal ───────────────────────────────────────────────────────────────
 function TaskModal({ task, onClose, onSave }) {
-  const width = useWindowWidth();
-  const isMobile = width <= 768;
+  const isMobile = window.innerWidth <= 768;
   const [form, setForm] = useState({
     title: task?.title || '',
     description: task?.description || '',
@@ -136,129 +210,58 @@ function TaskModal({ task, onClose, onSave }) {
         initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
         animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
         exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className={`modal ${isMobile ? 'bottom-sheet' : ''}`}
       >
         <div className="modal-header">
-          <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="text-accent"><Plus size={20} /></div>
-            {task ? 'Edit Task' : 'New Task'}
-          </div>
+          <div className="modal-title">{task ? 'Edit Mission' : 'New Objective'}</div>
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100% - 60px)' : 'auto' }}>
-          <div className="modal-body" style={{ flex: 1, overflowY: 'auto' }}>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
             <div className="form-group">
-              <label className="form-label">Title</label>
-              <input className="input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="What needs to be done?" autoFocus required />
+              <label>Title</label>
+              <input className="input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Objective name" autoFocus />
             </div>
-
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <textarea className="textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Add more details..." rows={2} />
-            </div>
-
             <div className="grid-2">
               <div className="form-group">
-                <label className="form-label">Priority</label>
+                <label>Priority</label>
                 <select className="select" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
-                  {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+                  {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Status</label>
+                <label>Status</label>
                 <select className="select" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                  {STATUSES.map(s => <option key={s} value={s}>{s.replace('-', ' ')}</option>)}
+                  {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
-              </div>
-            </div>
-
-            <div className="grid-2">
-              <div className="form-group">
-                <label className="form-label">Category</label>
-                <select className="select" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Due Date</label>
-                <input type="date" className="input" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
-              </div>
-            </div>
-
-            <div className="grid-2">
-              <div className="form-group">
-                <label className="form-label">Est. Time (min)</label>
-                <input type="number" className="input" value={form.estimatedMinutes} onChange={e => setForm(f => ({ ...f, estimatedMinutes: e.target.value }))} placeholder="e.g. 30" min={1} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Tags</label>
-                <input className="input" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="design, review" />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Subtasks</label>
-              <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                <input className="input" value={newSubtask} onChange={e => setNewSubtask(e.target.value)} placeholder="Add subtask..." onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())} />
-                <button type="button" className="btn btn-primary" onClick={addSubtask} style={{ padding: '0 16px' }}><Plus size={18} /></button>
-              </div>
-              <div style={{ maxHeight: 150, overflowY: 'auto', paddingRight: 4 }}>
-                {form.subtasks.map((s, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--surface2)', borderRadius: 10, marginBottom: 8, border: '1px solid var(--border)' }}>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{s.title}</span>
-                    <button type="button" className="btn btn-icon btn-ghost btn-sm" onClick={() => removeSubtask(i)} style={{ color: 'var(--red)', padding: 4 }}><Trash2 size={16} /></button>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
-
-          <div className="modal-footer" style={{ gap: 12, padding: isMobile ? '16px 20px 32px' : '20px 24px', borderTop: '1px solid var(--border)' }}>
-            <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: isMobile ? 1 : 'none' }}>Cancel</button>
-            <button type="submit" className="btn btn-primary" style={{ flex: isMobile ? 2 : 'none', minWidth: 120 }}>
-              {task ? 'Save Changes' : 'Create Task'}
-            </button>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary">Proceed</button>
           </div>
         </form>
       </motion.div>
-
-      <style>{`
-        @media (max-width: 768px) {
-          .modal.bottom-sheet {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            max-width: none;
-            border-radius: 24px 24px 0 0;
-            max-height: 92vh;
-            margin: 0;
-          }
-          .modal-overlay {
-            align-items: flex-end;
-          }
-        }
-      `}</style>
     </div>
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+// ─── Main Page ──────────────────────────────────────────────────────────────
 export default function TasksPage() {
   const qc = useQueryClient();
   const feedback = useFeedback();
+  const navigate = useNavigate();
   const width = useWindowWidth();
   const isMobile = width <= 768;
   const [modal, setModal] = useState(null);
   const [filters, setFilters] = useState({ status: '', priority: '', search: '', sortBy: 'createdAt' });
   const [selected, setSelected] = useState([]);
-  const [confirmState, setConfirmState] = useState({ open: false, taskId: null, taskTitle: '' });
+  const [confirmState, setConfirmState] = useState({ open: false, task: null });
 
   const { data, isLoading } = useQuery({
     queryKey: ['tasks', filters],
-    queryFn: () => tasksAPI.getAll({ ...filters, limit: 100 }).then(r => r.data)
+    queryFn: () => tasksAPI.getAll(filters).then(r => r.data)
   });
 
   const { data: statsData } = useQuery({
@@ -269,29 +272,21 @@ export default function TasksPage() {
   const invalidate = () => {
     qc.invalidateQueries(['tasks']);
     qc.invalidateQueries(['task-stats']);
-    qc.invalidateQueries(['dashboard']);
   };
 
   const createMutation = useMutation({
     mutationFn: (d) => tasksAPI.create(d),
-    onSuccess: () => { toast.success('Task created! 🎯'); setModal(null); invalidate(); }
+    onSuccess: () => { toast.success('Objective Secured'); setModal(null); invalidate(); }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => tasksAPI.update(id, data),
-    onSuccess: () => { toast.success('Task updated!'); setModal(null); invalidate(); }
+    onSuccess: () => { invalidate(); }
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => tasksAPI.delete(id),
-    onSuccess: (_, deletedId) => {
-      invalidate();
-    }
-  });
-
-  const bulkDeleteMutation = useMutation({
-    mutationFn: (ids) => tasksAPI.bulkDelete(ids),
-    onSuccess: () => { toast.success(`${selected.length} tasks deleted`); setSelected([]); invalidate(); }
+    onSuccess: () => { toast.success('Objective Removed'); setConfirmState({ open: false, task: null }); invalidate(); }
   });
 
   const tasks = data?.tasks || [];
@@ -299,6 +294,7 @@ export default function TasksPage() {
   const handleSave = (formData) => {
     if (modal && modal._id) {
       updateMutation.mutate({ id: modal._id, data: formData });
+      setModal(null);
     } else {
       createMutation.mutate(formData);
     }
@@ -311,308 +307,67 @@ export default function TasksPage() {
   };
 
   const toggleSelect = (id) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-  const selectAll = () => setSelected(tasks.length === selected.length ? [] : tasks.map(t => t._id));
 
-  // ─── Undo-delete ─────────────────────────────────────────────────────────────
   const handleDelete = (task) => {
-    setConfirmState({ open: false, taskId: null, taskTitle: '' });
-    // Optimistically remove from cache for speed
-    qc.setQueryData(['tasks', filters], (old) => old
-      ? { ...old, tasks: old.tasks.filter(t => t._id !== task._id) }
-      : old
-    );
-
-    // Show undo toast
-    toast((t) => (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ flex: 1, fontSize: 13 }}>
-          <strong style={{ color: 'var(--red)' }}>Deleted</strong> "{task.title.slice(0, 32)}{task.title.length > 32 ? '…' : ''}"
-        </span>
-        <button
-          onClick={() => {
-            toast.dismiss(t.id);
-            createMutation.mutate({
-              title: task.title,
-              description: task.description,
-              priority: task.priority,
-              status: 'pending',
-              category: task.category,
-              dueDate: task.dueDate,
-              estimatedMinutes: task.estimatedMinutes,
-              tags: task.tags,
-              subtasks: task.subtasks
-            });
-          }}
-          style={{
-            background: 'rgba(130,114,255,0.15)',
-            border: '1px solid rgba(130,114,255,0.3)',
-            color: 'var(--accent)',
-            borderRadius: 6,
-            padding: '4px 10px',
-            cursor: 'pointer',
-            fontSize: 12,
-            fontWeight: 700,
-            flexShrink: 0
-          }}
-        >
-          Undo
-        </button>
-      </div>
-    ), { duration: 5000, style: { maxWidth: 380 } });
-
-    // Actually delete
     deleteMutation.mutate(task._id);
   };
-
-  const priorityColor = { urgent: 'var(--red)', high: 'var(--orange)', medium: 'var(--yellow)', low: 'var(--green)' };
 
   return (
     <div className="responsive-container">
       <div className="page-header mb-6">
         <div>
-          <div className="page-title flex items-center gap-3">
-            <div className="text-accent"><ClipboardList size={isMobile ? 24 : 32} /></div>
+          <div className="page-title flex items-center gap-3" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800 }}>
+            <ClipboardList size={isMobile ? 24 : 32} className="text-accent" />
             Mission Control
           </div>
           <p className="page-subtitle">Track, manage and conquer your objectives</p>
         </div>
-        <MagneticButton 
-          className="btn btn-primary hide-mobile haptic-feedback" 
-          onClick={() => setModal('create')}
-          whileHover={{ scale: 1.05, boxShadow: '0 20px 40px var(--accent-glow)' }}
-        >
+        <button className="btn btn-primary hide-mobile" onClick={() => setModal('create')}>
           <Plus size={18} /> New Objective
-        </MagneticButton>
+        </button>
       </div>
 
-      {/* Floating Action Button for Mobile */}
-      <div className="fab-container">
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          className="btn-fab"
-          onClick={() => setModal('create')}
-        >
-          <Plus size={28} />
-        </motion.button>
-      </div>
-
-      {/* Stats */}
       {statsData && (
-        <div className="stats-grid stats-carousel mb-6">
-          {[
-            { label: 'Total', value: statsData.total, color: 'var(--text2)', icon: Layers },
-            { label: 'Pending', value: statsData.pending, color: 'var(--yellow)', icon: Clock },
-            { label: 'Active', value: statsData.inProgress, color: 'var(--accent)', icon: Zap },
-            { label: 'Done', value: statsData.completed, color: 'var(--green)', icon: Check },
-            { label: 'Past Due', value: statsData.overdue, color: 'var(--red)', icon: AlertCircle },
-            { label: 'Today', value: statsData.todayCompleted, color: 'var(--accent3)', icon: Trophy },
-          ].map((s, i) => (
-            <div key={i} className="stat-card">
-              <s.icon size={16} style={{ color: s.color, opacity: 0.7 }} />
-              <SensitivityShield>
-                <div className="stat-value">{s.value}</div>
-              </SensitivityShield>
-              <div className="stat-label">{s.label}</div>
-            </div>
+        <div className="stats-grid mb-6">
+          <div className="stat-card">
+            <SensitivityShield><div className="stat-value">{statsData.total}</div></SensitivityShield>
+            <div className="stat-label">Total</div>
+          </div>
+          <div className="stat-card">
+            <SensitivityShield><div className="stat-value">{statsData.completed}</div></SensitivityShield>
+            <div className="stat-label">Done</div>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? <TasksSkeleton /> : (
+        <div className="tasks-list">
+          {tasks.map((task, index) => (
+            <TaskItem 
+              key={task._id}
+              task={task}
+              isMobile={isMobile}
+              selected={selected.includes(task._id)}
+              toggleSelect={toggleSelect}
+              toggleComplete={toggleComplete}
+              setModal={setModal}
+              setConfirmState={setConfirmState}
+            />
           ))}
         </div>
       )}
 
-      {/* Filters */}
-      <div className="card mb-6 p-4">
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: isMobile ? '1 1 100%' : '1 1 240px' }}>
-            <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
-            <input className="input" style={{ paddingLeft: 40 }} placeholder="Search objectives..." value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
-          </div>
-
-          <div style={{ display: 'flex', gap: 12, flex: isMobile ? '1 1 100%' : '0 1 auto', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-            <select className="select" style={{ flex: isMobile ? 1 : 'none', minWidth: isMobile ? 'calc(50% - 6px)' : 130 }} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
-              <option value="">All Status</option>
-              {STATUSES.map(s => <option key={s} value={s}>{s.replace('-', ' ')}</option>)}
-            </select>
-
-            <select className="select" style={{ flex: isMobile ? 1 : 'none', minWidth: isMobile ? 'calc(50% - 6px)' : 130 }} value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
-              <option value="">Priority</option>
-              {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-
-            <select className="select" style={{ flex: isMobile ? 1 : 'none', minWidth: isMobile ? 180 : 180 }} value={filters.sortBy} onChange={e => setFilters(f => ({ ...f, sortBy: e.target.value }))}>
-              <option value="createdAt">Created</option>
-              <option value="dueDate">Due Date</option>
-              <option value="priority">Priority</option>
-              <option value="title">A-Z</option>
-            </select>
-          </div>
-
-          {(filters.search || filters.status || filters.priority) && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setFilters({ status: '', priority: '', search: '', sortBy: 'createdAt' })}>
-              <X size={14} /> Clear
-            </button>
-          )}
-
-          {selected.length > 0 && (
-            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="flex items-center gap-3">
-              <span className="text-sm text-muted">{selected.length} selected</span>
-              <button className="btn btn-ghost btn-sm text-red" onClick={() => setConfirmState({ open: true, task: null, bulk: true })}>
-                <Trash2 size={14} /> Delete Selected
-              </button>
-            </motion.div>
-          )}
-        </div>
-      </div>
-
-      {/* Task List */}
-      {isLoading ? (
-        <TasksSkeleton />
-      ) : tasks.length === 0 ? (
-        <EmptyState 
-          title="Clear Skies Ahead" 
-          description="All objectives secured. Your mission log is clear, leaving space for your next great achievement."
-          icon={CheckCircle2}
-          action={{
-            label: "Create New Objective",
-            onClick: () => setModal('create')
-          }}
-        />
-      ) : (
-        <div className="tasks-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {tasks.map((task, index) => {
-            const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
-            return (
-              <motion.div
-                key={task._id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className={`task-row-container aura-iridescent ${selected.includes(task._id) ? 'selected' : ''}`}
-                style={{ 
-                  borderRadius: 20,
-                  opacity: task.status === 'cancelled' ? 0.4 : 1
-                }}
-              >
-                <div className="task-row-swipe-wrapper" style={{ position: 'relative', overflow: 'hidden', borderRadius: 20 }}>
-                  <motion.div
-                    drag={isMobile ? "x" : false}
-                    dragConstraints={{ left: 0, right: 0 }}
-                    onDragEnd={(_, info) => {
-                      if (info.offset.x > 100) toggleComplete(task);
-                      else if (info.offset.x < -100) setConfirmState({ open: true, task });
-                    }}
-                    className="task-row-main"
-                    style={{ 
-                      position: 'relative', 
-                      zIndex: 2, 
-                      background: 'rgba(255,255,255,0.02)', 
-                      backdropFilter: 'blur(20px)',
-                      borderRadius: 20, 
-                      border: '1px solid var(--border)',
-                      padding: '16px 24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 20
-                    }}
-                  >
-                    <div className="task-row-check" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <input type="checkbox" checked={selected.includes(task._id)} onChange={() => toggleSelect(task._id)} />
-                      <button
-                        onClick={() => toggleComplete(task)}
-                        className="status-checkbox haptic-tap"
-                        style={{
-                          width: 28, height: 28, borderRadius: 10, border: '2px solid var(--border)',
-                          background: task.status === 'completed' ? 'var(--green)' : 'transparent',
-                          borderColor: task.status === 'completed' ? 'var(--green)' : 'var(--muted)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}
-                      >
-                        <AnimatePresence>
-                          {task.status === 'completed' && (
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                              <Check size={16} color="white" strokeWidth={3} />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </button>
-                    </div>
-
-                    <div className="task-row-content" onClick={() => setModal(task)} style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ 
-                        fontSize: 17, fontWeight: 700,
-                        textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-                        color: task.status === 'completed' ? 'var(--muted)' : 'var(--text)',
-                        marginBottom: 4
-                      }}>
-                        <SensitivityShield>
-                          {task.title}
-                        </SensitivityShield>
-                      </div>
-                      <div className="task-row-meta" style={{ display: 'flex', gap: 12, fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        {task.category && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Tag size={12} /> {task.category}</span>
-                        )}
-                        {task.dueDate && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isOverdue ? 'var(--red)' : 'inherit' }}>
-                            <Calendar size={12} /> {format(new Date(task.dueDate), 'MMM d')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="task-row-badges hide-mobile" style={{ display: 'flex', gap: 8 }}>
-                      <span className={`badge badge-${task.priority}`} style={{ borderRadius: 8, padding: '4px 10px', fontSize: 10, fontWeight: 900 }}>{task.priority}</span>
-                    </div>
-
-                    <div className="task-row-actions" style={{ display: 'flex', gap: 8 }}>
-                      <button className="btn btn-icon btn-ghost btn-sm" onClick={() => setModal(task)}><Pencil size={18} /></button>
-                      <button className="btn btn-icon btn-ghost btn-sm text-red" onClick={() => setConfirmState({ open: true, task })}><Trash2 size={18} /></button>
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Modals */}
       <AnimatePresence>
-        {modal && (
-          <TaskModal task={modal === 'create' ? null : modal} onClose={() => setModal(null)} onSave={handleSave} />
-        )}
+        {modal && <TaskModal task={modal === 'create' ? null : modal} onClose={() => setModal(null)} onSave={handleSave} />}
       </AnimatePresence>
 
       <ConfirmDialog
         open={confirmState.open}
-        title="Delete Task?"
-        message={`"${confirmState.task?.title || ''}" will be removed. You can undo this action immediately after.`}
-        confirmText="Delete"
+        title="Remove Objective?"
+        confirmText="Remove"
         onConfirm={() => handleDelete(confirmState.task)}
         onCancel={() => setConfirmState({ open: false, task: null })}
       />
-
-      <style>{`
-        .task-row:hover { background: var(--surface2) !important; }
-        .hover-lift:hover { transform: translateY(-1px); }
-        .text-accent { color: var(--accent); }
-        .status-checkbox:hover { border-color: var(--accent) !important; transform: scale(1.1); }
-        
-        .task-row-check input[type="checkbox"] {
-          opacity: 0;
-          width: 0;
-          margin: 0;
-          pointer-events: none;
-          transition: all 0.2s ease;
-        }
-
-        .task-row-container:hover .task-row-check input[type="checkbox"],
-        .tasks-has-selection .task-row-check input[type="checkbox"],
-        .task-row-container.selected .task-row-check input[type="checkbox"] {
-          opacity: 1;
-          width: 16px;
-          margin-right: 4px;
-          pointer-events: auto;
-        }
-      `}</style>
-    </div >
+    </div>
   );
 }
