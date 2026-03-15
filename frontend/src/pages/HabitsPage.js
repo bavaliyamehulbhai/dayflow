@@ -9,8 +9,11 @@ import {
   RefreshCcw, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useZenTheme } from '../hooks/useZenTheme';
+import { useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../components/ConfirmDialog';
 import useFeedback from '../hooks/useFeedback';
+import SensitivityShield from '../components/layout/SensitivityShield';
 
 const ICONS = ['⭐', '💪', '🏃', '📚', '💧', '🧘', '🍎', '😴', '✍️', '🎯', '💊', '🌿', '🎨', '🎵', '🧹', '💻'];
 const COLORS = ['#7c6dfa', '#fa6d8a', '#6dfacc', '#fad96d', '#fa9a6d', '#6daafa', '#e96dfa', '#6dfaed'];
@@ -111,8 +114,10 @@ function HabitModal({ habit, onClose, onSave }) {
           <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: '16px', display: 'flex', alignItems: 'center', gap: 16, marginTop: 8, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: '28px' }}>{form.icon}</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: '15px' }}>{form.name || 'Your new ritual'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>{form.targetCount} {form.unit} • {form.frequency}</div>
+              <SensitivityShield>
+                <div style={{ fontWeight: 800, fontSize: 18, fontFamily: 'Syne, sans-serif', color: 'var(--text)' }}>{form.name || 'Your new ritual'}</div>
+              </SensitivityShield>
+              <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>{form.targetCount} {form.unit} • {form.frequency}</div>
             </div>
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: form.color, boxShadow: `0 0 15px ${form.color}66` }} />
           </div>
@@ -204,14 +209,13 @@ export default function HabitsPage() {
     <div className="responsive-container">
       <div className="page-header mb-6">
         <div>
-          <div className="page-title flex items-center gap-3">
-            <div className="text-accent"><Sparkles size={isMobile ? 24 : 32} /></div>
-            Ritual Chamber
-          </div>
-          <p className="page-subtitle">Transmute actions into character</p>
+          <h1 className="page-title" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em' }}>
+            Ritual Engine
+          </h1>
+          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.8 }}>Neural consistency for peak evolution</p>
         </div>
-        <button className="btn btn-primary hide-mobile magnetic-btn" onClick={() => setModal('create')}>
-          <Plus size={18} /> New Ritual
+        <button className="btn btn-primary btn-premium magnetic-btn" onClick={() => setModal({})} style={{ borderRadius: 14 }}>
+          <Plus size={18} /> Forge Ritual
         </button>
       </div>
 
@@ -268,12 +272,12 @@ export default function HabitsPage() {
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
           {/* List Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '16px 24px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 700 }}>Ritual Objectives</span>
-            <div style={{ display: 'flex', gap: 8, paddingRight: 72 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '20px 24px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
+            <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, opacity: 0.8 }}>Ritual Objectives</span>
+            <div style={{ display: 'flex', gap: 12, paddingRight: 84 }}>
               {last7.map(d => (
-                <div key={d.toISOString()} style={{ width: 36, textAlign: 'center', fontSize: 11, color: format(d, 'yyyy-MM-dd') === today ? 'var(--accent)' : 'var(--muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-                  {format(d, 'EE').charAt(0)}
+                <div key={d.toISOString()} style={{ width: 40, textAlign: 'center', fontSize: 11, color: format(d, 'yyyy-MM-dd') === today ? 'var(--accent)' : 'var(--muted)', fontWeight: 800, textTransform: 'uppercase' }}>
+                  {format(d, 'EEE').charAt(0)}
                 </div>
               ))}
             </div>
@@ -339,40 +343,57 @@ export default function HabitsPage() {
                     </div>
                   </div>
 
-                  {/* Day tracking + actions */}
                   <div style={{
                     display: 'flex',
-                    gap: 8,
+                    gap: 12,
                     alignItems: 'center',
                     justifyContent: isMobile ? 'space-between' : 'flex-end',
                     marginTop: isMobile ? 12 : 0,
-                    width: isMobile ? '100%' : 'auto'
+                    width: isMobile ? '100%' : 'auto',
+                    position: 'relative'
                   }}>
-                    <div style={{ display: 'flex', gap: 8, flex: isMobile ? 1 : 'none', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
+                    {/* Progression Chain Line */}
+                    {!isMobile && (
+                      <div style={{ position: 'absolute', right: 104, top: '50%', width: 280, height: 2, background: 'var(--border)', zIndex: 0, opacity: 0.3 }} />
+                    )}
+
+                    <div style={{ display: 'flex', gap: 12, flex: isMobile ? 1 : 'none', justifyContent: isMobile ? 'flex-start' : 'flex-end', position: 'relative', zIndex: 1 }}>
                       {last7.map(d => {
                         const dateStr = format(d, 'yyyy-MM-dd');
                         const done = isCompleted(habit, dateStr);
                         const isToday = dateStr === today;
                         return (
-                          <button
+                          <motion.button
                             key={dateStr}
+                            whileHover={isToday ? { scale: 1.1 } : {}}
+                            whileTap={isToday ? { scale: 0.9 } : {}}
                             onClick={(e) => { e.stopPropagation(); if (isToday) completeMutation.mutate({ id: habit._id, date: dateStr }); }}
                             disabled={!isToday && !done}
                             className={`habit-check ${done ? 'done' : ''}`}
                             style={{
-                              width: 36, height: 36, borderRadius: 10,
-                              border: `2px solid ${done ? habit.color : isToday ? 'var(--border2)' : 'var(--border)'}`,
+                              width: 40, height: 40, borderRadius: 12,
+                              border: `2px solid ${done ? habit.color : isToday ? 'var(--accent)' : 'var(--border)'}`,
                               background: done ? habit.color : 'transparent',
                               cursor: isToday ? 'pointer' : 'default',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               color: 'white',
-                              boxShadow: done ? `0 4px 12px ${habit.color}55` : 'none',
-                              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                              opacity: !isToday && !done ? 0.2 : 1
+                              boxShadow: done ? `0 0 20px ${habit.color}44, inset 0 0 10px rgba(255,255,255,0.2)` : 'none',
+                              transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                              opacity: !isToday && !done ? 0.3 : 1
                             }}
                           >
-                            {done && <Check size={18} strokeWidth={3} />}
-                          </button>
+                            <AnimatePresence mode="wait">
+                              {done ? (
+                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                                  <Check size={20} strokeWidth={3.5} />
+                                </motion.div>
+                              ) : isToday ? (
+                                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }}>
+                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+                                </motion.div>
+                              ) : null}
+                            </AnimatePresence>
+                          </motion.button>
                         );
                       })}
                     </div>

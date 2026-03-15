@@ -11,11 +11,15 @@ import {
   FileText,
   Settings,
   LogOut,
-  User
+  User,
+  Shield,
+  ShieldOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CommandPalette from './CommandPalette';
 import ShortcutsHelp from './ShortcutsHelp';
+import ShortcutOverlay from './ShortcutOverlay';
+import { useSecurity } from '../../context/SecurityGuard';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
@@ -38,6 +42,7 @@ const mobileTabItems = [
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { isSecureMode, toggleSecureMode } = useSecurity();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -65,11 +70,30 @@ export default function Layout({ children }) {
 
   return (
     <div className="app-layout">
+      {/* ─── Global Aura Orbs ────────────────────────────────────────────── */}
+      <div className="aura-orb" style={{ top: '10%', left: '15%', width: 400, height: 400, background: 'var(--aura-color)' }} />
+      <div className="aura-orb" style={{ bottom: '15%', right: '10%', width: 500, height: 500, background: 'var(--aura-color-2)', animationDelay: '-5s' }} />
+      <div className="aura-orb" style={{ top: '50%', left: '50%', width: 300, height: 300, background: 'var(--aura-color-3)', animationDelay: '-10s', filter: 'blur(120px)' }} />
 
       {/* ─── Desktop + Tablet Sidebar ──────────────────────────────────────── */}
+      {/* ─── Desktop + Tablet Sidebar ──────────────────────────────────────── */}
       {!isMobile && (
-        <aside className={`sidebar ${isTablet ? 'sidebar-icon' : ''}`}>
-          <div className="sidebar-logo">
+        <aside className={`sidebar ${isTablet ? 'sidebar-icon' : ''}`} style={{
+          background: 'var(--surface)',
+          backdropFilter: 'var(--glass-premium)',
+          WebkitBackdropFilter: 'var(--glass-premium)',
+          borderRight: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-lg)'
+        }}>
+          <div className="sidebar-logo" style={{
+            padding: '32px 24px',
+            fontSize: isTablet ? '24px' : '28px',
+            textAlign: isTablet ? 'center' : 'left',
+            background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            letterSpacing: '-0.04em'
+          }}>
             {isTablet ? '⚡' : 'DayFlow'}
           </div>
 
@@ -100,6 +124,15 @@ export default function Layout({ children }) {
                 <Settings size={18} className="nav-icon" />
                 {!isTablet && <span className="nav-label">Settings</span>}
               </NavLink>
+              <button
+                className={`nav-link ${isSecureMode ? 'secure-active' : ''}`}
+                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                onClick={toggleSecureMode}
+                title={isSecureMode ? 'Disable Secure Mode' : 'Enable Secure Mode'}
+              >
+                {isSecureMode ? <ShieldOff size={18} className="nav-icon" style={{ color: 'var(--accent)' }} /> : <Shield size={18} className="nav-icon" />}
+                {!isTablet && <span className="nav-label" style={{ color: isSecureMode ? 'var(--accent)' : 'inherit' }}>{isSecureMode ? 'Public Mode' : 'Private Mode'}</span>}
+              </button>
               <button
                 className="nav-link logout-btn"
                 style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
@@ -147,18 +180,22 @@ export default function Layout({ children }) {
         )}
 
         {/* ─── Main Content ──────────────────────────────────────────────────── */}
-        <main className="main-content" style={{ marginLeft: 0 }}>
+        <main className="main-content" style={{ 
+          marginLeft: 0,
+          background: 'var(--grad-mesh)',
+          minHeight: '100vh'
+        }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 12, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -12, filter: 'blur(10px)' }}
+              initial={{ opacity: 0, scale: 0.9, z: -100, filter: 'blur(20px)' }}
+              animate={{ opacity: 1, scale: 1, z: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 1.1, z: 100, filter: 'blur(20px)' }}
               transition={{
-                duration: 0.4,
-                ease: [0.16, 1, 0.3, 1],
-                filter: { duration: 0.3 }
+                duration: 0.7,
+                ease: [0.16, 1, 0.3, 1]
               }}
+              style={{ perspective: 1000 }}
               className="page-content"
             >
               {children}
@@ -203,6 +240,20 @@ export default function Layout({ children }) {
       }
       <CommandPalette />
       <ShortcutsHelp />
+      <ShortcutOverlay />
+
+      {/* Mobile Privacy Curtain */}
+      <div 
+        className={`privacy-curtain ${isSecureMode ? 'active' : ''}`}
+        onClick={toggleSecureMode}
+      >
+        <div style={{ textAlign: 'center', pointerEvents: 'none' }}>
+            <ShieldOff size={64} color="var(--accent)" style={{ marginBottom: 20, opacity: 0.5 }} />
+            <h2 style={{ color: 'white', fontFamily: 'Syne', fontWeight: 800 }}>Shield Active</h2>
+            <p style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Tap anywhere to reveal</p>
+        </div>
+        <div className="curtain-handle" />
+      </div>
     </div >
   );
 }

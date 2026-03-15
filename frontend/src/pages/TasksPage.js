@@ -8,8 +8,45 @@ import {
   X, ChevronRight, ClipboardList, Clock, Tag, Calendar, Layers, Zap, Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AICoach from '../components/AICoach';
+import ProductivityCircle from '../components/ProductivityCircle';
 import useFeedback from '../hooks/useFeedback';
 import ConfirmDialog from '../components/ConfirmDialog';
+import EmptyState from '../components/EmptyState';
+import { useRef } from 'react';
+import SensitivityShield from '../components/layout/SensitivityShield';
+
+// ─── Magnetic Effect Component ──────────────────────────────────────────────
+const MagneticButton = ({ children, className, onClick, style, whileHover }) => {
+  const ref = useRef(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e) => {
+    const { clientX, clientY } = e;
+    const { left, top, width, height } = ref.current.getBoundingClientRect();
+    const x = clientX - (left + width / 2);
+    const y = clientY - (top + height / 2);
+    setPosition({ x, y });
+  };
+
+  const handleMouseLeave = () => setPosition({ x: 0, y: 0 });
+
+  return (
+    <motion.button
+      ref={ref}
+      className={className}
+      onClick={onClick}
+      style={{ ...style, position: 'relative' }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      animate={{ x: position.x * 0.2, y: position.y * 0.2 }}
+      whileHover={whileHover}
+      transition={{ type: 'spring', stiffness: 150, damping: 15, mass: 0.1 }}
+    >
+      {children}
+    </motion.button>
+  );
+};
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const STATUSES = ['pending', 'in-progress', 'completed', 'cancelled'];
@@ -339,9 +376,13 @@ export default function TasksPage() {
           </div>
           <p className="page-subtitle">Track, manage and conquer your objectives</p>
         </div>
-        <button className="btn btn-primary hide-mobile magnetic-btn" onClick={() => setModal('create')}>
+        <MagneticButton 
+          className="btn btn-primary hide-mobile haptic-feedback" 
+          onClick={() => setModal('create')}
+          whileHover={{ scale: 1.05, boxShadow: '0 20px 40px var(--accent-glow)' }}
+        >
           <Plus size={18} /> New Objective
-        </button>
+        </MagneticButton>
       </div>
 
       {/* Floating Action Button for Mobile */}
@@ -368,7 +409,9 @@ export default function TasksPage() {
           ].map((s, i) => (
             <div key={i} className="stat-card">
               <s.icon size={16} style={{ color: s.color, opacity: 0.7 }} />
-              <div className="stat-value" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}cc)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{s.value}</div>
+              <SensitivityShield>
+                <div className="stat-value">{s.value}</div>
+              </SensitivityShield>
               <div className="stat-label">{s.label}</div>
             </div>
           ))}
@@ -409,10 +452,10 @@ export default function TasksPage() {
           )}
 
           {selected.length > 0 && (
-            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} style={{ marginLeft: isMobile ? 0 : 'auto', display: 'flex', gap: 12, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end', marginTop: isMobile ? 8 : 0 }}>
-              <span style={{ fontSize: 13, color: 'var(--text2)', alignSelf: 'center', fontWeight: 600 }}>{selected.length} selected</span>
-              <button className="btn btn-danger btn-sm" onClick={() => bulkDeleteMutation.mutate(selected)}>
-                <Trash2 size={14} /> Delete
+            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="flex items-center gap-3">
+              <span className="text-sm text-muted">{selected.length} selected</span>
+              <button className="btn btn-ghost btn-sm text-red" onClick={() => setConfirmState({ open: true, task: null, bulk: true })}>
+                <Trash2 size={14} /> Delete Selected
               </button>
             </motion.div>
           )}
@@ -420,117 +463,116 @@ export default function TasksPage() {
       </div>
 
       {/* Task List */}
-      {
-        isLoading ? (
-          <TasksSkeleton />
-        ) : tasks.length === 0 ? (
-          <div className="card" style={{ padding: '100px 40px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(130,114,255,0.03), rgba(109,250,204,0.02))' }}>
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}>
-              <div className="empty-icon" style={{ fontSize: 64, marginBottom: 20, filter: 'drop-shadow(0 0 15px var(--accent))' }}>✨</div>
-              <div className="empty-title" style={{ fontSize: 28, fontWeight: 900, fontFamily: 'Syne, sans-serif' }}>Clear skies ahead</div>
-              <div className="empty-desc" style={{ marginTop: 12, fontSize: 16, color: 'var(--muted)', maxWidth: 400, margin: '12px auto' }}>All objectives secured. The path is clear for your next great achievement.</div>
-              <button className="btn btn-primary" style={{ marginTop: 32, padding: '12px 32px' }} onClick={() => setModal('create')}>
-                <Plus size={18} /> Add Your First Task
-              </button>
-            </motion.div>
-          </div>
-        ) : (
-          <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
-            <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 24px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 700 }}>
-              <input type="checkbox" checked={selected.length === tasks.length && tasks.length > 0} onChange={selectAll} style={{ cursor: 'pointer', width: 16, height: 16 }} />
-              <span style={{ flex: 1 }}>Mission Description</span>
-              <span style={{ minWidth: 100, textAlign: 'center' }}>Priority</span>
-              <span style={{ minWidth: 110, textAlign: 'center' }}>Status</span>
-              <span style={{ minWidth: 100 }}>Deadline</span>
-              <span style={{ minWidth: 100 }}>Actions</span>
-            </div>
-
-            <div className={`tasks-list-container ${selected.length > 0 ? 'tasks-has-selection' : ''}`} style={{ display: 'flex', flexDirection: 'column' }}>
-              {tasks.map((task, i) => {
-                const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
-                return (
+      {isLoading ? (
+        <TasksSkeleton />
+      ) : tasks.length === 0 ? (
+        <EmptyState 
+          title="Clear Skies Ahead" 
+          description="All objectives secured. Your mission log is clear, leaving space for your next great achievement."
+          icon={CheckCircle2}
+          action={{
+            label: "Create New Objective",
+            onClick: () => setModal('create')
+          }}
+        />
+      ) : (
+        <div className="tasks-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {tasks.map((task, index) => {
+            const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
+            return (
+              <motion.div
+                key={task._id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                className={`task-row-container aura-iridescent ${selected.includes(task._id) ? 'selected' : ''}`}
+                style={{ 
+                  borderRadius: 20,
+                  opacity: task.status === 'cancelled' ? 0.4 : 1
+                }}
+              >
+                <div className="task-row-swipe-wrapper" style={{ position: 'relative', overflow: 'hidden', borderRadius: 20 }}>
                   <motion.div
-                    key={task._id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ x: 6, backgroundColor: 'rgba(130,114,255,0.02)' }}
-                    transition={{ delay: i * 0.018, type: 'spring', stiffness: 300, damping: 20 }}
-                    className={`task-row-container ${selected.includes(task._id) ? 'selected' : ''}`}
-                    style={{ opacity: task.status === 'cancelled' ? 0.4 : 1 }}
+                    drag={isMobile ? "x" : false}
+                    dragConstraints={{ left: 0, right: 0 }}
+                    onDragEnd={(_, info) => {
+                      if (info.offset.x > 100) toggleComplete(task);
+                      else if (info.offset.x < -100) setConfirmState({ open: true, task });
+                    }}
+                    className="task-row-main"
+                    style={{ 
+                      position: 'relative', 
+                      zIndex: 2, 
+                      background: 'rgba(255,255,255,0.02)', 
+                      backdropFilter: 'blur(20px)',
+                      borderRadius: 20, 
+                      border: '1px solid var(--border)',
+                      padding: '16px 24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 20
+                    }}
                   >
-                    <div
-                      className="task-row-swipe-wrapper"
-                      style={{ position: 'relative', overflow: 'hidden', background: 'var(--surface)' }}
-                    >
-                      {/* Swipe Backgrounds */}
-                      <div className="swipe-bg swipe-bg-complete" style={{ position: 'absolute', inset: 0, background: 'var(--green)', display: 'flex', alignItems: 'center', padding: '0 20px', color: 'white' }}>
-                        <Check size={24} />
-                      </div>
-                      <div className="swipe-bg swipe-bg-delete" style={{ position: 'absolute', inset: 0, background: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 20px', color: 'white' }}>
-                        <Trash2 size={24} />
-                      </div>
-
-                      <motion.div
-                        drag={isMobile ? "x" : false}
-                        dragConstraints={{ left: 0, right: 0 }}
-                        onDragEnd={(_, info) => {
-                          if (info.offset.x > 100) toggleComplete(task);
-                          else if (info.offset.x < -100) setConfirmState({ open: true, task });
+                    <div className="task-row-check" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <input type="checkbox" checked={selected.includes(task._id)} onChange={() => toggleSelect(task._id)} />
+                      <button
+                        onClick={() => toggleComplete(task)}
+                        className="status-checkbox haptic-tap"
+                        style={{
+                          width: 28, height: 28, borderRadius: 10, border: '2px solid var(--border)',
+                          background: task.status === 'completed' ? 'var(--green)' : 'transparent',
+                          borderColor: task.status === 'completed' ? 'var(--green)' : 'var(--muted)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}
-                        className="task-row-main"
-                        style={{ position: 'relative', zIndex: 2, background: 'var(--surface-solid)' }}
                       >
-                        <div className="task-row-check">
-                          <input type="checkbox" checked={selected.includes(task._id)} onChange={() => toggleSelect(task._id)} />
-                          <button
-                            onClick={() => toggleComplete(task)}
-                            className="status-checkbox haptic-tap"
-                            style={{
-                              background: task.status === 'completed' ? 'var(--green)' : 'transparent',
-                              borderColor: task.status === 'completed' ? 'var(--green)' : 'var(--border2)'
-                            }}
-                          >
-                            {task.status === 'completed' && <Check size={16} strokeWidth={3} />}
-                          </button>
-                        </div>
+                        <AnimatePresence>
+                          {task.status === 'completed' && (
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                              <Check size={16} color="white" strokeWidth={3} />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </button>
+                    </div>
 
-                        <div className="task-row-content" onClick={() => setModal(task)}>
-                          <div className={`task-row-title ${task.status === 'completed' ? 'completed' : ''}`}>
-                            {task.title}
-                          </div>
-                          <div className="task-row-meta">
-                            {task.category && (
-                              <span><Tag size={12} /> {task.category}</span>
-                            )}
-                            {task.subtasks?.length > 0 && (
-                              <span><CheckCircle2 size={12} /> {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}</span>
-                            )}
-                            {task.dueDate && (
-                              <span className={isOverdue ? 'overdue' : ''}>
-                                <Calendar size={12} /> {format(new Date(task.dueDate), 'MMM d')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                    <div className="task-row-content" onClick={() => setModal(task)} style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ 
+                        fontSize: 17, fontWeight: 700,
+                        textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+                        color: task.status === 'completed' ? 'var(--muted)' : 'var(--text)',
+                        marginBottom: 4
+                      }}>
+                        <SensitivityShield>
+                          {task.title}
+                        </SensitivityShield>
+                      </div>
+                      <div className="task-row-meta" style={{ display: 'flex', gap: 12, fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        {task.category && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Tag size={12} /> {task.category}</span>
+                        )}
+                        {task.dueDate && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isOverdue ? 'var(--red)' : 'inherit' }}>
+                            <Calendar size={12} /> {format(new Date(task.dueDate), 'MMM d')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                        <div className="task-row-badges hide-mobile">
-                          <span className={`badge badge-${task.priority}`}>{task.priority}</span>
-                          <span className={`badge badge-${task.status}`}>{task.status.replace('-', ' ')}</span>
-                        </div>
+                    <div className="task-row-badges hide-mobile" style={{ display: 'flex', gap: 8 }}>
+                      <span className={`badge badge-${task.priority}`} style={{ borderRadius: 8, padding: '4px 10px', fontSize: 10, fontWeight: 900 }}>{task.priority}</span>
+                    </div>
 
-                        <div className="task-row-actions">
-                          <button className="btn btn-icon btn-ghost btn-sm" onClick={() => setModal(task)}><Pencil size={16} /></button>
-                          <button className="btn btn-icon btn-ghost btn-sm text-red" onClick={() => setConfirmState({ open: true, task })}><Trash2 size={16} /></button>
-                        </div>
-                      </motion.div>
+                    <div className="task-row-actions" style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn btn-icon btn-ghost btn-sm" onClick={() => setModal(task)}><Pencil size={18} /></button>
+                      <button className="btn btn-icon btn-ghost btn-sm text-red" onClick={() => setConfirmState({ open: true, task })}><Trash2 size={18} /></button>
                     </div>
                   </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        )
-      }
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modals */}
       <AnimatePresence>

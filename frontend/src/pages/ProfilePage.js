@@ -18,9 +18,8 @@ import {
   Palette, Sun, Moon
 } from 'lucide-react';
 import { useZenTheme } from '../hooks/useZenTheme';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../components/ConfirmDialog';
+import SensitivityShield from '../components/layout/SensitivityShield';
 
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
@@ -333,13 +332,15 @@ export default function ProfilePage() {
         className="card"
         style={{
           marginBottom: 20, padding: 'var(--space-6) var(--space-8)',
-          background: 'linear-gradient(135deg,rgba(130,114,255,0.07),rgba(250,109,138,0.05),rgba(109,250,204,0.03))',
-          border: '1px solid var(--border)', position: 'relative', overflow: 'hidden'
+          background: 'var(--grad-mesh)',
+          border: '1px solid var(--border)', position: 'relative', overflow: 'hidden',
+          borderRadius: 24,
+          boxShadow: 'var(--shadow-xl)'
         }}
       >
         {/* BG orbs */}
-        <div style={{ position: 'absolute', top: -80, right: -80, width: 250, height: 250, background: 'var(--accent)', opacity: 0.05, borderRadius: '50%', filter: 'blur(70px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 200, height: 200, background: 'var(--accent2)', opacity: 0.05, borderRadius: '50%', filter: 'blur(60px)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: -120, right: -120, width: 300, height: 300, background: 'var(--accent)', opacity: 0.1, borderRadius: '50%', filter: 'blur(90px)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -100, left: -100, width: 250, height: 250, background: 'var(--accent2)', opacity: 0.1, borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none' }} />
 
         <div style={{
           display: 'flex',
@@ -465,24 +466,41 @@ export default function ProfilePage() {
           </div>
 
           {/* Score ring */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <ScoreRing score={productivityScore} size={isMobile ? 80 : 110} />
-            <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Productivity</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <div style={{ position: 'relative' }}>
+              <ScoreRing score={productivityScore} size={isMobile ? 90 : 120} />
+              <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                style={{ position: 'absolute', inset: -4, border: '1px dashed var(--accent)', borderRadius: '50%', opacity: 0.2 }}
+              />
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2 }}>Zenith Level 14</div>
           </div>
         </div>
 
-        {/* Profile completeness bar */}
-        {completeness < 100 && (
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 20, padding: '12px 16px', background: 'var(--surface2)', borderRadius: 12, border: '1px solid var(--border)', maxWidth: 600, margin: '20px auto 0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Profile Completeness</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)' }}>{completeness}%</span>
+        {/* Level / Progress Bar */}
+        <div style={{ marginTop: 24, padding: '16px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Flame size={14} className="text-orange" />
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Growth Progress</span>
             </div>
-            <div style={{ height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
-              <motion.div initial={{ width: 0 }} animate={{ width: `${completeness}%` }} transition={{ duration: 1 }} style={{ height: '100%', background: 'linear-gradient(90deg,var(--accent),var(--accent2))', borderRadius: 3 }} />
-            </div>
-          </motion.div>
-        )}
+            <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)' }}>2.4k / 5k Focus Points</span>
+          </div>
+          <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', position: 'relative' }}>
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: '48%' }}
+              transition={{ duration: 1.5, ease: 'easeOut' }}
+              style={{ height: '100%', background: 'var(--grad-primary)', borderRadius: 10, boxShadow: '0 0 15px rgba(124,109,250,0.5)' }}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>
+            <span>INITIATE</span>
+            <span>ASCENDANT</span>
+          </div>
+        </div>
 
         {/* Quick action shortcuts */}
         <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
@@ -582,21 +600,38 @@ export default function ProfilePage() {
                 </form>
               </div>
 
-              {/* Account Info card */}
+              {/* Growth Stats card */}
               <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
-                <div className="card-title mb-4"><Activity size={14} className="text-accent2" /> Account Overview</div>
-                <div className="stats-grid" style={{ gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)' }}>
+                <div className="card-title mb-6"><TrendingUp size={15} className="text-accent2" /> Lifetime Growth Metrics</div>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
                   {[
-                    { label: 'Member Since', value: memberSince },
-                    { label: 'Days Active', value: `${memberDays}d` },
-                    { label: 'Account ID', value: user?._id?.slice(-8)?.toUpperCase() || '—' },
-                    { label: 'Region', value: 'Atlas' },
-                  ].map((s, i) => (
-                    <div key={i} className="stat-card p-3 flex justify-between items-center bg-surface2 border border-border rounded-xl">
-                      <span className="text-xs text-muted font-bold uppercase">{s.label}</span>
-                      <span className="text-sm font-bold text-text">{s.value}</span>
-                    </div>
-                  ))}
+                    { label: 'Tasks Mastered', value: tasksCompleted, target: 500, icon: Target, color: 'var(--accent)' },
+                    { label: 'Deep Focus (hrs)', value: Math.floor(focusMinutes / 60), target: 100, icon: Clock, color: 'var(--green)' },
+                    { label: 'Active Streak (days)', value: currentStreak, target: 30, icon: Flame, color: 'var(--orange)' },
+                    { label: 'Rituals Maintained', value: analytics.habitsTotal || 0, target: 100, icon: Zap, color: 'var(--accent2)' },
+                  ].map((s, i) => {
+                    const progress = Math.min(100, (s.value / s.target) * 100);
+                    return (
+                      <div key={i} style={{ padding: 20, background: 'var(--surface2)', borderRadius: 18, border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 10, background: `${s.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <s.icon size={16} style={{ color: s.color }} />
+                            </div>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)' }}>{s.label}</span>
+                          </div>
+                          <span style={{ fontSize: 16, fontWeight: 900 }}>{s.value}</span>
+                        </div>
+                        <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+                          <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} style={{ height: '100%', background: s.color, borderRadius: 2 }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>
+                          <span>Level 1</span>
+                          <span>Goal: {s.target}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

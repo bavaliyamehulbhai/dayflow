@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import AICoach from '../components/AICoach';
 import ProductivityCircle from '../components/ProductivityCircle';
+import { SensitivityShield } from '../context/SecurityGuard';
 
 // ─── Magnetic Effect Component ──────────────────────────────────────────────
 const MagneticButton = ({ children, className, onClick, style }) => {
@@ -112,10 +113,10 @@ function AnimatedStat({ value, label, color, icon: Icon }) {
   return (
     <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
       <div style={{ color, opacity: 0.8 }}><Icon size={20} /></div>
-      <div className="stat-value" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: 'var(--fs-2xl)' }}>
-        {display}
-      </div>
-      <div className="stat-label" style={{ fontWeight: 600 }}>{label}</div>
+      <SensitivityShield>
+        <div className="stat-value" style={{ color }}>{display}</div>
+      </SensitivityShield>
+      <div className="stat-label">{label}</div>
     </div>
   );
 }
@@ -130,16 +131,16 @@ function DashboardSkeleton() {
       {/* Clock skeleton */}
       <div className="skeleton" style={{ height: 160, borderRadius: 16, marginBottom: 24 }} />
       {/* Stats skeleton */}
-      <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="skeleton" style={{ height: 110, borderRadius: 16 }} />
+      <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="skeleton" style={{ height: 120, borderRadius: 20 }} />
         ))}
       </div>
       {/* Main grid skeleton */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 340px', gap: 24 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div className="skeleton" style={{ height: 280, borderRadius: 16 }} />
-          <div className="skeleton" style={{ height: 260, borderRadius: 16 }} />
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: 32 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+          <div className="skeleton" style={{ height: 320, borderRadius: 20 }} />
+          <div className="skeleton" style={{ height: 300, borderRadius: 20 }} />
         </div>
         {!isMobile && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -172,24 +173,70 @@ function Clock() {
   if (hours >= 22 || hours < 6) GreetingIcon = Moon;
 
   return (
-    <div className="card clock-card" style={{ textAlign: 'center', padding: isMobile ? '20px 14px' : '32px 24px', position: 'relative', overflow: 'hidden' }}>
-      <div className="greeting-icon-bg" style={{ position: 'absolute', top: -10, right: -10, opacity: 0.1 }}>
-        <GreetingIcon size={isMobile ? 80 : 120} />
+    <div className="card clock-card" style={{ 
+      textAlign: 'center', 
+      padding: isMobile ? '32px 16px' : '48px 32px', 
+      position: 'relative', 
+      overflow: 'hidden',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
+      boxShadow: 'var(--shadow-lg)',
+      borderRadius: 'var(--radius-xl)'
+    }}>
+      <div className="greeting-icon-bg" style={{ 
+        position: 'absolute', 
+        top: -20, 
+        right: -20, 
+        opacity: 0.05,
+        transform: 'rotate(15deg)'
+      }}>
+        <GreetingIcon size={isMobile ? 120 : 200} />
       </div>
-      <div className="clock-time" style={{ fontSize: isMobile ? 'clamp(1.8rem, 8vw, 3rem)' : 'var(--fs-3xl)', letterSpacing: isMobile ? '-1px' : '-3px' }}>
-        {format(time, 'hh:mm:ss a')}
-      </div>
-      <div className="clock-date" style={{ fontSize: isMobile ? '10px' : 'var(--fs-xs)', letterSpacing: isMobile ? '1px' : '3px', marginTop: 6 }}>
-        {format(time, 'EEEE, MMMM d, yyyy')}
-      </div>
-      <div style={{ marginTop: 'var(--space-4)' }}>
-        <div style={{ height: 6, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden' }}>
-          <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--accent2))', borderRadius: 3, boxShadow: '0 0 15px rgba(130,114,255,0.5)', transition: 'width 1s linear' }} />
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
+        <div className="clock-time" style={{ 
+          fontSize: isMobile ? '12vw' : 'clamp(3rem, 10vw, 6rem)', 
+          letterSpacing: '-0.06em',
+          background: 'linear-gradient(180deg, var(--text), var(--text2))',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          textShadow: '0 10px 30px rgba(0,0,0,0.5)'
+        }}>
+          {format(time, 'HH:mm:ss')}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted)', marginTop: 8, fontWeight: 500 }}>
-          <span>6 AM</span>
-          <span style={{ color: 'var(--text2)' }}>{Math.round(pct)}% complete</span>
-          <span>11 PM</span>
+        <div className="clock-date" style={{ 
+          fontSize: isMobile ? '12px' : 'var(--fs-sm)', 
+          letterSpacing: '0.2em', 
+          marginTop: 12,
+          color: 'var(--accent)',
+          fontWeight: 800
+        }}>
+          {format(time, 'EEEE, MMMM do').toUpperCase()}
+        </div>
+      </motion.div>
+
+      <div style={{ marginTop: 'var(--space-8)', maxWidth: '600px', margin: '32px auto 0' }}>
+        <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 1.5, ease: "circOut" }}
+            style={{ 
+              height: '100%', 
+              background: 'linear-gradient(90deg, var(--accent), var(--accent3))', 
+              borderRadius: 2, 
+              boxShadow: '0 0 20px var(--accent-glow)'
+            }} 
+          />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted)', marginTop: 12, fontWeight: 700, letterSpacing: '0.05em' }}>
+          <span>SUNRISE</span>
+          <span style={{ color: 'var(--text2)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 10 }}>{Math.round(pct)}% OF DAYLIGHT</span>
+          <span>SUNSET</span>
         </div>
       </div>
     </div >
@@ -352,15 +399,19 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
 
           {/* Activity Consistency Grid (LeetCode Style) */}
-          <motion.div variants={itemVariants} className="card" style={{ padding: '24px' }}>
+          <motion.div variants={itemVariants} className="card aura-iridescent" style={{ padding: '24px' }}>
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Activity size={16} className="text-accent" />
                 Consistency Tracker
               </div>
-              <button className="btn btn-sm btn-ghost" onClick={() => navigate('/profile')}>
+              <MagneticButton 
+                className="btn btn-sm btn-ghost haptic-feedback" 
+                onClick={() => navigate('/profile')}
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}
+              >
                 View Profile <ArrowRight size={14} style={{ marginLeft: 4 }} />
-              </button>
+              </MagneticButton>
             </div>
 
             <div style={{ marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
@@ -469,7 +520,7 @@ export default function DashboardPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
           {/* AI Coach */}
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="card aura-iridescent">
             <AICoach />
           </motion.div>
 
@@ -572,7 +623,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Recent Notes */}
-          <motion.div variants={itemVariants} className="card">
+          <motion.div variants={itemVariants} className="card aura-iridescent">
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <FileText size={16} />

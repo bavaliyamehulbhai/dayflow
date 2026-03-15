@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDialog from '../components/ConfirmDialog';
+import SensitivityShield from '../components/layout/SensitivityShield';
 
 const CATEGORIES = ['work', 'personal', 'health', 'learning', 'social', 'other'];
 const CAT_COLORS = { work: '#7c6dfa', personal: '#fa6d8a', health: '#6dfacc', learning: '#fad96d', social: '#fa9a6d', other: '#a3a3a3' };
@@ -172,32 +173,39 @@ export default function SchedulePage() {
     <div className="responsive-container">
       <div className="page-header mb-6">
         <div>
-          <div className="page-title flex items-center gap-3">
-            <div className="text-accent"><Sparkles size={isMobile ? 24 : 32} /></div>
-            Day Nexus
+          <div className="page-title flex items-center gap-4">
+            <motion.div 
+              animate={{ rotate: [0, 15, -15, 0] }}
+              transition={{ repeat: Infinity, duration: 5 }}
+              className="text-accent"
+            >
+              <Sparkles size={isMobile ? 28 : 36} />
+            </motion.div>
+            <span style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em' }}>Temporal Nexus</span>
           </div>
-          <p className="page-subtitle">Architect your temporal alignment</p>
+          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.8 }}>Architect your temporal alignment & flow</p>
         </div>
-        <button className="btn btn-primary btn-premium" onClick={() => setModal('create')}>
-          <Plus size={18} /> Schedule Event
+        <button className="btn btn-primary btn-premium magnetic-btn" onClick={() => setModal('create')} style={{ borderRadius: 14, boxShadow: 'var(--shadow-lg)' }}>
+          <Plus size={18} /> Schedule Alignment
         </button>
       </div>
 
       {/* Date navigation */}
-      <div className="card glass-card mb-6" style={{ padding: isMobile ? '16px' : '16px 24px', display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 20, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: isMobile ? '1 1 100%' : '1', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
-          <button className="btn btn-icon btn-ghost" onClick={prevDay}><ChevronLeft size={20} /></button>
+      <div className="card glass-card mb-6" style={{ padding: isMobile ? '12px' : '12px 20px', display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16, flexWrap: 'wrap', borderRadius: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: isMobile ? '1 1 100%' : '1', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
+          <motion.button whileHover={{ x: -4 }} className="btn btn-icon btn-ghost" onClick={prevDay}><ChevronLeft size={20} /></motion.button>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)' }}>
+            <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>
               {format(new Date(currentDate + 'T00:00:00'), 'EEEE, MMMM d')}
             </div>
           </div>
-          <button className="btn btn-icon btn-ghost" onClick={nextDay}><ChevronRight size={20} /></button>
+          <motion.button whileHover={{ x: 4 }} className="btn btn-icon btn-ghost" onClick={nextDay}><ChevronRight size={20} /></motion.button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flex: isMobile ? '1 1 100%' : 'none', width: isMobile ? '100%' : 'auto' }}>
-          <button className="btn btn-ghost btn-sm" style={{ fontWeight: 700, flex: isMobile ? 1 : 'none' }} onClick={() => setCurrentDate(format(new Date(), 'yyyy-MM-dd'))}>Today</button>
-          <input type="date" className="input" style={{ flex: isMobile ? 2 : 'none', maxWidth: isMobile ? 'none' : 160, border: '1px solid var(--border)' }} value={currentDate} onChange={e => setCurrentDate(e.target.value)} />
+        <div style={{ display: 'flex', gap: 10, flex: isMobile ? '1 1 100%' : 'none', width: isMobile ? '100%' : 'auto', alignItems: 'center' }}>
+          <button className="btn btn-ghost btn-sm" style={{ fontWeight: 800, flex: isMobile ? 1 : 'none', borderRadius: 10 }} onClick={() => setCurrentDate(format(new Date(), 'yyyy-MM-dd'))}>Today</button>
+          <div style={{ height: 24, width: 1, background: 'var(--border)', margin: '0 4px' }} className="hide-mobile" />
+          <input type="date" className="input" style={{ flex: isMobile ? 2 : 'none', maxWidth: isMobile ? 'none' : 160, borderRadius: 12, border: '1px solid var(--border)', fontSize: 13, fontWeight: 700 }} value={currentDate} onChange={e => setCurrentDate(e.target.value)} />
         </div>
       </div>
 
@@ -225,11 +233,15 @@ export default function SchedulePage() {
                   top: getEventTop(`${now.getHours()}:${now.getMinutes()}`) + 32,
                   left: 0, right: 0,
                   height: 2,
-                  background: 'var(--red)',
-                  zIndex: 10,
-                  boxShadow: '0 0 10px var(--red)'
+                  background: 'var(--accent)',
+                  zIndex: 20,
+                  boxShadow: '0 0 15px var(--accent)'
                 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--red)', marginTop: -4, marginLeft: -5, boxShadow: '0 0 10px var(--red)' }} />
+                <motion.div 
+                  animate={{ scale: [1, 1.4, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--accent)', marginTop: -5, marginLeft: -6, boxShadow: '0 0 15px var(--accent)' }} 
+                />
               </motion.div>
             )}
 
@@ -244,7 +256,7 @@ export default function SchedulePage() {
                 return (
                   <motion.div
                     key={ev._id}
-                    initial={{ opacity: 0, scale: 0.95, x: 10 }}
+                    initial={{ opacity: 0, scale: 0.95, x: 20 }}
                     animate={{ opacity: 1, scale: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     style={{
@@ -252,30 +264,38 @@ export default function SchedulePage() {
                       top: top + 33,
                       left: 12, right: 12,
                       height: height - 2,
-                      background: `linear-gradient(135deg, ${color}33, ${color}11)`,
-                      backdropFilter: 'blur(4px)',
-                      border: `1.5px solid ${color}`,
-                      borderLeft: `5px solid ${color}`,
-                      borderRadius: 12,
-                      padding: '10px 14px',
+                      background: status === 'current' ? `linear-gradient(135deg, ${color}44, ${color}22)` : `linear-gradient(135deg, ${color}22, ${color}08)`,
+                      backdropFilter: 'blur(8px)',
+                      border: `1.5px solid ${color}${status === 'current' ? '99' : '44'}`,
+                      borderLeft: `6px solid ${color}`,
+                      borderRadius: 14,
+                      padding: '12px 16px',
                       overflow: 'hidden',
                       cursor: 'pointer',
-                      opacity: status === 'past' || ev.isCompleted ? 0.4 : 1,
-                      zIndex: 5,
-                      boxShadow: status === 'current' ? `0 8px 16px ${color}33` : 'none',
+                      opacity: ev.isCompleted ? 0.3 : status === 'past' ? 0.5 : 1,
+                      zIndex: status === 'current' ? 15 : 5,
+                      boxShadow: status === 'current' ? `0 12px 32px ${color}33, inset 0 0 20px rgba(255,255,255,0.05)` : 'none',
                     }}
-                    whileHover={{ scale: 1.01, zIndex: 6, boxShadow: `0 8px 24px ${color}44` }}
+                    whileHover={{ scale: 1.02, zIndex: 16, boxShadow: `0 12px 24px ${color}44` }}
                     onClick={() => setModal(ev)}
                   >
-                    <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {ev.isCompleted && <CheckCircle2 size={14} className="text-green" />}
+                    <div style={{ fontWeight: 800, fontSize: 'var(--fs-sm)', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
+                      {ev.isCompleted && <CheckCircle2 size={16} className="text-green" style={{ filter: `drop-shadow(0 0 5px ${color})` }} />}
                       {ev.title}
                     </div>
                     {height > 50 && (
-                      <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700, opacity: 0.8 }}>
                         <Clock size={12} />
-                        {ev.startTime} — {ev.endTime || 'No end'}
+                        {ev.startTime} — {ev.endTime || '∞'}
                       </div>
+                    )}
+                    {status === 'current' && (
+                        <motion.div 
+                          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                          style={{ position: 'absolute', top: 12, right: 12, fontSize: 9, fontWeight: 800, color: color, background: `${color}22`, padding: '2px 8px', borderRadius: 4, letterSpacing: 1 }}
+                        >
+                          ACTIVE
+                        </motion.div>
                     )}
                   </motion.div>
                 );

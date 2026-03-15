@@ -449,9 +449,11 @@ export default function PomodoroPage() {
                   <motion.div
                     key={Math.floor(timeLeft / 60)}
                     initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 1.05, opacity: 0 }}
-                    transition={{ duration: 0.15 }}
+                    animate={{ scale: running ? [1, 1.02, 1] : 1, opacity: 1 }}
+                    transition={{ 
+                      scale: { repeat: running ? Infinity : 0, duration: 4, ease: "easeInOut" },
+                      opacity: { duration: 0.2 }
+                    }}
                     style={{
                       fontFamily: 'Syne, sans-serif',
                       fontSize: 'clamp(2.5rem, 12vw, 4.5rem)',
@@ -461,47 +463,54 @@ export default function PomodoroPage() {
                       background: modeInfo.gradient,
                       WebkitBackgroundClip: 'text',
                       backgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent'
+                      WebkitTextFillColor: 'transparent',
+                      filter: running ? 'drop-shadow(0 0 20px rgba(124,109,250,0.3))' : 'none'
                     }}
                   >
                     {formatTime(timeLeft)}
                   </motion.div>
                 </AnimatePresence>
-                <div style={{ fontSize: isMobile ? 10 : 12, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 3, fontWeight: 700, marginTop: 6 }}>
+                <div style={{ fontSize: isMobile ? 10 : 12, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 4, fontWeight: 800, marginTop: 8, opacity: 0.8 }}>
                   {modeInfo.label}
                 </div>
                 {running && (
                   <motion.div
-                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.7, 0.3] }}
                     transition={{ repeat: Infinity, duration: 2 }}
-                    style={{ width: 6, height: 6, borderRadius: '50%', background: modeInfo.color, marginTop: 8 }}
+                    style={{ width: 8, height: 8, borderRadius: '50%', background: modeInfo.color, marginTop: 12, boxShadow: `0 0 15px ${modeInfo.color}` }}
                   />
                 )}
               </div>
             </div>
 
             {/* Session dots */}
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: isMobile ? 24 : 36 }}>
-              {[0, 1, 2, 3].map(i => (
-                <motion.div
-                  key={i}
-                  animate={{
-                    scale: i === (sessions % 4) && running ? [1, 1.3, 1] : 1,
-                    background: i < (sessions % 4) ? modeInfo.color : 'var(--border)'
-                  }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  style={{
-                    width: 10, height: 10, borderRadius: 4,
-                    boxShadow: i < (sessions % 4) ? `0 0 8px ${modeInfo.color}88` : 'none',
-                  }}
-                />
-              ))}
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: isMobile ? 32 : 48 }}>
+              {[0, 1, 2, 3].map(i => {
+                const isActive = i === (sessions % 4);
+                const isCompleted = i < (sessions % 4);
+                return (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      scale: isActive && running ? [1, 1.2, 1] : 1,
+                      background: isCompleted || isActive ? modeInfo.color : 'var(--border)',
+                      opacity: isCompleted ? 1 : isActive ? 0.8 : 0.3
+                    }}
+                    transition={{ repeat: isActive && running ? Infinity : 0, duration: 2 }}
+                    style={{
+                      width: 14, height: 14, borderRadius: 5,
+                      boxShadow: isCompleted || (isActive && running) ? `0 0 20px ${modeInfo.color}66` : 'none',
+                      border: isActive ? `2px solid rgba(255,255,255,0.2)` : 'none'
+                    }}
+                  />
+                );
+              })}
               {sessions > 0 && sessions % 4 === 0 && (
                 <motion.span
                   initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                  style={{ marginLeft: 8, fontSize: 12, fontWeight: 800, color: 'var(--accent)' }}
+                  style={{ marginLeft: 12, fontSize: 13, fontWeight: 900, color: 'var(--accent)', letterSpacing: 1 }}
                 >
-                  ⚡ LEVEL UP!
+                  ⚡ FLOW MASTER
                 </motion.span>
               )}
             </div>
@@ -627,78 +636,117 @@ export default function PomodoroPage() {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: 20
+              padding: 20,
+              overflow: 'hidden'
             }}
           >
-            <div style={{ position: 'absolute', top: 30, right: 30 }}>
-              <button
+            {/* Scanline Effect */}
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03))', backgroundSize: '100% 4px, 3px 100%', pointerEvents: 'none', zIndex: 10 }} />
+
+            {/* Immersive Breathing Background */}
+            <motion.div 
+              animate={{ 
+                scale: running ? [1, 1.25, 1] : 1,
+                opacity: running ? [0.03, 0.12, 0.03] : 0.03,
+                rotate: [0, 5, 0]
+              }}
+              transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
+              style={{ 
+                position: 'absolute', inset: -100, 
+                background: `radial-gradient(circle at center, ${modeInfo.color}, transparent 65%)`,
+                pointerEvents: 'none'
+              }} 
+            />
+
+            <div style={{ position: 'absolute', top: 40, right: 40, zIndex: 20 }}>
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 90 }}
                 className="btn btn-ghost"
                 onClick={() => setIsFocusMode(false)}
-                style={{ borderRadius: '50%', width: 50, height: 50, padding: 0 }}
+                style={{ borderRadius: '50%', width: 64, height: 64, padding: 0, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', backdropFilter: 'blur(10px)' }}
               >
                 <Minimize2 size={24} />
-              </button>
+              </motion.button>
             </div>
 
-            <div style={{ textAlign: 'center', maxWidth: 600, width: '100%' }}>
+            <div style={{ textAlign: 'center', maxWidth: 1000, width: '100%', position: 'relative', zIndex: 15 }}>
               <motion.div
-                animate={{ scale: running ? [1, 1.02, 1] : 1 }}
-                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                animate={{ 
+                  scale: running ? [1, 1.05, 1] : 1,
+                  filter: running ? ['blur(0px)', 'blur(2px)', 'blur(0px)'] : 'blur(0px)'
+                }}
+                transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }}
                 style={{
                   fontFamily: 'Syne, sans-serif',
-                  fontSize: 'clamp(5rem, 25vw, 12rem)',
+                  fontSize: 'clamp(8rem, 35vw, 20rem)',
                   fontWeight: 800,
-                  letterSpacing: -8,
-                  lineHeight: 1,
+                  letterSpacing: -12,
+                  lineHeight: 0.85,
                   background: modeInfo.gradient,
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  marginBottom: 20
+                  marginBottom: 10,
+                  filter: `drop-shadow(0 0 60px ${modeInfo.color}44)`
                 }}
               >
                 {formatTime(timeLeft)}
               </motion.div>
 
-              <div style={{ fontSize: 18, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 8, fontWeight: 700, marginBottom: 60 }}>
+              <div style={{ fontSize: 24, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 15, fontWeight: 900, marginBottom: 80, opacity: 0.7 }}>
                 {modeInfo.label}
               </div>
 
-              <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
-                <button
+              <div style={{ display: 'flex', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: `0 30px 80px ${modeInfo.color}77` }}
+                  whileTap={{ scale: 0.95 }}
                   className="btn btn-primary"
                   onClick={handleStart}
                   style={{
-                    padding: '20px 60px',
-                    fontSize: 20,
-                    fontWeight: 700,
+                    padding: '28px 90px',
+                    fontSize: 26,
+                    fontWeight: 900,
                     background: modeInfo.gradient,
-                    borderRadius: 20,
+                    borderRadius: 28,
                     border: 'none',
-                    boxShadow: `0 12px 40px ${modeInfo.color}44`
+                    boxShadow: `0 20px 60px ${modeInfo.color}55`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}
                 >
-                  {running ? <Pause size={24} /> : <Play size={24} />}
-                </button>
-                <button
+                  {running ? <Pause size={36} fill="white" /> : <Play size={36} fill="white" />}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: -30, background: 'rgba(255,255,255,0.08)' }}
+                  whileTap={{ scale: 0.9 }}
                   className="btn btn-ghost"
                   onClick={handleReset}
-                  style={{ width: 72, height: 72, borderRadius: '50%', border: '1px solid var(--border)' }}
+                  style={{ width: 88, height: 88, borderRadius: '50%', border: '1.5px solid var(--border)', background: 'rgba(255,255,255,0.03)' }}
                 >
-                  <RotateCcw size={24} />
-                </button>
+                  <RotateCcw size={32} />
+                </motion.button>
               </div>
 
               {linkedTask && (
-                <div style={{ marginTop: 60, padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Active Objective</div>
-                  <div style={{ fontSize: 20, fontWeight: 700 }}>{tasksData?.find(t => t._id === linkedTask)?.title}</div>
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{ 
+                      marginTop: 100, padding: '40px', background: 'rgba(13, 13, 22, 0.3)', 
+                      borderRadius: 40, border: '1.5px solid rgba(255,255,255,0.1)', 
+                      backdropFilter: 'blur(30px) saturate(150%)',
+                      boxShadow: '0 40px 100px rgba(0,0,0,0.4)'
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 6, marginBottom: 16, fontWeight: 900 }}>Active Objective</div>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1 }}>{tasksData?.find(t => t._id === linkedTask)?.title}</div>
+                  <div style={{ width: 60, height: 4, background: modeInfo.color, margin: '20px auto 0', borderRadius: 2 }} />
+                </motion.div>
               )}
             </div>
 
-            <div style={{ position: 'absolute', bottom: 40, color: 'var(--muted)', fontSize: 14 }}>
-              Press Esc or click the close button to exit Focus Mode
+            <div style={{ position: 'absolute', bottom: 60, color: 'var(--muted)', fontSize: 14, fontWeight: 900, letterSpacing: 4, opacity: 0.4 }}>
+              ASCEND TO HIGHER CALM · ESC TO EXIT
             </div>
           </motion.div>
         )}

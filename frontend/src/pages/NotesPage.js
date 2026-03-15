@@ -21,7 +21,9 @@ import {
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
+import SensitivityShield from '../components/layout/SensitivityShield';
 
 const NOTE_COLORS = [
   { value: '#1a1a26', label: 'Basalt' },
@@ -58,84 +60,88 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.98, y: 10 }}
         animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.98, y: 10 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 400 }}
         className={`modal glass-modal ${isMobile ? 'bottom-sheet' : ''}`}
         style={{
-          maxWidth: 720,
-          background: `linear-gradient(180deg, ${color}, #0f1115)`,
-          border: `1px solid ${color}44`,
+          maxWidth: 900,
+          background: `linear-gradient(180deg, ${color}dd, var(--bg-dark))`,
+          backdropFilter: 'blur(40px) saturate(180%)',
+          border: `1px solid ${color}66`,
           width: '100%',
-          margin: isMobile ? 0 : 'var(--space-4) auto',
+          margin: isMobile ? 0 : 'var(--space-2) auto',
           display: 'flex',
           flexDirection: 'column',
-          height: isMobile ? 'calc(100% - 60px)' : 'auto'
+          height: isMobile ? 'calc(100% - 40px)' : 'calc(100vh - 80px)',
+          borderRadius: isMobile ? '24px 24px 0 0' : 24,
+          boxShadow: '0 30px 60px rgba(0,0,0,0.5)'
         }}
       >
-        <div className="modal-header" style={{ border: 'none', padding: window.innerWidth <= 768 ? '16px' : '20px 24px 12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-            <div style={{ color: 'var(--accent)' }}><FileText size={window.innerWidth <= 768 ? 18 : 20} /></div>
+        <div className="modal-header" style={{ border: 'none', padding: isMobile ? '20px' : '32px 40px 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+            <div style={{ color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: 10, borderRadius: 12 }}><FileText size={20} /></div>
             <input
-              style={{ flex: 1, background: 'none', border: 'none', fontFamily: 'Plus Jakarta Sans', fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', outline: 'none' }}
+              style={{ flex: 1, background: 'none', border: 'none', fontFamily: 'Syne, sans-serif', fontSize: 32, fontWeight: 800, color: 'var(--text)', outline: 'none', letterSpacing: '-0.02em' }}
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="Echo your thoughts..."
+              placeholder="Title of this Essence..."
             />
           </div>
-          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+          <button className="modal-close" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: 40, height: 40 }}><X size={20} /></button>
         </div>
-        <div className="modal-body" style={{ paddingTop: 0, flex: 1, overflowY: 'auto' }}>
-          <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Tag size={14} className="text-muted" />
+        
+        <div className="modal-body" style={{ paddingTop: 0, flex: 1, overflowY: 'auto', padding: isMobile ? '0 20px 20px' : '0 40px 40px' }}>
+          <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, opacity: 0.6 }}>
+            <Tag size={14} />
             <input
-              style={{ fontSize: 13, background: 'rgba(255,255,255,0.03)', border: 'none', color: 'var(--text)', padding: '8px 12px', borderRadius: 8, flex: 1 }}
+              style={{ fontSize: 13, background: 'none', border: 'none', color: 'var(--text)', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', flex: 1, fontWeight: 600 }}
               value={tags}
               onChange={e => setTags(e.target.value)}
-              placeholder="Tag (e.g. strategy, personal)"
+              placeholder="Add labels manually..."
             />
           </div>
 
           <textarea
             style={{
               width: '100%', background: 'none', border: 'none', outline: 'none',
-              color: 'var(--text)', fontFamily: 'Inter', fontSize: 'var(--fs-base)',
-              resize: 'none', lineHeight: 1.8, minHeight: 380
+              color: 'var(--text2)', fontFamily: 'Inter, sans-serif', fontSize: 18,
+              resize: 'none', lineHeight: 1.8, minHeight: '60vh',
+              fontWeight: 400
             }}
             value={content}
             onChange={e => setContent(e.target.value)}
-            placeholder="Let the thoughts flow..."
+            placeholder="Let the stream of consciousness flow here..."
             autoFocus
           />
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {NOTE_COLORS.map(c => (
-                <motion.button
-                  key={c.value}
-                  whileHover={{ scale: 1.2 }}
-                  onClick={() => setColor(c.value)}
-                  style={{
-                    width: 20, height: 20, borderRadius: '50%', background: c.value,
-                    border: `2px solid ${color === c.value ? 'var(--accent)' : 'transparent'}`,
-                    cursor: 'pointer', transition: 'border 0.2s'
-                  }}
-                />
-              ))}
-            </div>
-            <div style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>
-              {wordCount} words
+          <div style={{ display: 'flex', gap: 12, marginTop: 40, alignItems: 'center' }}>
+            {NOTE_COLORS.map(c => (
+              <motion.button
+                key={c.value}
+                whileHover={{ scale: 1.2, y: -2 }}
+                onClick={() => setColor(c.value)}
+                style={{
+                  width: 24, height: 24, borderRadius: '50%', background: c.value,
+                  border: `2px solid ${color === c.value ? 'white' : 'rgba(255,255,255,0.1)'}`,
+                  cursor: 'pointer', boxShadow: color === c.value ? `0 0 15px ${c.value}` : 'none'
+                }}
+              />
+            ))}
+            <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--muted)', fontWeight: 800, letterSpacing: 1 }}>
+              {wordCount} WORDS
             </div>
           </div>
         </div>
-        <div className="modal-footer" style={{ border: 'none', gap: 12, paddingBottom: isMobile ? 32 : 24 }}>
-          <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--green)', fontWeight: 700 }}>
-            <div className="pulse-dot" style={{ background: 'var(--green)' }} /> Synchronized
+
+        <div className="modal-footer" style={{ border: 'none', gap: 16, padding: isMobile ? '20px' : '24px 40px', background: 'rgba(0,0,0,0.2)' }}>
+          <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: 'var(--green)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+            <div className="pulse-dot" style={{ background: 'var(--green)', width: 8, height: 8 }} /> Cloud Synchronized
           </div>
-          <button className="btn btn-ghost" onClick={onClose} style={{ flex: isMobile ? 1 : 'none' }}>Dismiss</button>
-          <button className="btn btn-primary" style={{ flex: isMobile ? 1 : 'none' }} onClick={() => onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, false)}>
-            <Save size={16} /> Preserve Note
+          <button className="btn btn-ghost" onClick={onClose} style={{ fontWeight: 800 }}>Dismiss</button>
+          <button className="btn btn-primary" onClick={() => onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, false)} style={{ gap: 10, padding: '0 24px', borderRadius: 14 }}>
+            <Save size={18} /> Preserve Note
           </button>
         </div>
       </motion.div>
@@ -209,35 +215,40 @@ export default function NotesPage() {
   const NoteCard = ({ note, index }) => (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 15 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03 }}
-      className="card hover-lift glass-card note-card"
+      transition={{ delay: index * 0.05 }}
+      className="card hover-lift aura-iridescent note-card"
       style={{
-        background: note.color ? `linear-gradient(135deg, ${note.color}, rgba(15,17,21,0.9))` : 'var(--glass-bg)',
+        background: note.color ? `linear-gradient(135deg, ${note.color}dd, rgba(15,17,21,0.95))` : 'var(--glass-bg)',
+        backdropFilter: 'blur(16px)',
         border: `1.5px solid ${note.color ? note.color + '66' : 'var(--border)'}`,
-        padding: '24px',
+        padding: '28px',
         cursor: 'pointer',
         position: 'relative',
-        minHeight: view === 'grid' ? 180 : 'auto',
+        minHeight: view === 'grid' ? 220 : 'auto',
         display: 'flex',
         flexDirection: 'column',
+        borderRadius: 20,
+        boxShadow: note.color ? `0 10px 30px ${note.color}22` : 'var(--shadow-md)'
       }}
       onClick={() => setModal(note)}
     >
-      <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 6 }} className="note-actions">
+      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8 }} className="note-actions">
         <motion.button
-          whileHover={{ scale: 1.1 }}
+          whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }}
           whileTap={{ scale: 0.9 }}
-          className="btn btn-icon btn-ghost btn-sm card-action-btn"
+          className="btn btn-icon btn-ghost btn-sm"
+          style={{ width: 32, height: 32, borderRadius: 10 }}
           onClick={e => { e.stopPropagation(); pinMutation.mutate(note._id); }}
         >
-          <Pin size={14} style={{ fill: note.isPinned ? 'var(--accent)' : 'none', color: note.isPinned ? 'var(--accent)' : 'inherit' }} />
+          <Pin size={15} style={{ fill: note.isPinned ? 'var(--accent)' : 'none', color: note.isPinned ? 'var(--accent)' : 'inherit' }} />
         </motion.button>
         <motion.button
-          whileHover={{ scale: 1.1, color: 'var(--red)' }}
+          whileHover={{ scale: 1.1, color: 'var(--red)', background: 'rgba(255,0,0,0.1)' }}
           whileTap={{ scale: 0.9 }}
-          className="btn btn-icon btn-ghost btn-sm card-action-btn"
+          className="btn btn-icon btn-ghost btn-sm"
+          style={{ width: 32, height: 32, borderRadius: 10 }}
           onClick={e => {
             e.stopPropagation();
             setConfirmDialog({
@@ -248,30 +259,26 @@ export default function NotesPage() {
             });
           }}
         >
-          <Trash2 size={14} />
+          <Trash2 size={15} />
         </motion.button>
       </div>
 
-      <div style={{ fontFamily: 'Plus Jakarta Sans', fontWeight: 800, fontSize: 'var(--fs-base)', marginBottom: 12, paddingRight: 60, color: 'var(--text)' }}>
-        {note.title || <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>Untitled Essence</span>}
-      </div>
+      <SensitivityShield>
+        <h3 style={{ fontWeight: 800, fontSize: 18, marginBottom: 8, color: 'var(--text)', fontFamily: 'Syne, sans-serif' }}>{note.title || 'Untitled Fragment'}</h3>
+      </SensitivityShield>
+      <SensitivityShield>
+        <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: view === 'grid' ? 4 : 2, WebkitBoxOrient: 'vertical' }}>
+          {note.content}
+        </p>
+      </SensitivityShield>
 
-      <div style={{
-        fontSize: 'var(--fs-sm)', color: 'var(--text2)', overflow: 'hidden', flex: 1,
-        display: '-webkit-box', WebkitLineClamp: view === 'grid' ? 4 : 2,
-        WebkitBoxOrient: 'vertical', lineHeight: 1.6, fontWeight: 500
-      }}>
-        {note.content}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {note.tags?.slice(0, 2).map(t => (
-            <span key={t} style={{ fontSize: 11, background: 'rgba(255,255,255,0.06)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>#{t}</span>
+            <span key={t} style={{ fontSize: 10, background: 'rgba(255,255,255,0.1)', color: 'var(--accent)', padding: '3px 10px', borderRadius: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t}</span>
           ))}
-          {note.tags?.length > 2 && <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 700 }}>+{note.tags.length - 2}</span>}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>{format(new Date(note.updatedAt), 'MMM d')}</div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>{format(new Date(note.updatedAt), 'MMM d')}</div>
       </div>
     </motion.div>
   );
@@ -280,17 +287,15 @@ export default function NotesPage() {
     <div className="notes-split-container">
       {/* Scrollable Sidebar List */}
       <div className="notes-split-sidebar">
-        <div className="notes-sidebar-header">
-          <div className="search-wrap-minimal">
-            <Search size={16} />
-            <input
-              placeholder="Search..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+        <div className="page-header mb-6">
+          <div>
+            <h1 className="page-title" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em' }}>
+              Cognitive Repository
+            </h1>
+            <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.8 }}>Securely store and evolve your fragments of wisdom</p>
           </div>
-          <button className="btn btn-icon btn-primary btn-sm" onClick={handleNewNote}>
-            <Plus size={18} />
+          <button className="btn btn-primary btn-premium magnetic-btn" onClick={() => setModal({})} style={{ borderRadius: 14 }}>
+            <Plus size={18} /> Capture Essence
           </button>
         </div>
         <div className="notes-sidebar-list">

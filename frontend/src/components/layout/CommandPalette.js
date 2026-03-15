@@ -98,27 +98,37 @@ export default function CommandPalette() {
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         style={{
                             position: 'fixed', top: '20%', left: '50%', x: '-50%',
-                            width: '100%', maxWidth: 550, zIndex: 1001,
-                            background: 'var(--surface)', border: '1px solid var(--border)',
-                            borderRadius: 20, boxShadow: '0 32px 64px rgba(0,0,0,0.5)',
+                            width: '100%', maxWidth: 600, zIndex: 1001,
+                            background: 'rgba(23, 23, 23, 0.4)', 
+                            backdropFilter: 'blur(50px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(50px) saturate(180%)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: 24, 
+                            boxShadow: '0 40px 100px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.05)',
                             overflow: 'hidden'
                         }}
                     >
-                        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <Search size={20} className="text-muted" />
+                        <div style={{ padding: '24px 28px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <Search size={22} className="text-muted" style={{ opacity: 0.6 }} />
                             <input
                                 ref={inputRef}
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
                                 onKeyDown={onKeyDown}
-                                placeholder="Type a command or search..."
+                                placeholder="Quantum search commands..."
                                 style={{
                                     flex: 1, background: 'none', border: 'none', outline: 'none',
-                                    fontSize: 16, color: 'var(--text)', fontFamily: 'inherit'
+                                    fontSize: 20, color: 'var(--text)', fontFamily: 'Syne, sans-serif',
+                                    fontWeight: 700, letterSpacing: '-0.02em'
                                 }}
                             />
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--surface2)', padding: '4px 8px', borderRadius: 6, fontSize: 10, fontWeight: 800, color: 'var(--muted)' }}>
-                                <Command size={10} /> K
+                            <div style={{ 
+                                display: 'flex', alignItems: 'center', gap: 6, 
+                                background: 'rgba(255,255,255,0.05)', padding: '6px 12px', 
+                                borderRadius: 8, fontSize: 11, fontWeight: 900, color: 'var(--muted)',
+                                border: '1px solid rgba(255,255,255,0.05)'
+                            }}>
+                                <Command size={11} /> <span style={{ opacity: 0.8 }}>K</span>
                             </div>
                         </div>
 
@@ -143,29 +153,45 @@ export default function CommandPalette() {
                                                 {sectionActions.map((item) => {
                                                     const isSelected = filteredActions[activeIndex]?.id === item.id;
                                                     return (
-                                                        <div
+                                                        <motion.div
                                                             key={item.id}
                                                             onClick={() => handleAction(item)}
                                                             onMouseEnter={() => setActiveIndex(filteredActions.indexOf(item))}
+                                                            animate={isSelected ? { scale: 1.02, x: 4 } : { scale: 1, x: 0 }}
+                                                            className={isSelected ? 'aura-iridescent' : ''}
                                                             style={{
-                                                                display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
-                                                                borderRadius: 12, cursor: 'pointer',
+                                                                display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px',
+                                                                borderRadius: 16, cursor: 'pointer',
                                                                 background: isSelected ? 'var(--accent)' : 'transparent',
-                                                                color: isSelected ? 'white' : 'var(--text)',
-                                                                transition: 'all 0.15s ease'
+                                                                color: isSelected ? 'white' : 'rgba(255,255,255,0.7)',
+                                                                transition: 'background 0.2s ease',
+                                                                margin: '2px 0'
                                                             }}
                                                         >
                                                             <div style={{
-                                                                width: 32, height: 32, borderRadius: 8,
-                                                                background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--surface2)',
+                                                                width: 38, height: 38, borderRadius: 12,
+                                                                background: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.03)',
                                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                transition: 'all 0.15s ease'
+                                                                border: '1px solid rgba(255,255,255,0.05)'
                                                             }}>
-                                                                <item.icon size={16} />
+                                                                <item.icon size={18} />
                                                             </div>
-                                                            <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{item.label}</span>
-                                                            {isSelected && <ArrowRight size={14} className="animate-pulse" />}
-                                                        </div>
+                                                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                                                <span style={{ fontSize: 15, fontWeight: 700 }}>{item.label}</span>
+                                                                {isSelected && item.path && (
+                                                                    <span style={{ fontSize: 10, opacity: 0.7, fontWeight: 800, textTransform: 'uppercase' }}>
+                                                                        Go to {item.path.replace('/', '') || 'Dashboard'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {isSelected ? (
+                                                                <ArrowRight size={16} className="animate-pulse" />
+                                                            ) : (
+                                                                <div style={{ fontSize: 10, fontWeight: 900, opacity: 0.3, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4 }}>
+                                                                    {item.id.toUpperCase()}
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
                                                     );
                                                 })}
                                             </div>
