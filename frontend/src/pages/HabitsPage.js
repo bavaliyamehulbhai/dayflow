@@ -276,11 +276,11 @@ export default function HabitsPage() {
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
           {/* List Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: '20px 24px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, opacity: 0.8 }}>Ritual Objectives</span>
-            <div style={{ display: 'flex', gap: 12, paddingRight: 84 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: isMobile ? '12px 16px' : '20px 24px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
+            <span style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, opacity: 0.8 }}>Ritual Objectives</span>
+            <div style={{ display: 'flex', gap: isMobile ? 8 : 12, paddingRight: isMobile ? 0 : 84 }}>
               {last7.map(d => (
-                <div key={d.toISOString()} style={{ width: 40, textAlign: 'center', fontSize: 11, color: format(d, 'yyyy-MM-dd') === today ? 'var(--accent)' : 'var(--muted)', fontWeight: 800, textTransform: 'uppercase' }}>
+                <div key={d.toISOString()} style={{ width: isMobile ? 32 : 40, textAlign: 'center', fontSize: 10, color: format(d, 'yyyy-MM-dd') === today ? 'var(--accent)' : 'var(--muted)', fontWeight: 800, textTransform: 'uppercase' }}>
                   {format(d, 'EEE').charAt(0)}
                 </div>
               ))}
@@ -322,7 +322,7 @@ export default function HabitsPage() {
                     flexDirection: isMobile ? 'column' : 'row',
                     alignItems: isMobile ? 'flex-start' : 'center',
                     justifyContent: 'space-between',
-                    padding: isMobile ? '12px 16px' : 'var(--space-4) var(--space-6)',
+                    padding: isMobile ? '8px 12px' : 'var(--space-4) var(--space-6)',
                     borderBottom: idx < habits.length - 1 ? '1px solid var(--border)' : 'none',
                     position: 'relative',
                     zIndex: 2,
@@ -331,18 +331,18 @@ export default function HabitsPage() {
                   onClick={() => !isMobile && setModal(habit)}
                 >
                   {/* Habit info */}
-                  <div className="habit-row-info" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ fontSize: 'var(--fs-2xl)', filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.1))' }}>{habit.icon}</div>
+                  <div className="habit-row-info" style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16 }}>
+                    <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.1))' }}>{habit.icon}</div>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 'var(--fs-base)', color: 'var(--text)' }}>{habit.name}</div>
-                      <div style={{ display: 'flex', gap: 12, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ fontWeight: 600, fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-base)', color: 'var(--text)' }}>{habit.name}</div>
+                      <div style={{ display: 'flex', gap: 12, marginTop: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                         {habit.streak?.current > 0 && (
-                          <span style={{ fontSize: 11, color: 'var(--orange)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Flame size={12} /> {habit.streak.current}d
+                          <span style={{ fontSize: 10, color: 'var(--orange)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Flame size={10} /> {habit.streak.current}d
                           </span>
                         )}
-                        <span style={{ fontSize: 11, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <Zap size={12} /> {habit.frequency}
+                        <span style={{ fontSize: 10, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Zap size={10} /> {habit.frequency}
                         </span>
                       </div>
                     </div>
@@ -376,7 +376,7 @@ export default function HabitsPage() {
                             disabled={!isToday && !done}
                             className={`habit-check ${done ? 'done' : ''}`}
                             style={{
-                              width: 40, height: 40, borderRadius: 12,
+                              width: isMobile ? 32 : 40, height: isMobile ? 32 : 40, borderRadius: 10,
                               border: `2px solid ${done ? habit.color : isToday ? 'var(--accent)' : 'var(--border)'}`,
                               background: done ? habit.color : 'transparent',
                               cursor: isToday ? 'pointer' : 'default',

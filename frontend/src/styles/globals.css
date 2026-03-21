@@ -57,22 +57,22 @@
   --desktop-pad: 48px;
 
   /* Fluid Typography & Spacing (Scales with Viewport Width) */
-  --fs-xs: clamp(0.7rem, 0.6rem + 0.3vw, 0.8rem);
-  --fs-sm: clamp(0.8rem, 0.7rem + 0.4vw, 0.95rem);
-  --fs-base: clamp(0.95rem, 0.85rem + 0.5vw, 1.1rem);
-  --fs-md: clamp(1.1rem, 1rem + 0.6vw, 1.3rem);
-  --fs-lg: clamp(1.25rem, 1.1rem + 0.8vw, 1.6rem);
-  --fs-xl: clamp(1.6rem, 1.4rem + 1.2vw, 2.4rem);
-  --fs-2xl: clamp(2.2rem, 1.8rem + 2.5vw, 4rem);
-  --fs-display: clamp(3.5rem, 2.5rem + 6vw, 7.5rem);
+  --fs-xs: clamp(0.65rem, 0.6rem + 0.2vw, 0.75rem);
+  --fs-sm: clamp(0.75rem, 0.7rem + 0.3vw, 0.9rem);
+  --fs-base: clamp(0.85rem, 0.8rem + 0.4vw, 1.05rem);
+  --fs-md: clamp(1rem, 0.9rem + 0.5vw, 1.25rem);
+  --fs-lg: clamp(1.1rem, 1rem + 0.7vw, 1.5rem);
+  --fs-xl: clamp(1.1rem, 1.1rem + 1vw, 2.22rem);
+  --fs-2xl: clamp(1.25rem, 1.25rem + 2vw, 3.8rem);
+  --fs-display: clamp(1.8rem, 1.8rem + 5vw, 7rem);
 
-  --space-1: clamp(0.25rem, 0.2rem + 0.3vw, 0.6rem);
-  --space-2: clamp(0.5rem, 0.4rem + 0.6vw, 0.9rem);
-  --space-3: clamp(0.75rem, 0.6rem + 0.8vw, 1.25rem);
-  --space-4: clamp(1.1rem, 0.9rem + 1.2vw, 1.8rem);
-  --space-6: clamp(1.6rem, 1.3rem + 1.8vw, 2.8rem);
-  --space-8: clamp(2.2rem, 1.8rem + 2.5vw, 3.8rem);
-  --space-12: clamp(3.5rem, 2.8rem + 4vw, 5.5rem);
+  --space-1: clamp(0.15rem, 0.15rem + 0.2vw, 0.5rem);
+  --space-2: clamp(0.3rem, 0.3rem + 0.5vw, 0.8rem);
+  --space-3: clamp(0.5rem, 0.5rem + 0.7vw, 1.15rem);
+  --space-4: clamp(0.7rem, 0.7rem + 1vw, 1.6rem);
+  --space-6: clamp(1rem, 1rem + 1.5vw, 2.6rem);
+  --space-8: clamp(1.5rem, 1.5rem + 2.2vw, 3.5rem);
+  --space-12: clamp(2.2rem, 2.2rem + 3.5vw, 5rem);
 
   /* Aura Tokens */
   --aura-color: rgba(124, 109, 250, 0.15);
@@ -144,6 +144,27 @@
     padding: 0 var(--mobile-pad);
     width: 100%;
     margin: 0;
+  }
+  
+  /* Compact core components for mobile */
+  .card {
+    padding: var(--space-3) !important;
+    border-radius: 16px !important;
+  }
+  
+  .stat-card {
+    padding: var(--space-2) !important;
+    gap: 4px !important;
+  }
+
+  .stat-value {
+    font-size: clamp(1.25rem, 4vw, 1.8rem) !important;
+  }
+
+  .btn-lg, .action-btn-large {
+    height: 42px !important;
+    font-size: 14px !important;
+    padding: 0 20px !important;
   }
 }
 
@@ -713,6 +734,28 @@ body {
   color: var(--muted);
 }
 
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  margin-left: var(--sidebar-w);
+  transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 1024px) {
+  .sidebar-icon ~ .main-wrapper {
+    margin-left: 68px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-wrapper {
+    margin-left: 0 !important;
+  }
+}
+
 .main-content {
   flex: 1;
   display: flex;
@@ -724,12 +767,6 @@ body {
   min-width: 0;
   overflow-x: hidden;
   transition: margin 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    margin-left: 0 !important;
-  }
 }
 
 .main-content::before {
@@ -803,22 +840,17 @@ body {
 
 @media (max-width: 768px) {
   .page-content {
-    padding: 20px 16px;
+    padding: var(--mobile-pad);
     padding-bottom: calc(85px + env(safe-area-inset-bottom, 20px));
+    height: auto;
+    overflow-y: visible;
   }
-}
 
-@media (max-width: 768px) {
   .main-content {
     height: 100dvh;
     overflow-y: auto;
     width: 100vw;
-  }
-
-  .page-content {
-    padding: 16px 16px calc(86px + env(safe-area-inset-bottom, 0px));
-    height: auto;
-    overflow-y: visible;
+    margin-left: 0 !important;
   }
 }
 
@@ -849,11 +881,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   flex: 1;
   text-decoration: none;
-  padding: 8px 0;
-  min-height: 52px;
+  padding: 6px 0;
+  min-height: 48px;
   justify-content: center;
   color: var(--muted);
   transition: color 0.2s ease;
@@ -869,9 +901,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
 }
 
 .bottom-tab.active .bottom-tab-icon {
@@ -897,8 +929,8 @@ body {
 /* ─── Responsive Application Grids ─────────────────────────────────────── */
 .dashboard-main-grid {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 24px;
+  grid-template-columns: 1fr 380px;
+  gap: clamp(24px, 4vw, 40px);
 }
 
 .schedule-main-grid {
@@ -908,22 +940,27 @@ body {
   align-items: start;
 }
 
-@media (max-width: 1024px) {
-  .dashboard-main-grid {
-    grid-template-columns: 1fr 300px;
-  }
-
-  .schedule-main-grid {
-    grid-template-columns: 1fr 300px;
+@media (max-width: 1100px) {
+  .dashboard-main-grid,
+  .schedule-main-grid,
+  .filter-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
-
   .dashboard-main-grid,
-  .schedule-main-grid {
+  .schedule-main-grid,
+  .filter-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: center;
 }
 
 @keyframes tabGlow {
@@ -1318,6 +1355,40 @@ body {
   margin: 4px 0;
   color: var(--text);
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: var(--space-6);
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent 60%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.card:hover, .glass-card:hover {
+  border-color: rgba(130, 114, 255, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(130, 114, 255, 0.1);
+  transform: translateY(-2px);
 }
 
 .stat-label {

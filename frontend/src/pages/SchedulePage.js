@@ -43,7 +43,7 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
         animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
         exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`modal glass-modal ${isMobile ? 'bottom-sheet' : ''}`}
+        className={`modal glass-modal glass-card ${isMobile ? 'bottom-sheet' : ''}`}
         style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100% - 60px)' : 'auto' }}
       >
         <div className="modal-header">
@@ -182,7 +182,7 @@ export default function SchedulePage() {
             >
               <Sparkles size={isMobile ? 24 : 36} />
             </motion.div>
-            <span style={{ fontFamily: 'Syne, sans-serif', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em' }}>Temporal Nexus</span>
+            <h1 style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.02em' }}>Temporal Nexus</h1>
           </div>
           <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.8 }}>Architect your temporal alignment & flow</p>
         </div>
@@ -192,13 +192,16 @@ export default function SchedulePage() {
       </div>
 
       {/* Date navigation */}
-      <div className="card glass-card mb-6" style={{ padding: isMobile ? '12px' : '12px 20px', display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16, flexWrap: 'wrap', borderRadius: 16 }}>
+      <div className="card glass-card mb-6" style={{ padding: isMobile ? '8px 10px' : '12px 20px', display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 16, flexWrap: 'wrap', borderRadius: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: isMobile ? '1 1 100%' : '1', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
           <motion.button whileHover={{ x: -4 }} className="btn btn-icon btn-ghost" onClick={prevDay}><ChevronLeft size={20} /></motion.button>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-              {format(new Date(currentDate + 'T00:00:00'), 'EEEE, MMMM d')}
-            </div>
+            <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, fontFamily: 'Syne, sans-serif', color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                {format(new Date(currentDate + 'T00:00:00'), 'EEEE,')}
+              </div>
+              <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, fontFamily: 'Syne, sans-serif', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
+                {format(new Date(currentDate + 'T00:00:00'), 'MMMM d')}
+              </div>
           </div>
           <motion.button whileHover={{ x: 4 }} className="btn btn-icon btn-ghost" onClick={nextDay}><ChevronRight size={20} /></motion.button>
         </div>
@@ -211,11 +214,11 @@ export default function SchedulePage() {
       </div>
 
       {/* Main layout: timeline + list side by side on desktop, stacked on mobile */}
-      <div className="schedule-main-grid">
+      <div className="schedule-main-grid mt-8">
 
         {/* Timeline view */}
         <div className="card glass-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
-          <div style={{ position: 'relative', paddingLeft: isMobile ? 54 : 84, paddingRight: isMobile ? 8 : 24, paddingTop: 32, paddingBottom: 32 }}>
+          <div style={{ position: 'relative', paddingLeft: isMobile ? 48 : 84, paddingRight: isMobile ? 8 : 24, paddingTop: 32, paddingBottom: 32 }}>
             {hours.map(h => (
               <div key={h} style={{ position: 'relative', height: 64, borderBottom: '1px solid var(--border)', zIndex: 1 }}>
                 <div style={{ position: 'absolute', left: isMobile ? -50 : -70, top: -10, fontSize: 'var(--fs-xs)', color: 'var(--muted)', fontWeight: 700, width: isMobile ? 40 : 60, textAlign: 'right', fontFamily: 'Syne' }}>
@@ -270,7 +273,7 @@ export default function SchedulePage() {
                       border: `1.5px solid ${color}${status === 'current' ? '99' : '44'}`,
                       borderLeft: `6px solid ${color}`,
                       borderRadius: 14,
-                      padding: isMobile ? '8px 12px' : '12px 16px',
+                      padding: isMobile ? '6px 10px' : '12px 16px',
                       overflow: 'hidden',
                       cursor: 'pointer',
                       opacity: ev.isCompleted ? 0.3 : status === 'past' ? 0.5 : 1,
@@ -333,13 +336,12 @@ export default function SchedulePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="card hover-lift"
+                  className="card glass-card hover-lift"
                   style={{
-                    padding: '16px',
+                    padding: isMobile ? '12px' : '16px',
                     borderLeft: `3px solid ${color}`,
                     opacity: status === 'past' || ev.isCompleted ? 0.6 : 1,
                     cursor: 'pointer',
-                    background: status === 'current' ? `linear-gradient(to right, ${color}11, transparent)` : 'var(--surface)'
                   }}
                   onClick={() => setModal(ev)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -416,7 +418,6 @@ export default function SchedulePage() {
       <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
 
       <style>{`
-        .glass-card { background: var(--glass-bg); backdrop-filter: blur(10px); }
         .text-accent { color: var(--accent); }
         .text-green { color: var(--green); }
       `}</style>

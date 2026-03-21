@@ -167,11 +167,4 @@ export const SecurityProvider = ({ children }) => {
   );
 };
 
-export const SensitivityShield = ({ children, className = "" }) => {
-  const { isSecureMode } = useSecurity();
-  return (
-    <div className={`${isSecureMode ? 'sensitive-content' : ''} ${className}`}>
-      {children}
-    </div>
-  );
-};
+// Security components are exported from their respective files.

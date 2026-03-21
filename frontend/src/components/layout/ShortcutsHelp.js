@@ -16,8 +16,12 @@ const SHORTCUTS = [
 
 const ShortcutsHelp = () => {
     const [isOpen, setIsOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        
         const handleKeyDown = (e) => {
             if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
                 setIsOpen(prev => !prev);
@@ -28,7 +32,10 @@ const ShortcutsHelp = () => {
         };
 
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
     }, []);
 
     return (
@@ -43,8 +50,7 @@ const ShortcutsHelp = () => {
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="modal"
-                        style={{ maxWidth: 600, width: '90%' }}
+                        className={`modal ${isMobile ? 'bottom-sheet' : ''}`}
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="modal-header">

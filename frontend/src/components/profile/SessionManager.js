@@ -41,6 +41,17 @@ export default function SessionManager() {
         }
     });
 
+    const revokeAllMutation = useMutation({
+        mutationFn: () => authAPI.revokeAllSessions(),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['sessions']);
+            toast.success('All other sessions revoked successfully! 🔐');
+        },
+        onError: (err) => {
+            toast.error(err.response?.data?.error || 'Failed to revoke all sessions');
+        }
+    });
+
     if (isLoading) return <div className="p-4 text-center opacity-50">Loading sessions...</div>;
 
     const sessions = data?.sessions || [];
@@ -141,7 +152,7 @@ export default function SessionManager() {
                                 title: 'Revoke All Sessions',
                                 message: 'This will log you out from all other devices immediately. Proceed?',
                                 onConfirm: () => {
-                                    toast.success('Other sessions revoked');
+                                    revokeAllMutation.mutate();
                                     setConfirmDialog({ open: false });
                                 }
                             });

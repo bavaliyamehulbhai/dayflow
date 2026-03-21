@@ -79,7 +79,7 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
           boxShadow: '0 30px 60px rgba(0,0,0,0.5)'
         }}
       >
-        <div className="modal-header" style={{ border: 'none', padding: isMobile ? '20px' : '32px 40px 12px' }}>
+        <div className="modal-header" style={{ border: 'none', padding: isMobile ? '12px 16px' : '32px 40px 12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
             <div style={{ color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: 10, borderRadius: 12 }}><FileText size={window.innerWidth <= 768 ? 16 : 20} /></div>
             <input
@@ -95,7 +95,7 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
               placeholder="Title of this Essence..."
             />
           </div>
-          <button className="modal-close" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: 40, height: 40 }}><X size={20} /></button>
+          <button className="modal-close" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: isMobile ? 32 : 40, height: isMobile ? 32 : 40 }}><X size={isMobile ? 18 : 20} /></button>
         </div>
         
         <div className="modal-body" style={{ 
@@ -234,7 +234,7 @@ export default function NotesPage() {
         background: note.color ? `linear-gradient(135deg, ${note.color}dd, rgba(15,17,21,0.95))` : 'var(--glass-bg)',
         backdropFilter: 'blur(16px)',
         border: `1.5px solid ${note.color ? note.color + '66' : 'var(--border)'}`,
-        padding: '28px',
+        padding: isMobile ? '16px' : '28px',
         cursor: 'pointer',
         position: 'relative',
         minHeight: view === 'grid' ? 220 : 'auto',
@@ -275,15 +275,15 @@ export default function NotesPage() {
       </div>
 
       <SensitivityShield>
-        <h3 style={{ fontWeight: 800, fontSize: 18, marginBottom: 8, color: 'var(--text)', fontFamily: 'Syne, sans-serif' }}>{note.title || 'Untitled Fragment'}</h3>
+        <h3 style={{ fontWeight: 800, fontSize: isMobile ? 15 : 18, marginBottom: 6, color: 'var(--text)', fontFamily: 'Syne, sans-serif' }}>{note.title || 'Untitled Fragment'}</h3>
       </SensitivityShield>
       <SensitivityShield>
-        <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: view === 'grid' ? 4 : 2, WebkitBoxOrient: 'vertical' }}>
-          {note.content}
-        </p>
+          <p style={{ fontSize: isMobile ? 13 : 14, color: 'var(--text2)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: view === 'grid' ? 4 : 2, WebkitBoxOrient: 'vertical' }}>
+            {note.content}
+          </p>
       </SensitivityShield>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: isMobile ? 16 : 24, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {note.tags?.slice(0, 2).map(t => (
             <span key={t} style={{ fontSize: 10, background: 'rgba(255,255,255,0.1)', color: 'var(--accent)', padding: '3px 10px', borderRadius: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t}</span>

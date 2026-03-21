@@ -40,6 +40,16 @@ const createRainSound = (ctx) => {
   return { source: whiteNoise, gain, filter };
 };
 
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100, damping: 12 } }
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
+};
+
 const MODES = {
   work: { label: 'Focus', color: 'var(--accent)', icon: Brain, gradient: 'linear-gradient(135deg, #8272ff, #fa6d8a)' },
   'short-break': { label: 'Short Break', color: 'var(--green)', icon: Coffee, gradient: 'linear-gradient(135deg, #5ffad1, #3ecf8e)' },
@@ -239,7 +249,7 @@ export default function PomodoroPage() {
   const sidebarContent = (
     <>
       {/* Stats */}
-      <div className="card glass-card">
+      <motion.div variants={itemVariants} className="card glass-card">
         <div className="card-title" style={{ marginBottom: 18 }}>
           <History size={15} className="text-accent" /> Mastery Statistics
         </div>
@@ -263,10 +273,10 @@ export default function PomodoroPage() {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Link Task */}
-      <div className="card glass-card">
+      <motion.div variants={itemVariants} className="card glass-card">
         <div className="card-title" style={{ marginBottom: 14 }}>
           <Target size={15} className="text-accent" /> Active Objective
         </div>
@@ -279,10 +289,10 @@ export default function PomodoroPage() {
         <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10, lineHeight: 1.5 }}>
           Link a task to attribute focus time and boost productivity insights.
         </p>
-      </div>
+      </motion.div>
 
       {/* Session Note */}
-      <div className="card glass-card">
+      <motion.div variants={itemVariants} className="card glass-card">
         <div className="card-title" style={{ marginBottom: 14 }}>
           <StickyNote size={15} className="text-accent" /> Session Intent
         </div>
@@ -294,10 +304,10 @@ export default function PomodoroPage() {
           value={note}
           onChange={e => setNote(e.target.value)}
         />
-      </div>
+      </motion.div>
 
       {/* Soundscapes */}
-      <div className="card glass-card">
+      <motion.div variants={itemVariants} className="card glass-card">
         <div className="card-title" style={{ marginBottom: 14 }}>
           <Volume2 size={15} className="text-accent" /> Ambient Sounds
         </div>
@@ -325,10 +335,10 @@ export default function PomodoroPage() {
             style={{ width: '100%', accentColor: 'var(--accent)' }}
           />
         )}
-      </div>
+      </motion.div>
 
       {/* Config */}
-      <div className="card glass-card" style={{ padding: '18px 20px' }}>
+      <motion.div variants={itemVariants} className="card glass-card" style={{ padding: '18px 20px' }}>
         <div className="card-title" style={{ marginBottom: 14, opacity: 0.6 }}>Config</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
@@ -344,17 +354,23 @@ export default function PomodoroPage() {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </>
   );
 
   return (
-    <div className={`responsive-container ${running && isMobile ? 'focus-immersion' : ''}`}>
+    <>
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className={`responsive-container ${running && isMobile ? 'focus-immersion' : ''}`}
+    >
       <div className="page-header mb-6">
         <div>
-          <div className="page-title flex items-center gap-3">
-            <div className="text-accent"><Timer size={isMobile ? 24 : 32} /></div>
-            Flow State
+          <div className="page-title flex items-center gap-2">
+            <div className="text-accent"><Timer size={isMobile ? 20 : 32} /></div>
+            <span style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, fontFamily: 'Syne, sans-serif' }}>Flow State</span>
           </div>
           <p className="page-subtitle">Master your attention through intentional intervals</p>
         </div>
@@ -378,7 +394,7 @@ export default function PomodoroPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 20, minWidth: 0 }}>
 
           {/* Timer Card */}
-          <div className="card glass-card" style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)', position: 'relative', overflow: 'hidden' }}>
+          <motion.div variants={itemVariants} className="card glass-card" style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)', position: 'relative', overflow: 'hidden' }}>
             {/* Background glow blobs */}
             <div style={{ position: 'absolute', top: -80, left: -80, width: 240, height: 240, background: modeInfo.color, opacity: 0.06, filter: 'blur(70px)', borderRadius: '50%', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', bottom: -80, right: -80, width: 240, height: 240, background: 'var(--accent2)', opacity: 0.05, filter: 'blur(70px)', borderRadius: '50%', pointerEvents: 'none' }} />
@@ -456,7 +472,7 @@ export default function PomodoroPage() {
                     }}
                     style={{
                       fontFamily: 'Syne, sans-serif',
-                      fontSize: 'clamp(2.5rem, 12vw, 4.5rem)',
+                      fontSize: isMobile ? 'clamp(2.5rem, 15vw, 3.5rem)' : 'clamp(2.5rem, 12vw, 4.5rem)',
                       fontWeight: 800,
                       letterSpacing: isMobile ? -1 : -3,
                       lineHeight: 1,
@@ -523,8 +539,8 @@ export default function PomodoroPage() {
                 className="btn btn-primary"
                 onClick={handleStart}
                 style={{
-                  padding: isMobile ? '14px 36px' : '16px 52px',
-                  fontSize: isMobile ? 16 : 18,
+                  padding: isMobile ? '12px 30px' : '16px 52px',
+                  fontSize: isMobile ? 15 : 18,
                   fontWeight: 700,
                   background: modeInfo.gradient,
                   border: 'none',
@@ -534,15 +550,15 @@ export default function PomodoroPage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                 }}
               >
-                {running ? <><Pause size={20} /> Pause</> : startedAt ? <><Play size={20} /> Resume</> : <><Play size={20} /> Start</>}
+                {running ? <><Pause size={isMobile ? 18 : 20} /> Pause</> : startedAt ? <><Play size={isMobile ? 18 : 20} /> Resume</> : <><Play size={isMobile ? 18 : 20} /> Start</>}
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 className="btn btn-ghost haptic-tap"
                 onClick={handleReset}
-                style={{ width: isMobile ? 52 : 56, height: isMobile ? 52 : 56, padding: 0, borderRadius: '50%', border: '1px solid var(--border)', flexShrink: 0 }}
+                style={{ width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, padding: 0, borderRadius: '50%', border: '1px solid var(--border)', flexShrink: 0 }}
               >
-                <RotateCcw size={18} />
+                <RotateCcw size={isMobile ? 16 : 18} />
               </motion.button>
             </div>
 
@@ -551,7 +567,7 @@ export default function PomodoroPage() {
               <Zap size={13} style={{ color: 'var(--accent)' }} />
               Sessions this week: <strong style={{ color: 'var(--text)', marginLeft: 4 }}>{statsData?.periodPomos || 0}</strong>
             </div>
-          </div>
+          </motion.div>
 
           {/* Chart */}
           <div className="card glass-card">
@@ -752,11 +768,12 @@ export default function PomodoroPage() {
         )}
       </AnimatePresence>
 
+      </motion.div>
+
       <style>{`
-        .glass-card { background: rgba(255,255,255,0.02); backdrop-filter: blur(12px); }
         .text-accent { color: var(--accent); }
         .focus-immersion { filter: saturate(1.2); }
       `}</style>
-    </div>
+    </>
   );
 }

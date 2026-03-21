@@ -15,7 +15,8 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
     ];
 
     const today = new Date();
-    const yearAgo = subMonths(today, 11);
+    const monthsToShow = isMobile ? 3 : 12;
+    const startDate = subMonths(today, monthsToShow - 1);
 
     // Stats calculations
     const stats = useMemo(() => {
@@ -53,7 +54,7 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
 
     // Group days by month
     const monthsData = useMemo(() => {
-        const interval = eachMonthOfInterval({ start: startOfMonth(yearAgo), end: today });
+        const interval = eachMonthOfInterval({ start: startOfMonth(startDate), end: today });
         return interval.map(monthStart => {
             const mStart = startOfMonth(monthStart);
             const mEnd = endOfMonth(monthStart);
@@ -66,7 +67,7 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
                 startOffset: startDayOfWeek
             };
         });
-    }, [today, yearAgo]);
+    }, [today, startDate]);
 
     const handleSelect = (day, log) => {
         const dateStr = format(day, 'yyyy-MM-dd');
@@ -100,7 +101,7 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{stats.totalSubmissions}</span>
-                    <span style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>submissions in the past one year</span>
+                    <span style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>submissions in the past {isMobile ? '3 months' : 'one year'}</span>
                     <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: 'var(--muted)', cursor: 'help' }}>i</div>
                 </div>
 
@@ -220,12 +221,16 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
                                                         </div>
                                                         <div style={{ display: 'grid', gap: 4, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
                                                             <div style={{ fontSize: 10, display: 'flex', justifyContent: 'space-between' }}>
-                                                                <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Deep Work Sessions</span>
-                                                                <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{log?.pomodoros || 0}</span>
+                                                                <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Tasks Completed</span>
+                                                                <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{log?.tasksCompleted || 0}</span>
                                                             </div>
                                                             <div style={{ fontSize: 10, display: 'flex', justifyContent: 'space-between' }}>
-                                                                <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Focus Time</span>
-                                                                <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{log?.focusMinutes || 0}m</span>
+                                                                <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Habits & Events</span>
+                                                                <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{(log?.habitsCompleted || 0) + (log?.scheduleEventsCompleted || 0)}</span>
+                                                            </div>
+                                                            <div style={{ fontSize: 10, display: 'flex', justifyContent: 'space-between' }}>
+                                                                <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Deep Work Sessions</span>
+                                                                <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{log?.pomodoros || 0}</span>
                                                             </div>
                                                         </div>
                                                         {isRecord && (

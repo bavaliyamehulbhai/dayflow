@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AICoach from '../components/AICoach';
 import ProductivityCircle from '../components/ProductivityCircle';
 import SensitivityShield from '../components/layout/SensitivityShield';
+import Skeleton, { CardSkeleton, ListSkeleton } from '../components/Skeleton';
 
 // ─── Magnetic Effect Component ──────────────────────────────────────────────
 const MagneticButton = ({ children, className, onClick, style }) => {
@@ -136,27 +137,27 @@ function DashboardSkeleton() {
   const isMobile = window.innerWidth <= 768;
   return (
     <div className="responsive-container">
-      <div className="skeleton skeleton-text" style={{ width: 260, height: 36, marginBottom: 8 }} />
-      <div className="skeleton skeleton-text" style={{ width: 180, height: 18, marginBottom: 32 }} />
-      {/* Clock skeleton */}
-      <div className="skeleton" style={{ height: 160, borderRadius: 16, marginBottom: 24 }} />
-      {/* Stats skeleton */}
-      <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+      <Skeleton width="300px" height="48px" style={{ marginBottom: 8 }} />
+      <Skeleton width="200px" height="20px" style={{ marginBottom: 40 }} />
+      
+      {/* Clock Area */}
+      <Skeleton height="200px" borderRadius={24} style={{ marginBottom: 32 }} />
+
+      <div className="stats-grid" style={{ marginBottom: 32 }}>
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="skeleton" style={{ height: 120, borderRadius: 20 }} />
+          <Skeleton key={i} height="120px" borderRadius={20} />
         ))}
       </div>
-      {/* Main grid skeleton */}
+
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: 32 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-          <div className="skeleton" style={{ height: 320, borderRadius: 20 }} />
-          <div className="skeleton" style={{ height: 300, borderRadius: 20 }} />
+          <CardSkeleton />
+          <CardSkeleton />
         </div>
         {!isMobile && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div className="skeleton" style={{ height: 240, borderRadius: 16 }} />
-            <div className="skeleton" style={{ height: 220, borderRadius: 16 }} />
-            <div className="skeleton" style={{ height: 180, borderRadius: 16 }} />
+             <div className="card glass-card" style={{ height: 300 }}><Skeleton height="100%" /></div>
+             <div className="card glass-card" style={{ height: 200 }}><Skeleton height="100%" /></div>
           </div>
         )}
       </div>
@@ -183,16 +184,19 @@ function Clock() {
   if (hours >= 22 || hours < 6) GreetingIcon = Moon;
 
   return (
-    <div className="card clock-card" style={{ 
-      textAlign: 'center', 
-      padding: isMobile ? '32px 16px' : '48px 32px', 
-      position: 'relative', 
-      overflow: 'hidden',
-      background: 'var(--surface)',
-      border: '1px solid var(--border)',
-      boxShadow: 'var(--shadow-lg)',
-      borderRadius: 'var(--radius-xl)'
-    }}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="card clock-card glass-card" 
+      style={{ 
+        textAlign: 'center', 
+        padding: isMobile ? '32px 16px' : '48px 32px', 
+        position: 'relative', 
+        overflow: 'hidden',
+        borderRadius: 'var(--radius-xl)'
+      }}
+    >
       <div className="greeting-icon-bg" style={{ 
         position: 'absolute', 
         top: -20, 
@@ -209,7 +213,7 @@ function Clock() {
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <div className="clock-time" style={{ 
-          fontSize: isMobile ? '12vw' : 'clamp(3rem, 10vw, 6rem)', 
+          fontSize: isMobile ? 'clamp(1.5rem, 10vw, 2.2rem)' : 'clamp(3rem, 10vw, 6rem)', 
           letterSpacing: '-0.06em',
           background: 'linear-gradient(180deg, var(--text), var(--text2))',
           WebkitBackgroundClip: 'text',
@@ -249,7 +253,7 @@ function Clock() {
           <span>SUNSET</span>
         </div>
       </div>
-    </div >
+    </motion.div>
   );
 }
 
@@ -365,6 +369,7 @@ export default function DashboardPage() {
   };
 
   return (
+    <>
     <div className="responsive-container">
       <div className="page-header mb-6">
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -412,18 +417,12 @@ export default function DashboardPage() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="dashboard-main-grid"
-        style={{
-            display: 'grid',
-            gridTemplateColumns: width <= 1100 ? '1fr' : '1fr 380px',
-            gap: 'clamp(24px, 4vw, 40px)',
-            marginTop: 24
-        }}
+        className="dashboard-main-grid mt-6"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(24px, 4vw, 40px)', minWidth: 0 }}>
 
           {/* Activity Consistency Grid (LeetCode Style) */}
-          <motion.div variants={itemVariants} className="card aura-iridescent" style={{ padding: '24px' }}>
+          <motion.div variants={itemVariants} className="card glass-card aura-iridescent" style={{ padding: '24px' }}>
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Activity size={16} className="text-accent" />
@@ -442,8 +441,67 @@ export default function DashboardPage() {
               <ActivityHeatmapYear data={Array.isArray(activityData) ? activityData : []} isMobile={isMobile} onSelectDay={(d, log) => setSelectedLog(log)} />
             </div>
 
+            {/* Selected Day Details */}
+            <AnimatePresence mode="wait">
+              {selectedLog && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className="selected-day-card mb-6" style={{ 
+                    padding: '20px', 
+                    background: 'linear-gradient(135deg, var(--surface2), var(--surface3))',
+                    borderRadius: 16,
+                    border: '1px solid var(--accent)',
+                    boxShadow: '0 0 20px rgba(95, 250, 209, 0.1)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+                          Inspecting Progress
+                        </div>
+                        <h3 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
+                          {format(new Date(selectedLog.date), 'EEEE, MMMM do')}
+                        </h3>
+                      </div>
+                      <button 
+                        className="btn btn-sm btn-ghost" 
+                        onClick={() => setSelectedLog(null)}
+                        style={{ padding: '4px 8px', fontSize: 11 }}
+                      >
+                        Clear Selection
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 12 }}>
+                      {[
+                        { label: 'Tasks', value: selectedLog.tasksCompleted, icon: CheckCircle2, sub: 'completed' },
+                        { label: 'Focus', value: `${selectedLog.focusMinutes}m`, icon: Timer, sub: 'session' },
+                        { label: 'Rituals', value: selectedLog.habitsCompleted, icon: Trophy, sub: 'done' },
+                        { label: 'Events', value: selectedLog.scheduleEventsCompleted, icon: Calendar, sub: 'attended' }
+                      ].map((s, idx) => (
+                        <div key={idx} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                            <s.icon size={14} style={{ color: 'var(--accent)' }} />
+                            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase' }}>{s.label}</span>
+                          </div>
+                          <div style={{ fontSize: 18, fontWeight: 800 }}>{s.value}</div>
+                          <div style={{ fontSize: 10, color: 'var(--muted)' }}>{s.sub}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Daily Activity Table */}
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+              <h1 style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.02em', margin: 0 }}>
+                Mission <br />Control
+              </h1>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
                 Recent activity history
               </div>
@@ -493,7 +551,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Today's Tasks */}
-          <motion.div variants={itemVariants} className="card">
+          <motion.div variants={itemVariants} className="card glass-card">
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Target size={16} />
@@ -565,7 +623,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Today's Schedule */}
-          <motion.div variants={itemVariants} className="card">
+          <motion.div variants={itemVariants} className="card glass-card">
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Calendar size={16} />
@@ -610,7 +668,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Habits */}
-          <motion.div variants={itemVariants} className="card">
+          <motion.div variants={itemVariants} className="card glass-card">
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <RefreshCw size={16} />
@@ -651,7 +709,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Recent Notes */}
-          <motion.div variants={itemVariants} className="card aura-iridescent">
+          <motion.div variants={itemVariants} className="card glass-card aura-iridescent">
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <FileText size={16} />
@@ -785,6 +843,7 @@ export default function DashboardPage() {
           .hover-lift:hover { transform: translateY(-2px); border-color: var(--border2); background: var(--surface3) !important; }
         }
       `}</style>
-    </div >
+    </div>
+    </>
   );
 }

@@ -165,7 +165,7 @@ export default function Layout({ children }) {
       )}
 
       {/* ─── Main Content Area ─────────────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, marginLeft: isMobile ? 0 : (isTablet ? 68 : 'var(--sidebar-w)'), transition: 'margin-left 0.3s ease' }}>
+      <div className="main-wrapper">
         {/* ─── Mobile Top Header ─────────────────────────────────────────────── */}
         {isMobile && (
           <header className="mobile-header glass" style={{ position: 'sticky', top: 0, zIndex: 100 }}>

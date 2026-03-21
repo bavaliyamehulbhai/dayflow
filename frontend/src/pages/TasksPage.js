@@ -80,10 +80,10 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
             background: 'var(--surface)', 
             borderRadius: 20, 
             border: '1px solid var(--border)',
-            padding: isMobile ? '12px 16px' : '16px 24px',
+            padding: isMobile ? '10px 14px' : '16px 24px',
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? 12 : 20
+            gap: isMobile ? 10 : 20
           }}
         >
           <div className="task-row-check" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -110,22 +110,22 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
 
           <div className="task-row-content" onClick={() => setModal(task)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
             <div style={{ 
-              fontSize: isMobile ? 15 : 17, fontWeight: 700,
+              fontSize: isMobile ? 14 : 17, fontWeight: 700,
               textDecoration: task.status === 'completed' ? 'line-through' : 'none',
               color: task.status === 'completed' ? 'var(--muted)' : 'var(--text)',
-              marginBottom: 4
+              marginBottom: 2
             }}>
               <SensitivityShield>
                 {task.title}
               </SensitivityShield>
             </div>
-            <div className="task-row-meta" style={{ display: 'flex', gap: 12, fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div className="task-row-meta" style={{ display: 'flex', gap: 10, fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               {task.category && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Tag size={12} /> {task.category}</span>
               )}
               {task.dueDate && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isOverdue ? 'var(--red)' : 'inherit' }}>
-                  <Calendar size={12} /> {format(new Date(task.dueDate), 'MMM d')}
+                  <Calendar size={10} /> {format(new Date(task.dueDate), 'MMM d')}
                 </span>
               )}
             </div>
@@ -349,36 +349,31 @@ export default function TasksPage() {
 
       {/* Adaptive Filter Bar */}
       <div className="card mb-6 p-4 aura-iridescent">
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', 
-          gap: 12,
-          alignItems: 'center' 
-        }}>
+        <div className="filter-grid">
           <div style={{ position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
             <input 
               className="input" 
-              style={{ paddingLeft: 40, width: '100%', height: 42 }} 
+              style={{ paddingLeft: 40, width: '100%', height: isMobile ? 38 : 42 }} 
               placeholder="Search objectives..." 
               value={filters.search} 
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} 
             />
           </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <select className="select" style={{ height: 42 }} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
+ 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 8 : 12 }}>
+            <select className="select" style={{ height: isMobile ? 38 : 42 }} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
               <option value="">Status</option>
               {STATUSES.map(s => <option key={s} value={s}>{s.replace('-', ' ')}</option>)}
             </select>
-            <select className="select" style={{ height: 42 }} value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
+            <select className="select" style={{ height: isMobile ? 38 : 42 }} value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
               <option value="">Priority</option>
               {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
-
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <select className="select" style={{ flex: 1, height: 42 }} value={filters.sortBy} onChange={e => setFilters(f => ({ ...f, sortBy: e.target.value }))}>
+ 
+          <div style={{ display: 'flex', gap: isMobile ? 8 : 12, alignItems: 'center' }}>
+            <select className="select" style={{ flex: 1, height: isMobile ? 38 : 42 }} value={filters.sortBy} onChange={e => setFilters(f => ({ ...f, sortBy: e.target.value }))}>
               <option value="createdAt">Date Created</option>
               <option value="dueDate">Due Date</option>
               <option value="priority">Priority</option>

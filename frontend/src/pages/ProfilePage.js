@@ -331,9 +331,9 @@ export default function ProfilePage() {
       <motion.div
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card"
+        className="card glass-card"
         style={{
-          marginBottom: 20, padding: 'var(--space-6) var(--space-8)',
+          marginBottom: 20, padding: isMobile ? 'var(--space-4) var(--space-4)' : 'var(--space-6) var(--space-8)',
           background: 'var(--grad-mesh)',
           border: '1px solid var(--border)', position: 'relative', overflow: 'hidden',
           borderRadius: 24,
@@ -359,7 +359,7 @@ export default function ProfilePage() {
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div
               style={{
-                width: 'clamp(72px, 12vw, 110px)', height: 'clamp(72px, 12vw, 110px)', borderRadius: '50%',
+                width: isMobile ? 72 : 110, height: isMobile ? 72 : 110, borderRadius: '50%',
                 background: avatarGrad, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 'clamp(26px, 4vw, 36px)',
                 color: 'white', boxShadow: `0 8px 32px rgba(130,114,255,0.4),0 0 0 3px rgba(130,114,255,0.15)`,
@@ -399,7 +399,7 @@ export default function ProfilePage() {
           {/* Name, bio, meta */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800, letterSpacing: -0.5 }}>
+              <div style={{ fontFamily: 'Syne,sans-serif', fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, letterSpacing: -0.5 }}>
                 {user?.name}
               </div>
               {earnedCount >= 5 && (
@@ -528,7 +528,7 @@ export default function ProfilePage() {
       </motion.div>
 
       {/* ─── TAB BAR ───────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: isMobile ? 4 : 8, marginBottom: 20, background: 'var(--surface)', padding: 6, borderRadius: 16, border: '1px solid var(--border)', overflowX: 'auto', scrollbarWidth: 'none', maxWidth: 800, margin: '0 auto 20px' }}>
+      <div className="glass-card" style={{ display: 'flex', gap: isMobile ? 4 : 8, marginBottom: 20, padding: 6, borderRadius: 16, overflowX: 'auto', scrollbarWidth: 'none', maxWidth: 800, margin: '0 auto 20px' }}>
         {TABS.map(tab => {
           const active = activeTab === tab.id;
           return (
@@ -565,7 +565,7 @@ export default function ProfilePage() {
           {/* ── PROFILE ─────────────────────────────── */}
           {activeTab === 'profile' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
+              <div className="card glass-card" style={{ maxWidth: 800, margin: '0 auto' }}>
                 <div className="card-title mb-6"><User size={15} className="text-accent" /> Personal Info</div>
                 <form onSubmit={handleProfileSave}>
                   <div className="form-group">
@@ -603,7 +603,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Growth Stats card */}
-              <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
+              <div className="card glass-card" style={{ maxWidth: 800, margin: '0 auto' }}>
                 <div className="card-title mb-6"><TrendingUp size={15} className="text-accent2" /> Lifetime Growth Metrics</div>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
                   {[
@@ -654,7 +654,7 @@ export default function ProfilePage() {
           {/* ── SECURITY ─────────────────────────────── */}
           {activeTab === 'security' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 800, margin: '0 auto' }}>
-              <div className="card">
+              <div className="card glass-card">
                 <div className="card-title" style={{ marginBottom: 24 }}><Lock size={15} style={{ color: 'var(--accent2)' }} /> Change Password</div>
                 <form onSubmit={handlePasswordChange}>
                   <div className="form-group">

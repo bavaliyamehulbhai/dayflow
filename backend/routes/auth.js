@@ -226,7 +226,31 @@ router.get('/sessions', protect, async (req, res) => {
   }
 });
 
-// ─── Revoke Session ───────────────────────────────────────────────────────────
+// ─── Revoke All Other Sessions ────────────────────────────────────────────────
+router.delete('/sessions/revoke/all', protect, async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    
+    // Delete all sessions for this user EXCEPT the current one
+    const result = await Session.deleteMany({
+      user: req.user._id,
+      refreshToken: { $ne: refreshToken }
+    });
+
+    await logSecurityEvent({ 
+      userId: req.user._id, 
+      action: 'ALL_SESSIONS_REVOKED', 
+      req,
+      details: { count: result.deletedCount }
+    });
+
+    res.json({ success: true, message: `${result.deletedCount} sessions revoked successfully.` });
+  } catch (err) {
+    res.status(500).json({ error: 'Error revoking all sessions.' });
+  }
+});
+
+// ── Revoke Session ───────────────────────────────────────────────────────────
 router.delete('/sessions/:id', protect, async (req, res) => {
   try {
     const session = await Session.findOne({ _id: req.params.id, user: req.user._id });
@@ -570,7 +594,15 @@ router.get('/export', protect, async (req, res) => {
       exportedAt: new Date().toISOString()
     };
 
-    await logSecurityEvent({ userId, action: 'DATA_EXPORT', req });
+    await logSecurityEvent({ 
+      userId, 
+      action: 'DATA_EXPORT', 
+      req,
+      details: { 
+        resources: ['tasks', 'notes', 'habits', 'schedules', 'pomodoros', 'auditLogs'],
+        format: 'json'
+      }
+    });
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename=dayflow_export_${userId}.json`);
@@ -597,6 +629,14 @@ router.delete('/account', protect, async (req, res) => {
       require('../models/Session').deleteMany({ user: userId }),
       require('../models/User').findByIdAndDelete(userId)
     ]);
+
+    await logSecurityEvent({ 
+      userId, 
+      action: 'ACCOUNT_DELETION', 
+      status: 'success',
+      req,
+      details: { reason: 'user_initiated' }
+    });
 
     res.json({ success: true, message: 'Account and all data deleted permanentely.' });
   } catch (err) {
