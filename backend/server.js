@@ -107,9 +107,11 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // In development, allow all local origins. In production, be strict.
+    // In development, allow all local origins. In production, be strict but allow vercel previews.
     const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
-    if (isDev || !origin || allowedOrigins.includes(origin)) {
+    const isVercelPreview = origin && origin.includes('dayflow') && origin.endsWith('.vercel.app');
+    
+    if (isDev || !origin || allowedOrigins.includes(origin) || isVercelPreview) {
       return callback(null, true);
     }
     console.warn(`⚠️ CORS blocked for origin: ${origin}`);
@@ -188,9 +190,10 @@ app.get('/api/csrf-token', csrfProtection, (req, res) => {
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+  const isVercelPreview = origin && origin.includes('dayflow') && origin.endsWith('.vercel.app');
 
   // Use the same allowedOrigins list for CSRF protection
-  if (req.method !== 'GET' && origin && !allowedOrigins.includes(origin)) {
+  if (req.method !== 'GET' && origin && !allowedOrigins.includes(origin) && !isVercelPreview) {
     console.warn(`⚠️ CSRF origin check failed for: ${origin}`);
     return res.status(403).json({ error: 'CSRF Protection: Invalid origin.' });
   }
