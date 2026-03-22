@@ -96,19 +96,28 @@ app.use((req, res, next) => {
 });
 
 // CORS: open in dev, whitelist in production
-const allowedOrigins = (process.env.CLIENT_URLS || 'http://localhost:3000')
-  .split(',')
-  .map(o => o.trim());
+// ─── CORS Configuration ───────────────────────────────────────────────────────
+const allowedOrigins = [
+  'https://dayflow-inky.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  ...(process.env.CLIENT_URLS ? process.env.CLIENT_URLS.split(',').map(o => o.trim()) : []),
+  ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL.trim()] : [])
+];
 
 app.use(cors({
   origin: (origin, callback) => {
+    // In development, allow all local origins. In production, be strict.
     const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
     if (isDev || !origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    console.warn(`⚠️ CORS blocked for origin: ${origin}`);
     callback(new Error(`CORS: origin ${origin} not allowed`));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Client-Version', 'X-Requested-With'],
 }));
 
 // NoSQL injection sanitization
@@ -179,9 +188,10 @@ app.get('/api/csrf-token', csrfProtection, (req, res) => {
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  const allowed = (process.env.CLIENT_URLS || 'http://localhost:3000').split(',');
 
-  if (req.method !== 'GET' && origin && !allowed.includes(origin)) {
+  // Use the same allowedOrigins list for CSRF protection
+  if (req.method !== 'GET' && origin && !allowedOrigins.includes(origin)) {
+    console.warn(`⚠️ CSRF origin check failed for: ${origin}`);
     return res.status(403).json({ error: 'CSRF Protection: Invalid origin.' });
   }
   next();

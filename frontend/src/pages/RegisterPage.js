@@ -226,10 +226,11 @@ export default function RegisterPage() {
           <div style={{ 
             fontFamily: 'Syne, sans-serif', fontSize: 'clamp(32px, 5vw, 44px)', fontWeight: 800, 
             color: 'var(--text)', 
-            letterSpacing: '-0.06em' 
+            letterSpacing: '-0.06em',
+            textShadow: '0 10px 40px rgba(0,0,0,0.4)'
           }}>DayFlow</div>
-          <div style={{ color: 'var(--muted)', fontSize: 'clamp(14px, 2vw, 16px)', marginTop: 4, fontWeight: 600, opacity: 0.8 }}>
-            Manifest your <span className="holographic-text" style={{ color: 'var(--accent)', fontWeight: 800 }}>Digital Identity</span>
+          <div style={{ color: 'var(--muted)', fontSize: 'clamp(14px, 2vw, 16px)', marginTop: 8, fontWeight: 700, opacity: 0.9, letterSpacing: '0.02em' }}>
+            Initialize your <span className="holographic-text" style={{ fontWeight: 800 }}>Neural Presence</span>
           </div>
         </div>
 
@@ -262,8 +263,8 @@ export default function RegisterPage() {
             transition={{ delay: 0.6 }}
             style={{ marginBottom: 32, transform: 'translateZ(30px)' }}
           >
-            <h2 style={{ fontSize: 26, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.03em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Begin Journey</h2>
-            <p style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 600, marginTop: 4 }}>Create your portal to higher focus.</p>
+            <h2 style={{ fontSize: 28, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.04em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Synchronize</h2>
+            <p style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 700, marginTop: 6, opacity: 0.8 }}>Forge your portal to cognitive clarity.</p>
           </motion.div>
 
           {error && (
@@ -411,7 +412,7 @@ export default function RegisterPage() {
             >
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', transform: 'skewX(-45deg) translateX(-150%)', transition: 'transform 0.5s ease' }} className="btn-glint" />
               {loading
-                ? <div className="loading-spinner" style={{ width: 24, height: 24 }} />
+                ? <div className="loading-spinner" style={{ width: 24, height: 24, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                 : <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>CONSTRUCT IDENTITY <ArrowRight size={22} strokeWidth={2.5} /></span>
               }
             </motion.button>

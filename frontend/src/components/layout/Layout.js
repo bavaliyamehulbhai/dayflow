@@ -83,16 +83,20 @@ export default function Layout({ children }) {
           backdropFilter: 'var(--glass-premium)',
           WebkitBackdropFilter: 'var(--glass-premium)',
           borderRight: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-lg)'
+          boxShadow: 'var(--shadow-lg)',
+          transformStyle: 'preserve-3d'
         }}>
           <div className="sidebar-logo" style={{
             padding: '32px 24px',
             fontSize: isTablet ? '24px' : '28px',
             textAlign: isTablet ? 'center' : 'left',
-            background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
+            fontFamily: 'Syne, sans-serif',
+            fontWeight: 800,
+            background: 'var(--grad-premium)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.04em'
+            letterSpacing: '-0.06em',
+            textShadow: '0 10px 30px rgba(0,0,0,0.2)'
           }}>
             {isTablet ? '⚡' : 'DayFlow'}
           </div>
@@ -183,16 +187,18 @@ export default function Layout({ children }) {
         <main className="main-content" style={{ 
           marginLeft: 0,
           background: 'var(--grad-mesh)',
-          minHeight: '100vh'
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column'
         }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, scale: 0.9, z: -100, filter: 'blur(20px)' }}
-              animate={{ opacity: 1, scale: 1, z: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 1.1, z: 100, filter: 'blur(20px)' }}
+              initial={{ opacity: 0, y: 20, scale: 0.98, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -20, scale: 1.02, filter: 'blur(10px)' }}
               transition={{
-                duration: 0.7,
+                duration: 0.5,
                 ease: [0.16, 1, 0.3, 1]
               }}
               style={{ perspective: 1000 }}

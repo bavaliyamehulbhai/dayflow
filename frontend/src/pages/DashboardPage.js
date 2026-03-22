@@ -112,22 +112,32 @@ const AnimatedStat = React.memo(({ value, label, color, icon: Icon }) => {
   const animated = useCountUp(typeof value === 'number' ? value : 0);
   const display = typeof value === 'string' ? value : animated;
   return (
-    <div className="stat-card gpu-accel haptic-tap" style={{ 
+    <div className="glass-card gpu-accel haptic-tap" style={{ 
         display: 'flex', 
         flexDirection: 'column', 
         alignItems: 'center', 
-        gap: 'clamp(4px, 1vw, 8px)',
-        padding: 'clamp(12px, 2vw, 24px)'
+        gap: '8px',
+        padding: '24px',
+        borderRadius: 'var(--radius)',
+        border: '1px solid var(--border-premium)'
     }}>
-      <div style={{ color, opacity: 0.8 }}><Icon size={window.innerWidth <= 768 ? 16 : 20} /></div>
+      <div style={{ color, opacity: 0.9, marginBottom: 4 }}><Icon size={24} /></div>
       <SensitivityShield>
         <div className="stat-value" style={{ 
             color, 
-            fontSize: 'clamp(1.2rem, 4vw, 1.8rem)',
-            fontWeight: 800
+            fontSize: 'clamp(1.5rem, 5vw, 2rem)',
+            fontWeight: 800,
+            fontFamily: 'Syne, sans-serif',
+            letterSpacing: '-0.02em'
         }}>{display}</div>
       </SensitivityShield>
-      <div className="stat-label" style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.75rem)' }}>{label}</div>
+      <div className="stat-label" style={{ 
+          fontSize: '11px', 
+          fontWeight: 700, 
+          color: 'var(--muted)', 
+          textTransform: 'uppercase', 
+          letterSpacing: '1px' 
+      }}>{label}</div>
     </div>
   );
 });
@@ -187,69 +197,76 @@ function Clock() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="card clock-card glass-card" 
+      transition={{ duration: 0.8 }}
+      className="card clock-card premium-card" 
       style={{ 
         textAlign: 'center', 
-        padding: isMobile ? '32px 16px' : '48px 32px', 
+        padding: isMobile ? '40px 20px' : '64px 40px', 
         position: 'relative', 
         overflow: 'hidden',
-        borderRadius: 'var(--radius-xl)'
+        background: 'rgba(13, 13, 22, 0.6)',
+        border: '1px solid var(--border-premium)'
       }}
     >
       <div className="greeting-icon-bg" style={{ 
         position: 'absolute', 
-        top: -20, 
-        right: -20, 
-        opacity: 0.05,
-        transform: 'rotate(15deg)'
+        top: -30, 
+        right: -30, 
+        opacity: 0.08,
+        transform: 'rotate(15deg)',
+        color: 'var(--accent)'
       }}>
-        <GreetingIcon size={isMobile ? 120 : 200} />
+        <GreetingIcon size={isMobile ? 140 : 260} />
       </div>
       
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        transition={{ duration: 1, ease: "easeOut" }}
       >
         <div className="clock-time" style={{ 
-          fontSize: isMobile ? 'clamp(1.5rem, 10vw, 2.2rem)' : 'clamp(3rem, 10vw, 6rem)', 
-          letterSpacing: '-0.06em',
-          background: 'linear-gradient(180deg, var(--text), var(--text2))',
+          fontSize: isMobile ? 'clamp(2.5rem, 12vw, 3.5rem)' : 'clamp(4rem, 12vw, 8rem)', 
+          letterSpacing: '-0.07em',
+          fontWeight: 800,
+          fontFamily: 'Syne, sans-serif',
+          background: 'linear-gradient(180deg, #fff, var(--text2))',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          textShadow: '0 10px 30px rgba(0,0,0,0.5)'
+          textShadow: '0 20px 50px rgba(0,0,0,0.4)'
         }}>
           {format(time, 'HH:mm:ss')}
         </div>
         <div className="clock-date" style={{ 
-          fontSize: isMobile ? '12px' : 'var(--fs-sm)', 
-          letterSpacing: '0.2em', 
-          marginTop: 12,
+          fontSize: '14px', 
+          letterSpacing: '0.3em', 
+          marginTop: 16,
           color: 'var(--accent)',
-          fontWeight: 800
+          fontWeight: 800,
+          opacity: 0.9
         }}>
           {format(time, 'EEEE, MMMM do').toUpperCase()}
         </div>
       </motion.div>
 
-      <div style={{ marginTop: 'var(--space-8)', maxWidth: '600px', margin: '32px auto 0' }}>
-        <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+      <div style={{ marginTop: '48px', maxWidth: '800px', margin: '48px auto 0' }}>
+        <div style={{ height: 6, background: 'rgba(255,255,255,0.03)', borderRadius: 3, overflow: 'hidden' }}>
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${pct}%` }}
-            transition={{ duration: 1.5, ease: "circOut" }}
+            transition={{ duration: 2, ease: "circOut" }}
             style={{ 
               height: '100%', 
-              background: 'linear-gradient(90deg, var(--accent), var(--accent3))', 
-              borderRadius: 2, 
-              boxShadow: '0 0 20px var(--accent-glow)'
+              background: 'var(--grad-premium)', 
+              borderRadius: 3, 
+              boxShadow: '0 0 25px var(--accent-glow)'
             }} 
           />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted)', marginTop: 12, fontWeight: 700, letterSpacing: '0.05em' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', marginTop: 16, fontWeight: 800, letterSpacing: '0.1em' }}>
           <span>SUNRISE</span>
-          <span style={{ color: 'var(--text2)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 10 }}>{Math.round(pct)}% OF DAYLIGHT</span>
+          <span style={{ color: 'var(--text)', background: 'rgba(124, 109, 250, 0.1)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(124, 109, 250, 0.2)' }}>
+            {Math.round(pct)}% JOURNEY COMPLETE
+          </span>
           <span>SUNSET</span>
         </div>
       </div>
@@ -324,43 +341,49 @@ export default function DashboardPage() {
     const topTask = d?.tasks?.today?.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2))[0];
     
     return (
-      <div className="mobile-feed" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 24 }}>
+      <div className="mobile-feed" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 32 }}>
         {/* Row 1: Key Items */}
-        <div style={{ display: 'grid', gridTemplateColumns: nextEvent ? '1.2fr 1fr' : '1fr', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: nextEvent ? '1.2fr 1fr' : '1fr', gap: 16 }}>
           {nextEvent && (
-            <div className="feed-item next-up" onClick={() => navigate('/schedule')} style={{ padding: '16px', borderRadius: 20 }}>
-              <div className="feed-label" style={{ fontSize: 10 }}>NEXT UP</div>
-              <div className="feed-time" style={{ fontSize: 18, fontWeight: 800 }}>{nextEvent.startTime}</div>
-              <div className="feed-title" style={{ fontSize: 13, opacity: 0.9 }}>{nextEvent.title}</div>
+            <div className="glass-card feed-item next-up" onClick={() => navigate('/schedule')} style={{ padding: '20px', borderRadius: 24, border: '1px solid var(--border-premium)' }}>
+              <div className="feed-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)', letterSpacing: 1 }}>NEXT UP</div>
+              <div className="feed-time" style={{ fontSize: 22, fontWeight: 800, fontFamily: 'Syne', margin: '4px 0' }}>{nextEvent.startTime}</div>
+              <div className="feed-title" style={{ fontSize: 14, opacity: 0.8, fontWeight: 600 }}>{nextEvent.title}</div>
             </div>
           )}
           {topTask && (
-            <div className="feed-item priority-task" onClick={() => navigate('/tasks')} style={{ padding: '16px', borderRadius: 20 }}>
-              <div className="feed-label" style={{ fontSize: 10 }}>TOP FOCUS</div>
-              <div className={`feed-priority-tag priority-${topTask.priority}`} style={{ fontSize: 9 }}>{topTask.priority}</div>
-              <div className="feed-title" style={{ fontSize: 13, fontWeight: 600 }}>{topTask.title}</div>
+            <div className="glass-card feed-item priority-task" onClick={() => navigate('/tasks')} style={{ padding: '20px', borderRadius: 24, border: '1px solid var(--border-premium)' }}>
+              <div className="feed-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--orange)', letterSpacing: 1 }}>TOP FOCUS</div>
+              <div className={`feed-priority-tag priority-${topTask.priority}`} style={{ fontSize: 9, margin: '8px 0' }}>{topTask.priority.toUpperCase()}</div>
+              <div className="feed-title" style={{ fontSize: 14, fontWeight: 700 }}>{topTask.title}</div>
             </div>
           )}
         </div>
 
         {/* Row 2: Rituals & Habits */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div className="feed-item habits-glance" onClick={() => navigate('/habits')} style={{ padding: '16px', borderRadius: 20 }}>
-            <div className="feed-label" style={{ fontSize: 10, marginBottom: 8 }}>RITUALS</div>
-            <div className="feed-habits-grid" style={{ gap: 6 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="glass-card feed-item habits-glance" onClick={() => navigate('/habits')} style={{ padding: '20px', borderRadius: 24 }}>
+            <div className="feed-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent3)', letterSpacing: 1, marginBottom: 12 }}>RITUALS</div>
+            <div className="feed-habits-grid" style={{ display: 'flex', gap: 8 }}>
               {d?.habits?.list?.slice(0, 3).map(h => (
-                <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done' : ''}`} style={{ width: 24, height: 24, fontSize: 12 }}>
+                <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done' : ''}`} style={{ 
+                  width: 32, height: 32, borderRadius: 10, fontSize: 16,
+                  background: h.completedToday ? h.color : 'var(--surface2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '1px solid var(--border)'
+                }}>
                   {h.icon}
                 </div>
               ))}
             </div>
           </div>
           {d?.notes?.recent?.length > 0 && (
-            <div className="feed-item recent-note" onClick={() => navigate('/notes')} style={{ padding: '16px', borderRadius: 20 }}>
-              <div className="feed-label" style={{ fontSize: 10, marginBottom: 4 }}>NOTES</div>
-              <div style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div className="glass-card feed-item recent-note" onClick={() => navigate('/notes')} style={{ padding: '20px', borderRadius: 24 }}>
+              <div className="feed-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent2)', letterSpacing: 1, marginBottom: 8 }}>KNOWLEDGE</div>
+              <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {d.notes.recent[0].title}
               </div>
+              <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>Recently captured</div>
             </div>
           )}
         </div>
@@ -371,25 +394,28 @@ export default function DashboardPage() {
   return (
     <>
     <div className="responsive-container">
-      <div className="page-header mb-6">
+      <div className="page-header mb-8">
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="page-title flex items-center gap-3" style={{ 
-            fontSize: 'clamp(1.2rem, 6vw, 3.5rem)', 
+          <div className="page-title flex items-center gap-4" style={{ 
+            fontSize: 'clamp(1.5rem, 7vw, 4rem)', 
             fontWeight: 800,
-            lineHeight: 1.1,
-            letterSpacing: '-0.04em'
+            fontFamily: 'Syne, sans-serif',
+            lineHeight: 1.05,
+            letterSpacing: '-0.05em'
           }}>
-            <GreetingIcon className="text-accent" size={isMobile ? 24 : 48} style={{ flexShrink: 0 }} />
+            <GreetingIcon className="text-accent" size={isMobile ? 32 : 56} style={{ flexShrink: 0, filter: 'drop-shadow(0 0 15px var(--accent-glow))' }} />
             <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {greeting}, <span style={{ 
-                background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
+                background: 'var(--grad-premium)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 display: 'inline-block'
               }}>{user?.name?.split(' ')[0]}</span>
             </div>
           </div>
-          <p className="page-subtitle">Your productivity pulse for today</p>
+          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--muted)', marginTop: 8, letterSpacing: '0.02em' }}>
+            Synchronizing your productivity pulse for today
+          </p>
         </div>
       </div>
 
@@ -498,50 +524,52 @@ export default function DashboardPage() {
             </AnimatePresence>
 
             {/* Daily Activity Table */}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
-              <h1 style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.02em', margin: 0 }}>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 32 }}>
+              <h1 style={{ fontSize: isMobile ? '2rem' : '3.5rem', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em', margin: 0, lineHeight: 1 }}>
                 Mission <br />Control
               </h1>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
-                Recent activity history
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2 }}>
+                Sub-orbital activity logs
               </div>
-              <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 80px 80px', padding: '10px 16px', borderRadius: 8, background: 'var(--surface2)', fontSize: 10, fontWeight: 700, color: 'var(--muted)', marginBottom: 8 }}>
-                <span>DATE</span>
-                <span className="text-center">TASKS</span>
-                <span className="text-center">FOCUS</span>
-                <span className="text-center">HABITS</span>
-                <span className="text-center">LEVEL</span>
+              <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 100px 80px', padding: '12px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', fontSize: 10, fontWeight: 800, color: 'var(--muted)', marginBottom: 12, letterSpacing: 1 }}>
+                <span>SOLAR DATE</span>
+                <span className="text-center">EXECUTIONS</span>
+                <span className="text-center">RECOVERY</span>
+                <span className="text-center">RITUALS</span>
+                <span className="text-center">SIGNATURE</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {(Array.isArray(activityData) ? activityData : []).slice(-5).reverse().map((log, i) => (
                   <div key={log.date} style={{
                     display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr auto' : '1fr 80px 80px 80px 80px',
-                    padding: isMobile ? '14px 16px' : '12px 16px',
+                    gridTemplateColumns: isMobile ? '1fr auto' : '1fr 100px 100px 100px 80px',
+                    padding: isMobile ? '16px 20px' : '16px 20px',
                     background: 'var(--surface2)',
-                    borderRadius: 14,
+                    borderRadius: 18,
                     alignItems: 'center',
                     border: '1px solid var(--border)',
-                    boxShadow: isMobile ? 'var(--shadow-sm)' : 'none'
-                  }}>
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'var(--transition)'
+                  }} className="hover-lift">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <span style={{ fontSize: isMobile ? 14 : 13, fontWeight: 700 }}>{format(new Date(log.date), isMobile ? 'EEEE, MMM d' : 'MMM d, yyyy')}</span>
-                        {isMobile && <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>{log.tasksCompleted} tasks • {log.focusMinutes}m focus</span>}
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{format(new Date(log.date), isMobile ? 'EEEE, MMM d' : 'MMMM do, yyyy')}</span>
+                        {isMobile && <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>{log.tasksCompleted} executions • {log.focusMinutes}m recovery</span>}
                     </div>
                     {!isMobile && (
                       <>
-                        <span className="text-center" style={{ fontSize: 12, fontWeight: 700 }}>{log.tasksCompleted}</span>
-                        <span className="text-center" style={{ fontSize: 12, fontWeight: 700 }}>{log.focusMinutes}m</span>
-                        <span className="text-center" style={{ fontSize: 12, fontWeight: 700 }}>{log.habitsCompleted}</span>
+                        <span className="text-center" style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>{log.tasksCompleted}</span>
+                        <span className="text-center" style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent3)' }}>{log.focusMinutes}m</span>
+                        <span className="text-center" style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent2)' }}>{log.habitsCompleted}</span>
                       </>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
                       <div style={{
-                        width: isMobile ? 18 : 14,
-                        height: isMobile ? 18 : 14,
+                        width: 14,
+                        height: 14,
                         borderRadius: 4,
-                        background: ['var(--surface3)', '#2ecc7133', '#2ecc7166', '#27ae6099', '#27ae60'][log.intensity || 0],
-                        border: '1px solid var(--border)'
+                        background: ['var(--surface3)', 'var(--accent)', 'var(--accent4)', 'var(--accent3)', 'linear-gradient(135deg, var(--accent), var(--accent2))'][log.intensity || 0],
+                        border: '1px solid var(--border)',
+                        boxShadow: (log.intensity || 0) > 2 ? '0 0 10px var(--accent-glow)' : 'none'
                       }} />
                     </div>
                   </div>
