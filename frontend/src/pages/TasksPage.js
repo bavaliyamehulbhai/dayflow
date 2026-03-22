@@ -335,17 +335,23 @@ export default function TasksPage() {
 
   return (
     <div className="responsive-container">
-      <div className="page-header mb-10" style={{ alignItems: 'flex-start' }}>
+      <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative' }}>
+        <div className="aura-pulse" style={{ 
+          position: 'absolute', top: -50, left: -50, 
+          width: 200, height: 200, 
+          background: 'var(--grad-mesh-vibrant)', 
+          opacity: 0.1, zIndex: -1 
+        }} />
         <div>
-          <div className="page-title flex items-center gap-4" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-display)', fontWeight: 800, letterSpacing: '-0.04em' }}>
-            <div className="auth-logo-icon" style={{ width: 48, height: 48, marginBottom: 0 }}>
+          <div className="page-title flex items-center gap-4" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.2 }}>
+            <div className="auth-logo-icon aura-float" style={{ width: 48, height: 48, marginBottom: 0 }}>
               <ClipboardList size={24} color="white" strokeWidth={2.5} />
             </div>
             Mission Control
           </div>
           <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600 }}>Track, manage and conquer your tactical objectives</p>
         </div>
-        <button className="auth-button hide-mobile" onClick={() => setModal('create')} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
+        <button className="auth-button hide-mobile glow-on-hover" onClick={() => setModal('create')} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
           <div className="btn-glint" />
           <Plus size={20} style={{ marginRight: 8 }} /> New Objective
         </button>
@@ -378,7 +384,7 @@ export default function TasksPage() {
       )}
 
       {/* Adaptive Filter Bar */}
-      <div className="glass-card aura-iridescent mb-8" style={{ padding: 'clamp(16px, 3vw, 24px)', borderRadius: 24 }}>
+      <div className="glass-holographic aura-iridescent mb-8" style={{ padding: 'clamp(16px, 3vw, 24px)', borderRadius: 24, border: 'none' }}>
         <div className="filter-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr', gap: 16 }}>
           <div style={{ position: 'relative' }}>
             <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', opacity: 0.6 }} />

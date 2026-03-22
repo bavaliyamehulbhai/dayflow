@@ -33,18 +33,22 @@ export default function ConfirmDialog({ open, title, message, confirmText = 'Del
                 >
                     <motion.div
                         key="confirm-box"
-                        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.92, y: 16 }}
-                        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-                        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.92, y: 16 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                        className="confirm-dialog"
+                        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30, filter: 'blur(10px)' }}
+                        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30, filter: 'blur(10px)' }}
+                        transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                        className="confirm-dialog glass-holographic"
                         style={isMobile ? { 
                             width: '100%', 
                             borderRadius: '24px 24px 0 0', 
-                            padding: '24px 24px calc(24px + env(safe-area-inset-bottom))',
+                            padding: '32px 24px calc(24px + env(safe-area-inset-bottom))',
                             maxWidth: 'none',
-                            margin: 0
-                        } : {}}
+                            margin: 0,
+                            border: 'none'
+                        } : {
+                            border: 'none',
+                            boxShadow: '0 40px 100px rgba(0,0,0,0.6)'
+                        }}
                     >
                         <button className="modal-close" onClick={onCancel} style={{ position: 'absolute', top: 16, right: 16 }}>
                             <X size={18} />

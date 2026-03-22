@@ -160,7 +160,7 @@ export default function LoginPage() {
           rotateY: { type: 'spring', stiffness: 100, damping: 30 },
           rotateX: { type: 'spring', stiffness: 100, damping: 30 }
         }}
-        style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1, transformStyle: 'preserve-3d' }}
+        style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1, transformStyle: 'preserve-3d' }}
       >
         {/* Holographic Glint / Scanline Effect */}
         <div style={{
@@ -171,7 +171,7 @@ export default function LoginPage() {
         }} />
 
         {/* Logo & Brand */}
-        <div style={{ textAlign: 'center', marginBottom: 'clamp(24px, 5vh, 48px)', transform: 'translateZ(60px)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(16px, 3.5vh, 28px)', transform: 'translateZ(60px)' }}>
           <Magnetic>
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
@@ -183,7 +183,7 @@ export default function LoginPage() {
             </motion.div>
           </Magnetic>
           <motion.div className="auth-title">DayFlow</motion.div>
-          <div style={{ color: 'var(--muted)', fontSize: 'clamp(14px, 2vw, 16px)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
+          <div style={{ color: 'var(--muted)', fontSize: 'clamp(13px, 1.8vw, 15px)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
             Architecting Your <span className="holographic-text">Infinite Potential</span>
           </div>
         </div>
@@ -207,10 +207,10 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            style={{ marginBottom: 32, transform: 'translateZ(30px)' }}
+            style={{ marginBottom: 24, transform: 'translateZ(30px)' }}
           >
-            <h2 style={{ fontSize: 26, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.03em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Welcome back, architect.</h2>
-            <p style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 600, marginTop: 4 }}>Enter your credentials to re-align with the flow.</p>
+            <h2 style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.03em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Welcome back, architect.</h2>
+            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600, marginTop: 2 }}>Enter your credentials to re-align with the flow.</p>
           </motion.div>
 
           {error && (
@@ -236,11 +236,11 @@ export default function LoginPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
             onSubmit={handleSubmit} 
-            style={{ display: 'flex', flexDirection: 'column', gap: 20, transform: 'translateZ(20px)' }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 14, transform: 'translateZ(20px)' }}
           >
             <div className="form-group">
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ width: 12, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
+              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ width: 12, height: 1.2, background: 'var(--accent)', borderRadius: 1 }}></span>
                 Cognitive Portal
               </label>
               <input
@@ -254,8 +254,8 @@ export default function LoginPage() {
             </div>
 
             <div className="form-group">
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ width: 12, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
+              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ width: 12, height: 1.2, background: 'var(--accent2)', borderRadius: 1 }}></span>
                 Security Cipher
               </label>
               <div style={{ position: 'relative' }}>
@@ -276,7 +276,7 @@ export default function LoginPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
@@ -285,6 +285,7 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               className="auth-button haptic-feedback"
+              style={{ marginTop: 8 }}
             >
               <div className="btn-glint" />
               {loading ? (
@@ -297,9 +298,9 @@ export default function LoginPage() {
             </motion.button>
           </motion.form>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '28px 0', opacity: 0.3, transform: 'translateZ(10px)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '24px 0', opacity: 0.3, transform: 'translateZ(10px)' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--text)' }} />
-            <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase' }}>or</span>
+            <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>or</span>
             <div style={{ flex: 1, height: 1, background: 'var(--text)' }} />
           </div>
 
@@ -309,17 +310,17 @@ export default function LoginPage() {
             whileHover={{ scale: 1.02, background: 'rgba(255,255,255,0.08)' }}
             whileTap={{ scale: 0.98 }}
             style={{
-              width: '100%', height: 54, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(255,255,255,0.03)', color: 'var(--text)',
-              border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 16,
-              fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s ease',
+              width: '100%', height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(255,255,255,0.02)', color: 'var(--text)',
+              border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: 14,
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s ease',
               transform: 'translateZ(10px)'
             }}
           >
             ⚡ Experience the Flow (Demo)
           </motion.button>
 
-          <div style={{ marginTop: 32, textAlign: 'center', fontSize: 14, color: 'var(--muted)', fontWeight: 600, transform: 'translateZ(10px)' }}>
+          <div style={{ marginTop: 28, textAlign: 'center', fontSize: 13, color: 'var(--muted)', fontWeight: 600, transform: 'translateZ(10px)' }}>
             New to the ecosystem?{' '}
             <Link to="/register" style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'none' }}>
               Manifest Identity

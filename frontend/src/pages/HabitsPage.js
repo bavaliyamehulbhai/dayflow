@@ -222,17 +222,23 @@ export default function HabitsPage() {
 
   return (
     <div className="responsive-container">
-      <div className="page-header mb-10" style={{ alignItems: 'flex-start' }}>
+      <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative' }}>
+        <div className="aura-pulse" style={{ 
+          position: 'absolute', top: -50, left: -50, 
+          width: 200, height: 200, 
+          background: 'var(--grad-mesh-vibrant)', 
+          opacity: 0.1, zIndex: -1 
+        }} />
         <div>
-          <div className="page-title flex items-center gap-4" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-display)', fontWeight: 800, letterSpacing: '-0.04em' }}>
-            <div className="auth-logo-icon" style={{ width: 48, height: 48, marginBottom: 0 }}>
+          <div className="page-title flex items-center gap-4" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.2 }}>
+            <div className="auth-logo-icon aura-float" style={{ width: 48, height: 48, marginBottom: 0 }}>
               <RefreshCcw size={24} color="white" strokeWidth={2.5} />
             </div>
             Ritual Engine
           </div>
           <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600 }}>Neural consistency for peak biological evolution</p>
         </div>
-        <button className="auth-button hide-mobile" onClick={() => setModal({})} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
+        <button className="auth-button hide-mobile glow-on-hover" onClick={() => setModal({})} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
           <div className="btn-glint" />
           <Plus size={20} style={{ marginRight: 8 }} /> Forge Ritual
         </button>

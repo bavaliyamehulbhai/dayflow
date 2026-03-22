@@ -331,16 +331,23 @@ export default function ProfilePage() {
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="premium-card aura-iridescent"
+        className="glass-holographic aura-iridescent aura-float"
         style={{
           marginBottom: 32, 
-          padding: isMobile ? '32px 24px' : '48px 64px',
-          border: '1px solid rgba(255,255,255,0.05)',
+          padding: isMobile ? '24px 16px' : '48px 64px',
           borderRadius: 40,
           position: 'relative',
-          overflow: 'visible'
+          overflow: 'visible',
+          border: 'none'
         }}
       >
+        <div className="aura-pulse" style={{ 
+          position: 'absolute', top: '50%', left: '50%', 
+          width: '80%', height: '80%', 
+          background: 'var(--grad-mesh-vibrant)', 
+          opacity: 0.15, filter: 'blur(80px)', 
+          transform: 'translate(-50%, -50%)', zIndex: -1 
+        }} />
         <div className="btn-glint" style={{ opacity: 0.1 }} />
         
         <div style={{

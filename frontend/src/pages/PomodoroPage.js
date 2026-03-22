@@ -372,16 +372,22 @@ export default function PomodoroPage() {
       animate="visible"
       className={`responsive-container ${running && isMobile ? 'focus-immersion' : ''}`}
     >
-      <div className="page-header mb-10" style={{ alignItems: 'flex-start' }}>
+      <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative' }}>
+        <div className="aura-pulse" style={{ 
+          position: 'absolute', top: -50, left: -50, 
+          width: 200, height: 200, 
+          background: 'var(--grad-mesh-vibrant)', 
+          opacity: 0.1, zIndex: -1 
+        }} />
         <div>
           <div className="page-title flex items-center gap-4" style={{ 
             fontFamily: 'Syne, sans-serif', 
-            fontSize: 'var(--fs-display)', 
+            fontSize: 'var(--fs-2xl)', 
             fontWeight: 800,
             letterSpacing: '-0.05em',
-            lineHeight: 1
+            lineHeight: 1.2
           }}>
-            <div className="auth-logo-icon" style={{ width: 48, height: 48, marginBottom: 0 }}>
+            <div className="auth-logo-icon aura-float" style={{ width: 48, height: 48, marginBottom: 0 }}>
               <Timer size={24} color="white" strokeWidth={2.5} fill="white" />
             </div>
             Temporal Engine
@@ -391,7 +397,7 @@ export default function PomodoroPage() {
           </p>
         </div>
         <button
-          className="btn glass haptic-tap"
+          className="btn glass haptic-tap glow-on-hover"
           onClick={() => setIsFocusMode(true)}
           style={{ borderRadius: 16, height: 54, padding: '0 24px', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)' }}
         >
@@ -410,7 +416,7 @@ export default function PomodoroPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 20, minWidth: 0 }}>
 
           {/* Timer Card */}
-          <motion.div variants={itemVariants} className="premium-card aura-iridescent" style={{ textAlign: 'center', padding: 'var(--space-10) var(--space-6)', position: 'relative', overflow: 'hidden', borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+          <motion.div variants={itemVariants} className="glass-holographic aura-iridescent" style={{ textAlign: 'center', padding: 'var(--space-10) var(--space-6)', position: 'relative', overflow: 'hidden', borderRadius: 40, border: 'none' }}>
             <div className="btn-glint" style={{ opacity: 0.05 }} />
 
             {/* Mode Switcher */}
@@ -487,8 +493,8 @@ export default function PomodoroPage() {
                   </filter>
                 </defs>
               </svg>
-              {/* Center text */}
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              {/* Timer UI components */}
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={timeLeft}

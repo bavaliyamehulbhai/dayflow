@@ -3,15 +3,14 @@ import React from 'react';
 const Skeleton = ({ width, height, borderRadius = 12, className = "" }) => {
   return (
     <div 
-      className={`shimmer-wrapper ${className}`} 
+      className={`skeleton ${className}`} 
       style={{ 
         width: width || '100%', 
         height: height || '20px', 
-        borderRadius 
+        borderRadius,
+        opacity: 0.6
       }}
-    >
-      <div className="shimmer" />
-    </div>
+    />
   );
 };
 

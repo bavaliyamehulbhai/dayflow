@@ -194,23 +194,23 @@ export default function RegisterPage() {
             opacity: { duration: 0.8 },
             y: { duration: 0.8 }
         }}
-        style={{ width: '100%', maxWidth: 480, position: 'relative', zIndex: 1, transformStyle: 'preserve-3d' }}
+        style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1, transformStyle: 'preserve-3d' }}
       >
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 'clamp(24px, 5vh, 40px)', transform: 'translateZ(60px)' }}>
+        {/* Logo & Brand */}
+        <div style={{ textAlign: 'center', marginBottom: 'clamp(16px, 3.5vh, 24px)', transform: 'translateZ(60px)' }}>
           <Magnetic>
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.3 }}
               className="auth-logo-icon"
             >
               <Zap size={window.innerWidth <= 768 ? 32 : 42} color="white" strokeWidth={2.5} fill="white" />
             </motion.div>
           </Magnetic>
-          <div className="auth-title">DayFlow</div>
-          <div style={{ color: 'var(--muted)', fontSize: 'clamp(14px, 2vw, 16px)', marginTop: 8, fontWeight: 700, opacity: 0.9, letterSpacing: '0.02em' }}>
-            Initialize your <span className="holographic-text">Neural Presence</span>
+          <motion.div className="auth-title">DayFlow</motion.div>
+          <div style={{ color: 'var(--muted)', fontSize: 'clamp(12px, 1.8vw, 14px)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
+            Architecting Your <span className="holographic-text">Infinite Potential</span>
           </div>
         </div>
 
@@ -233,10 +233,10 @@ export default function RegisterPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            style={{ marginBottom: 32, transform: 'translateZ(30px)' }}
+            style={{ marginBottom: 20, transform: 'translateZ(30px)' }}
           >
-            <h2 style={{ fontSize: 28, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.04em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Synchronize</h2>
-            <p style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 700, marginTop: 6, opacity: 0.8 }}>Forge your portal to cognitive clarity.</p>
+            <h2 style={{ fontSize: 26, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.04em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Synchronize</h2>
+            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 700, marginTop: 4, opacity: 0.8 }}>Forge your portal to cognitive clarity.</p>
           </motion.div>
 
           {error && (
@@ -261,7 +261,7 @@ export default function RegisterPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
             onSubmit={handleSubmit} 
-            style={{ display: 'flex', flexDirection: 'column', gap: 20, transform: 'translateZ(20px)' }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 12, transform: 'translateZ(20px)' }}
           >
             <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>

@@ -176,24 +176,30 @@ export default function SchedulePage() {
 
   return (
     <div className="responsive-container">
-      <div className="page-header mb-10" style={{ alignItems: 'flex-start' }}>
+      <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative' }}>
+        <div className="aura-pulse" style={{ 
+          position: 'absolute', top: -50, left: -50, 
+          width: 200, height: 200, 
+          background: 'var(--grad-mesh-vibrant)', 
+          opacity: 0.1, zIndex: -1 
+        }} />
         <div>
           <div className="page-title flex items-center gap-4">
-            <div className="auth-logo-icon" style={{ width: 48, height: 48, marginBottom: 0 }}>
+            <div className="auth-logo-icon aura-float" style={{ width: 48, height: 48, marginBottom: 0 }}>
               <Sparkles size={24} color="white" strokeWidth={2.5} fill="white" />
             </div>
-            <h1 style={{ fontSize: 'var(--fs-display)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em' }}>Temporal Nexus</h1>
+            <h1 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em', lineHeight: 1.2 }}>Temporal Nexus</h1>
           </div>
           <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600 }}>Architect your temporal alignment & cognitive flow</p>
         </div>
-        <button className="auth-button hide-mobile" onClick={() => setModal('create')} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
+        <button className="auth-button hide-mobile glow-on-hover" onClick={() => setModal('create')} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
           <div className="btn-glint" />
           <Plus size={20} style={{ marginRight: 8 }} /> Schedule Alignment
         </button>
       </div>
 
       {/* Date navigation */}
-      <div className="glass-card mb-8" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="glass-holographic mb-8" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', borderRadius: 24, border: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: isMobile ? '1 1 100%' : '1', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
           <motion.button whileHover={{ x: -4, background: 'rgba(255,255,255,0.05)' }} className="btn btn-icon glass haptic-tap" onClick={prevDay} style={{ borderRadius: 12 }}><ChevronLeft size={22} /></motion.button>
           <div style={{ textAlign: 'center', minWidth: isMobile ? 'auto' : 200 }}>
@@ -218,7 +224,7 @@ export default function SchedulePage() {
       <div className="schedule-main-grid mt-8">
 
         {/* Timeline view */}
-        <div className="premium-card aura-iridescent" style={{ padding: 0, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24 }}>
+        <div className="glass-holographic aura-iridescent" style={{ padding: 0, overflow: 'hidden', border: 'none', borderRadius: 24 }}>
           <div style={{ position: 'relative', paddingLeft: isMobile ? 56 : 96, paddingRight: isMobile ? 12 : 32, paddingTop: 40, paddingBottom: 40 }}>
             {hours.map(h => (
               <div key={h} style={{ position: 'relative', height: 64, borderBottom: '1px solid rgba(255,255,255,0.03)', zIndex: 1 }}>

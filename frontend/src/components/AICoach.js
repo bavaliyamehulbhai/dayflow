@@ -30,11 +30,11 @@ const AICoach = () => {
 
     return (
         <>
-            <div className="card" style={{
-                background: 'linear-gradient(135deg, rgba(130, 114, 255, 0.08), rgba(255, 107, 139, 0.05))',
-                border: '1px solid rgba(130, 114, 255, 0.2)',
+            <div className="card glass-holographic" style={{
                 overflow: 'hidden',
-                position: 'relative'
+                position: 'relative',
+                border: 'none',
+                background: 'linear-gradient(135deg, rgba(130, 114, 255, 0.08), rgba(255, 107, 139, 0.05))',
             }}>
                 <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, background: 'var(--accent)', filter: 'blur(50px)', opacity: 0.1, pointerEvents: 'none' }}></div>
 

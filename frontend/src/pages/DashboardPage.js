@@ -178,7 +178,7 @@ function Clock() {
       className="clock-card-premium"
     >
       <div className="greeting-icon-bg" style={{ color: 'var(--accent)' }}>
-        <GreetingIcon size={window.innerWidth <= 768 ? 140 : 260} />
+        <GreetingIcon size={window.innerWidth <= 768 ? 100 : 180} />
       </div>
       
       <motion.div 
@@ -327,11 +327,23 @@ export default function DashboardPage() {
 
   return (
     <div className="responsive-container">
-      <div className="dashboard-header">
+      <div className="dashboard-header" style={{ position: 'relative', overflow: 'visible' }}>
+        <div className="aura-pulse" style={{ 
+          position: 'absolute', top: -100, left: -100, 
+          width: 300, height: 300, 
+          background: 'var(--grad-mesh-vibrant)', 
+          opacity: 0.15, zIndex: -1 
+        }} />
         <div className="flex-items-center gap-4">
-          <GreetingIcon className="text-accent" size={isMobile ? 32 : 56} style={{ filter: 'drop-shadow(0 0 15px var(--accent-glow))' }} />
-          <div className="dashboard-title truncate">
-            {greeting}, <span className="holographic-text">{user?.name?.split(' ')[0]}</span>
+          <GreetingIcon className="text-accent aura-float" size={isMobile ? 28 : 44} style={{ filter: 'drop-shadow(0 0 15px var(--accent-glow))' }} />
+          <div className="dashboard-title text-display truncate" style={{ fontSize: 'var(--fs-2xl)' }}>
+            {greeting}, <span className="holographic-text" style={{ 
+              background: 'linear-gradient(135deg, var(--text) 0%, var(--accent) 50%, var(--text) 100%)',
+              backgroundSize: '200% auto',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              animation: 'organicShimmer 8s linear infinite'
+            }}>{user?.name?.split(' ')[0]}</span>
           </div>
         </div>
         <p className="page-subtitle fw-semibold color-muted mt-2 ls-wide">
@@ -364,7 +376,7 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(24px, 4vw, 40px)', minWidth: 0 }}>
 
           {/* Activity Consistency Grid (LeetCode Style) */}
-          <motion.div variants={itemVariants} className="card glass-card aura-iridescent" style={{ padding: '24px' }}>
+          <motion.div variants={itemVariants} className="card glass-holographic aura-iridescent" style={{ padding: '24px', border: 'none' }}>
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Activity size={16} className="text-accent" />
@@ -550,7 +562,7 @@ export default function DashboardPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
           {/* AI Coach */}
-          <motion.div variants={itemVariants} className="card aura-iridescent">
+          <motion.div variants={itemVariants} className="aura-float">
             <AICoach />
           </motion.div>
 
