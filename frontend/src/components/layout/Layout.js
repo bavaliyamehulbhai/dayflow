@@ -76,28 +76,9 @@ export default function Layout({ children }) {
       <div className="aura-orb" style={{ top: '50%', left: '50%', width: 300, height: 300, background: 'var(--aura-color-3)', animationDelay: '-10s', filter: 'blur(120px)' }} />
 
       {/* ─── Desktop + Tablet Sidebar ──────────────────────────────────────── */}
-      {/* ─── Desktop + Tablet Sidebar ──────────────────────────────────────── */}
       {!isMobile && (
-        <aside className={`sidebar ${isTablet ? 'sidebar-icon' : ''}`} style={{
-          background: 'var(--surface)',
-          backdropFilter: 'var(--glass-premium)',
-          WebkitBackdropFilter: 'var(--glass-premium)',
-          borderRight: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-lg)',
-          transformStyle: 'preserve-3d'
-        }}>
-          <div className="sidebar-logo" style={{
-            padding: '32px 24px',
-            fontSize: isTablet ? '24px' : '28px',
-            textAlign: isTablet ? 'center' : 'left',
-            fontFamily: 'Syne, sans-serif',
-            fontWeight: 800,
-            background: 'var(--grad-premium)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.06em',
-            textShadow: '0 10px 30px rgba(0,0,0,0.2)'
-          }}>
+        <aside className={`sidebar ${isTablet ? 'sidebar-icon' : ''}`}>
+          <div className="sidebar-logo">
             {isTablet ? '⚡' : 'DayFlow'}
           </div>
 
@@ -118,7 +99,7 @@ export default function Layout({ children }) {
               ))}
             </div>
 
-            <div className="nav-section" style={{ marginTop: 12 }}>
+            <div className="nav-section mt-4">
               {!isTablet && <span className="nav-section-label">Preferences</span>}
               <NavLink
                 to="/profile"
@@ -130,7 +111,6 @@ export default function Layout({ children }) {
               </NavLink>
               <button
                 className={`nav-link ${isSecureMode ? 'secure-active' : ''}`}
-                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                 onClick={toggleSecureMode}
                 title={isSecureMode ? 'Disable Secure Mode' : 'Enable Secure Mode'}
               >
@@ -139,7 +119,6 @@ export default function Layout({ children }) {
               </button>
               <button
                 className="nav-link logout-btn"
-                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                 onClick={handleLogout}
                 title="Log Out"
               >
@@ -154,7 +133,6 @@ export default function Layout({ children }) {
               className="user-card"
               onClick={() => navigate('/profile')}
               title={user?.name}
-              style={{ justifyContent: isTablet ? 'center' : 'flex-start' }}
             >
               <div className="user-avatar">{initials}</div>
               {!isTablet && (
@@ -184,24 +162,17 @@ export default function Layout({ children }) {
         )}
 
         {/* ─── Main Content ──────────────────────────────────────────────────── */}
-        <main className="main-content" style={{ 
-          marginLeft: 0,
-          background: 'var(--grad-mesh)',
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
+        <main className="main-content">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 20, scale: 0.98, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -20, scale: 1.02, filter: 'blur(10px)' }}
+              initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
               transition={{
-                duration: 0.5,
+                duration: 0.4,
                 ease: [0.16, 1, 0.3, 1]
               }}
-              style={{ perspective: 1000 }}
               className="page-content"
             >
               {children}

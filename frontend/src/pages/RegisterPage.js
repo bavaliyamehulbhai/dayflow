@@ -49,24 +49,20 @@ function getPasswordStrength(password) {
 }
 
 const InputField = ({ label, type, placeholder, value, onChange, onBlur, error, success, autoComplete, autoFocus, className }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+  <div className="form-group">
     <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
       {label}
     </label>
     <div style={{ position: 'relative' }}>
       <input
         type={type}
-        className={`input ${className} ${error ? 'input-error' : success ? 'input-ok' : ''}`}
+        className={`auth-input haptic-feedback ${className} ${error ? 'input-error' : success ? 'input-ok' : ''}`}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
         onBlur={onBlur}
         autoComplete={autoComplete}
         autoFocus={autoFocus}
-        style={{ 
-          height: 52, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-          borderRadius: 14, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%'
-        }}
       />
     </div>
     <AnimatePresence>
@@ -158,11 +154,7 @@ export default function RegisterPage() {
     <div 
       onMouseMove={handleCardMouseMove}
       onMouseLeave={handleCardMouseLeave}
-      style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '20px', background: 'var(--bg)', position: 'relative', overflow: 'hidden',
-        perspective: '1200px'
-      }}
+      className="auth-container"
     >
       {/* Background Orbs */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', background: 'radial-gradient(circle at 50% 50%, rgba(124,109,250,0.08), transparent 70%)' }}>
@@ -211,26 +203,14 @@ export default function RegisterPage() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              style={{ 
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', 
-                width: 'clamp(64px, 10vw, 84px)', height: 'clamp(64px, 10vw, 84px)', borderRadius: 28, 
-                background: 'linear-gradient(135deg, var(--accent), var(--accent2))', 
-                boxShadow: '0 20px 50px rgba(124,109,250,0.4), 0 0 100px rgba(124,109,250,0.2)',
-                marginBottom: 20,
-                border: '1.5px solid rgba(255,255,255,0.3)',
-                cursor: 'pointer'
-              }}>
+              className="auth-logo-icon"
+            >
               <Zap size={window.innerWidth <= 768 ? 32 : 42} color="white" strokeWidth={2.5} fill="white" />
             </motion.div>
           </Magnetic>
-          <div style={{ 
-            fontFamily: 'Syne, sans-serif', fontSize: 'clamp(32px, 5vw, 44px)', fontWeight: 800, 
-            color: 'var(--text)', 
-            letterSpacing: '-0.06em',
-            textShadow: '0 10px 40px rgba(0,0,0,0.4)'
-          }}>DayFlow</div>
+          <div className="auth-title">DayFlow</div>
           <div style={{ color: 'var(--muted)', fontSize: 'clamp(14px, 2vw, 16px)', marginTop: 8, fontWeight: 700, opacity: 0.9, letterSpacing: '0.02em' }}>
-            Initialize your <span className="holographic-text" style={{ fontWeight: 800 }}>Neural Presence</span>
+            Initialize your <span className="holographic-text">Neural Presence</span>
           </div>
         </div>
 
@@ -239,18 +219,10 @@ export default function RegisterPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4, duration: 0.8 }}
-          className="card glass-card aura-iridescent" 
+          className="auth-card aura-iridescent" 
           style={{ 
-            background: 'rgba(13, 13, 22, 0.55)', 
-            backdropFilter: 'blur(60px) saturate(250%)', 
-            border: '2px solid rgba(255, 255, 255, 0.08)', 
-            borderRadius: 42, 
-            padding: 'clamp(32px, 6vh, 48px) clamp(24px, 5vw, 40px)', 
-            boxShadow: '0 50px 100px rgba(0,0,0,0.8), inset 0 0 40px rgba(255,255,255,0.03)',
             transform: 'translateZ(40px)',
-            transformStyle: 'preserve-3d',
-            position: 'relative',
-            overflow: 'hidden'
+            transformStyle: 'preserve-3d'
           }}
         >
           {/* Internal Glow Orbs */}
@@ -291,51 +263,41 @@ export default function RegisterPage() {
             onSubmit={handleSubmit} 
             style={{ display: 'flex', flexDirection: 'column', gap: 20, transform: 'translateZ(20px)' }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span style={{ width: 10, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
                 Full Manifestation
               </label>
               <input
                 type="text"
-                className="input haptic-feedback"
+                className="auth-input haptic-feedback"
                 placeholder="Mehul Shah"
                 value={form.name}
                 onChange={handleChange('name')}
                 onBlur={() => handleBlur('name')}
                 required autoFocus autoComplete="name"
-                style={{ 
-                  height: 52, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
-                  borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
-                  transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
               />
               {getFieldError('name') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('name')}</div>}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span style={{ width: 10, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
                 Cognitive Relay
               </label>
               <input
                 type="email"
-                className="input haptic-feedback"
+                className="auth-input haptic-feedback"
                 placeholder="you@presence.app"
                 value={form.email}
                 onChange={handleChange('email')}
                 onBlur={() => handleBlur('email')}
                 required autoComplete="email"
-                style={{ 
-                  height: 52, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
-                  borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
-                  transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
               />
               {getFieldError('email') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('email')}</div>}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span style={{ width: 10, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
                 Security Cipher
@@ -343,17 +305,12 @@ export default function RegisterPage() {
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className="input haptic-feedback"
+                  className="auth-input haptic-feedback"
                   placeholder="The complex key..."
                   value={form.password}
                   onChange={handleChange('password')}
                   onBlur={() => handleBlur('password')}
                   autoComplete="new-password" 
-                  style={{ 
-                    height: 52, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
-                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-                  }}
                 />
                 <EyeBtn show={showPassword} onToggle={() => setShowPassword(v => !v)} />
               </div>
@@ -370,7 +327,7 @@ export default function RegisterPage() {
               {getFieldError('password') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('password')}</div>}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span style={{ width: 10, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
                 Affirm Cipher
@@ -378,17 +335,12 @@ export default function RegisterPage() {
               <div style={{ position: 'relative' }}>
                 <input
                   type={showConfirm ? 'text' : 'password'}
-                  className="input haptic-feedback"
+                  className="auth-input haptic-feedback"
                   placeholder="Repeat the key..."
                   value={form.confirm}
                   onChange={handleChange('confirm')}
                   onBlur={() => handleBlur('confirm')}
                   autoComplete="new-password" 
-                  style={{ 
-                    height: 52, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
-                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-                  }}
                 />
                 <EyeBtn show={showConfirm} onToggle={() => setShowConfirm(v => !v)} />
               </div>
@@ -397,20 +349,9 @@ export default function RegisterPage() {
 
             <motion.button
               type="submit" disabled={loading}
-              whileHover={{ scale: 1.02, y: -4, boxShadow: '0 25px 45px rgba(124,109,250,0.4)' }} 
-              whileTap={{ scale: 0.98 }}
-              className="haptic-feedback"
-              style={{ 
-                width: '100%', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                fontSize: 16, fontWeight: 800, marginTop: 12, borderRadius: 20, 
-                background: 'linear-gradient(135deg, var(--accent), var(--accent2))', 
-                color: 'white', border: 'none', cursor: 'pointer',
-                letterSpacing: '0.08em',
-                boxShadow: '0 15px 35px rgba(124,109,250,0.3)',
-                position: 'relative', overflow: 'hidden'
-              }}
+              className="auth-button haptic-feedback"
             >
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', transform: 'skewX(-45deg) translateX(-150%)', transition: 'transform 0.5s ease' }} className="btn-glint" />
+              <div className="btn-glint" />
               {loading
                 ? <div className="loading-spinner" style={{ width: 24, height: 24, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                 : <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>CONSTRUCT IDENTITY <ArrowRight size={22} strokeWidth={2.5} /></span>
@@ -425,28 +366,6 @@ export default function RegisterPage() {
         </motion.div>
       </motion.div>
 
-      <style>{`
-        .holographic-text {
-            background: linear-gradient(135deg, var(--accent) 0%, #fff 50%, var(--accent2) 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: holoFlow 5s linear infinite;
-        }
-        @keyframes holoFlow { to { background-position: 200% center; } }
-        
-        .password-eye:hover { color: var(--accent) !important; transform: scale(1.1) translateY(-50%) !important; }
-
-        .input:focus {
-            background: rgba(255,255,255,0.06) !important;
-            border-color: var(--accent) !important;
-            box-shadow: 0 0 20px rgba(124,109,250,0.1);
-        }
-
-        .btn-glint:hover {
-            transform: skewX(-45deg) translateX(150%) !important;
-        }
-      `}</style>
     </div>
   );
 }

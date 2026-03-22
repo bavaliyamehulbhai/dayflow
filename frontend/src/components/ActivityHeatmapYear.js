@@ -7,11 +7,11 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
     const [selectedDay, setSelectedDay] = useState(null);
 
     const intensityColors = [
-        '#1a1a26',              // level 0 (subtle dark for empty cells)
-        '#dcfce7',              // level 1 (light green)
-        '#86efac',              // level 2 
-        '#22c55e',              // level 3
-        '#166534'               // level 4 (vibrant green)
+        'rgba(255,255,255,0.03)', // level 0
+        '#7c6dfa',              // level 1 (Indigo)
+        '#00f2fe',              // level 2 (Cyan)
+        '#ff4d7d',              // level 3 (Rose)
+        '#fa6d8a'               // level 4 (Vibrant)
     ];
 
     const today = new Date();
@@ -81,47 +81,59 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
     }, [data]);
 
     return (
-        <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 16,
-            padding: '24px',
+        <div className="premium-card aura-iridescent" style={{
+            background: 'rgba(255,255,255,0.01)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: 24,
+            padding: '32px',
             width: '100%',
             color: 'var(--text)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+            position: 'relative',
+            overflow: 'hidden'
         }}>
+            <div className="btn-glint" style={{ opacity: 0.02 }} />
             {/* Header Stats */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: 24,
+                marginBottom: 32,
                 flexWrap: 'wrap',
-                gap: 16
+                gap: 20
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{stats.totalSubmissions}</span>
-                    <span style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>submissions in the past {isMobile ? '3 months' : 'one year'}</span>
-                    <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: 'var(--muted)', cursor: 'help' }}>i</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: 'white', fontFamily: 'Syne', letterSpacing: '-0.04em' }}>{stats.totalSubmissions}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5 }}>Synchronized Events</div>
+                        <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>Past {isMobile ? '90 cycles' : '365 cycles'}</div>
+                    </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 24, fontSize: 13, color: 'var(--muted)', fontWeight: 500, alignItems: 'center' }}>
-                    <div>Total active days: <span style={{ color: 'var(--text)', fontWeight: 700 }}>{stats.activeDays}</span></div>
-                    <div>Max streak: <span style={{ color: 'var(--text)', fontWeight: 700 }}>{stats.maxStreak}</span></div>
-                    <select style={{
-                        background: 'var(--surface2)',
-                        padding: '4px 12px',
-                        borderRadius: 8,
-                        border: '1px solid var(--border)',
+                <div style={{ display: 'flex', gap: 24, fontSize: 11, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)' }} />
+                        Active Days: <span style={{ color: 'white' }}>{stats.activeDays}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--red)' }} />
+                        Max Streak: <span style={{ color: 'white' }}>{stats.maxStreak}</span>
+                    </div>
+                    <select className="glass" style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        padding: '6px 12px',
+                        borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.1)',
                         color: 'var(--text)',
-                        fontSize: 12,
-                        fontWeight: 600,
+                        fontSize: 10,
+                        fontWeight: 900,
                         cursor: 'pointer',
-                        outline: 'none'
+                        outline: 'none',
+                        textTransform: 'uppercase',
+                        letterSpacing: 1
                     }}>
-                        <option>Current Year</option>
-                        <option>2025</option>
-                        <option>2024</option>
+                        <option>Current Era</option>
+                        <option>2025 Cycle</option>
+                        <option>2024 Cycle</option>
                     </select>
                 </div>
             </div>

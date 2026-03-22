@@ -101,17 +101,7 @@ export default function LoginPage() {
     <div 
       onMouseMove={handleCardMouseMove}
       onMouseLeave={handleCardMouseLeave}
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        background: 'var(--bg)',
-        position: 'relative',
-        overflow: 'hidden',
-        perspective: '1200px'
-      }}
+      className="auth-container"
     >
       {/* Animated Background Orbs */}
       <div style={{
@@ -187,27 +177,14 @@ export default function LoginPage() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: 'clamp(64px, 10vw, 84px)', height: 'clamp(64px, 10vw, 84px)', borderRadius: 28,
-                background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
-                boxShadow: '0 20px 50px rgba(124,109,250,0.4), 0 0 100px rgba(124,109,250,0.2)',
-                marginBottom: 24,
-                border: '1.5px solid rgba(255,255,255,0.3)',
-                cursor: 'pointer'
-              }}>
+              className="auth-logo-icon"
+            >
               <Zap size={window.innerWidth <= 768 ? 32 : 42} color="white" strokeWidth={2.5} fill="white" />
             </motion.div>
           </Magnetic>
-          <motion.div style={{
-            fontFamily: 'Syne, sans-serif', fontSize: 'clamp(32px, 5vw, 44px)', fontWeight: 800,
-            color: 'var(--text)',
-            letterSpacing: '-0.06em',
-            marginBottom: 4,
-            textShadow: '0 10px 30px rgba(0,0,0,0.5)'
-          }}>DayFlow</motion.div>
+          <motion.div className="auth-title">DayFlow</motion.div>
           <div style={{ color: 'var(--muted)', fontSize: 'clamp(14px, 2vw, 16px)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
-            Architecting Your <span className="holographic-text" style={{ color: 'var(--accent)', fontWeight: 800 }}>Infinite Potential</span>
+            Architecting Your <span className="holographic-text">Infinite Potential</span>
           </div>
         </div>
 
@@ -216,18 +193,10 @@ export default function LoginPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4, duration: 0.8 }}
-          className="card glass-card aura-iridescent" 
+          className="auth-card aura-iridescent" 
           style={{
-            background: 'rgba(13, 13, 22, 0.55)',
-            backdropFilter: 'blur(60px) saturate(250%)',
-            border: '2px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 42,
-            padding: 'clamp(32px, 6vh, 48px) clamp(24px, 5vw, 40px)',
-            boxShadow: '0 50px 100px rgba(0,0,0,0.8), inset 0 0 40px rgba(255,255,255,0.03)',
             transform: 'translateZ(40px)',
-            transformStyle: 'preserve-3d',
-            position: 'relative',
-            overflow: 'hidden'
+            transformStyle: 'preserve-3d'
           }}
         >
           {/* Internal Glow Orbs */}
@@ -269,28 +238,22 @@ export default function LoginPage() {
             onSubmit={handleSubmit} 
             style={{ display: 'flex', flexDirection: 'column', gap: 20, transform: 'translateZ(20px)' }}
           >
-            <div className="form-group" style={{ marginBottom: 0 }}>
+            <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span style={{ width: 12, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
                 Cognitive Portal
               </label>
               <input
                 type="email"
-                className="input haptic-feedback"
+                className="auth-input haptic-feedback"
                 placeholder="you@presence.app"
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 required autoFocus autoComplete="email"
-                style={{ 
-                    height: 54, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, color: 'white',
-                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-                }}
               />
             </div>
 
-            <div className="form-group" style={{ marginBottom: 0 }}>
+            <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span style={{ width: 12, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
                 Security Cipher
@@ -298,17 +261,11 @@ export default function LoginPage() {
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className="input haptic-feedback"
+                  className="auth-input haptic-feedback"
                   placeholder="••••••••"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   required autoComplete="current-password"
-                  style={{ 
-                    height: 54, background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16, padding: '0 20px', fontSize: 15, fontWeight: 600, width: '100%', color: 'white',
-                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-                  }}
                 />
                 <button
                   type="button"
@@ -327,20 +284,9 @@ export default function LoginPage() {
             <motion.button
               type="submit"
               disabled={loading}
-              whileHover={{ scale: 1.02, y: -4, boxShadow: '0 25px 45px rgba(124,109,250,0.4)' }}
-              whileTap={{ scale: 0.98 }}
-              className="haptic-feedback"
-              style={{
-                width: '100%', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, fontWeight: 800, marginTop: 12, borderRadius: 20,
-                background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
-                color: 'white', border: 'none', cursor: 'pointer',
-                letterSpacing: '0.08em',
-                boxShadow: '0 15px 35px rgba(124,109,250,0.3)',
-                position: 'relative', overflow: 'hidden'
-              }}
+              className="auth-button haptic-feedback"
             >
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', transform: 'skewX(-45deg) translateX(-150%)', transition: 'transform 0.5s ease' }} className="btn-glint" />
+              <div className="btn-glint" />
               {loading ? (
                 <div className="loading-spinner" style={{ width: 24, height: 24 }} />
               ) : (
@@ -391,26 +337,6 @@ export default function LoginPage() {
           background: 'var(--accent2)', borderRadius: '50%', filter: 'blur(40px)', opacity: 0.15, zIndex: -1
         }} />
       </motion.div>
-
-      <style>{`
-        .holographic-text {
-            background: linear-gradient(135deg, var(--accent) 0%, #fff 50%, var(--accent2) 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: holoFlow 5s linear infinite;
-        }
-
-        @keyframes holoFlow {
-            to { background-position: 200% center; }
-        }
-
-        .input:focus {
-            background: rgba(255,255,255,0.06) !important;
-            border-color: var(--accent) !important;
-            box-shadow: 0 0 20px rgba(124,109,250,0.1);
-        }
-      `}</style>
     </div>
   );
 }

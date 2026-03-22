@@ -67,56 +67,75 @@ export default function SessionManager() {
                 </span>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <AnimatePresence mode="popLayout">
                     {sessions.map((session) => {
-                        const isCurrent = session.refreshToken === localStorage.getItem('dayflow_token'); // Simplified check
+                        const isCurrent = session.refreshToken === localStorage.getItem('dayflow_token');
 
                         return (
                             <motion.div
                                 key={session._id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className={`p-4 rounded-xl border flex items-center gap-4 transition-all ${isCurrent ? 'bg-accent/5 border-accent/20' : 'bg-surface2 border-border'
-                                    }`}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                className="premium-card"
+                                style={{
+                                    padding: '24px',
+                                    borderRadius: 20,
+                                    border: `1px solid ${isCurrent ? 'rgba(124, 109, 250, 0.2)' : 'rgba(255,255,255,0.05)'}`,
+                                    background: isCurrent ? 'rgba(124, 109, 250, 0.05)' : 'rgba(255,255,255,0.02)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 20,
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                }}
                             >
-                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isCurrent ? 'bg-accent/10 text-accent' : 'bg-surface3 text-muted'
-                                    }`}>
+                                {isCurrent && <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'var(--accent)' }} />}
+                                <div style={{ 
+                                    width: 56, height: 56, borderRadius: 16, 
+                                    background: isCurrent ? 'rgba(124, 109, 250, 0.1)' : 'rgba(255,255,255,0.03)', 
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: isCurrent ? 'var(--accent)' : 'var(--muted)',
+                                    border: '1px solid rgba(255,255,255,0.05)'
+                                }}>
                                     {getDeviceIcon(session.userAgent)}
                                 </div>
 
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-sm truncate">
-                                            {session.os || 'Unknown OS'} • {session.browser || 'Browser'}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                                        <span style={{ fontSize: 15, fontWeight: 800, color: 'white', fontFamily: 'Syne' }}>
+                                            {session.os || 'Unknown Core'} • {session.browser || 'Interface'}
                                         </span>
                                         {isCurrent && (
-                                            <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">
-                                                Current
+                                            <span style={{ fontSize: 9, background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: 6, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                                Active Host
                                             </span>
                                         )}
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
-                                        <div className="flex items-center gap-1.5 text-xs text-muted">
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
                                             {getBrowserIcon(session.userAgent)}
-                                            <span>{session.ip || 'Unknown IP'}</span>
+                                            <span style={{ fontFamily: 'DM Mono, monospace' }}>{session.ip || '0.0.0.0'}</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 text-xs text-muted">
-                                            <Clock size={12} />
-                                            <span>Active {formatDistanceToNow(new Date(session.lastActive))} ago</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+                                            <Clock size={14} />
+                                            <span>Seen {formatDistanceToNow(new Date(session.lastActive))} ago</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 {!isCurrent && (
-                                    <button
+                                    <motion.button
+                                        whileHover={{ scale: 1.1, background: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }}
+                                        whileTap={{ scale: 0.9 }}
                                         onClick={() => {
                                             setConfirmDialog({
                                                 open: true,
-                                                title: 'Revoke Session',
-                                                message: 'Are you sure you want to revoke this session? The device will be logged out immediately.',
+                                                title: 'Neutralize Session',
+                                                message: 'Banish this device from the network? Re-authentication will be required.',
+                                                confirmText: 'Neutralize',
                                                 onConfirm: () => {
                                                     revokeMutation.mutate(session._id);
                                                     setConfirmDialog({ open: false });
@@ -124,11 +143,17 @@ export default function SessionManager() {
                                             });
                                         }}
                                         disabled={revokeMutation.isPending}
-                                        className="p-2 text-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                        style={{ 
+                                            width: 44, height: 44, 
+                                            borderRadius: 14, background: 'rgba(255,255,255,0.03)', 
+                                            border: '1px solid rgba(255,255,255,0.05)', display: 'flex', 
+                                            alignItems: 'center', justifyContent: 'center', 
+                                            color: 'var(--muted)', cursor: 'pointer' 
+                                        }}
                                         title="Revoke Session"
                                     >
-                                        <XCircle size={18} />
-                                    </button>
+                                        <XCircle size={20} />
+                                    </motion.button>
                                 )}
                             </motion.div>
                         );

@@ -49,87 +49,98 @@ function HabitModal({ habit, onClose, onSave }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
         animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`modal ${isMobile ? 'bottom-sheet' : ''}`}
+        className={`auth-card aura-iridescent ${isMobile ? 'bottom-sheet' : ''}`}
+        style={{ width: '100%', maxWidth: 540, padding: 0, overflow: 'hidden' }}
       >
-        <div className="modal-header">
-          <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="text-accent"><RefreshCcw size={20} /></div>
-            {habit ? 'Refine Habit' : 'Forge New Habit'}
+        <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'Syne', fontWeight: 800, fontSize: 22 }}>
+            <div className="auth-logo-icon" style={{ width: 32, height: 32, marginBottom: 0 }}>
+              <RefreshCcw size={18} color="white" />
+            </div>
+            {habit ? 'Refine Ritual' : 'Forge New Ritual'}
           </div>
-          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+          <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 8 }}>
+            <X size={20} />
+          </button>
         </div>
         <div className="modal-body" style={{ 
+          padding: '32px',
           maxHeight: isMobile ? '80vh' : 'auto', 
           overflowY: 'auto',
-          paddingBottom: isMobile ? 'calc(24px + env(safe-area-inset-bottom))' : 24
+          paddingBottom: isMobile ? 'calc(32px + env(safe-area-inset-bottom))' : 32
         }}>
-          <div className="form-group">
-            <label className="form-label">Objective Name</label>
-            <input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Morning meditation" autoFocus />
+          <div className="form-group mb-6">
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Ritual Name</label>
+            <input className="auth-input haptic-feedback" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Morning meditation" style={{ height: 56, fontSize: 16 }} autoFocus />
           </div>
-          <div className="form-group">
-            <label className="form-label">Description</label>
-            <textarea className="textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Why is this important?" rows={2} />
+          <div className="form-group mb-6">
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Intent & Description</label>
+            <textarea className="auth-input haptic-feedback" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Why is this important?" rows={2} style={{ height: 'auto', minHeight: 80, padding: '16px 20px' }} />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Icon Ritual</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div className="form-group mb-6">
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 12, display: 'block' }}>Icon Ritual</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {ICONS.map(icon => (
                 <button key={icon} type="button" onClick={() => setForm(f => ({ ...f, icon }))}
-                  style={{ width: isMobile ? 44 : 40, height: isMobile ? 44 : 40, borderRadius: 10, border: `2px solid ${form.icon === icon ? form.color : 'var(--border)'}`, background: form.icon === icon ? `${form.color}22` : 'var(--surface2)', fontSize: 20, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  className="glass haptic-tap"
+                  style={{ width: 44, height: 44, borderRadius: 12, border: `2px solid ${form.icon === icon ? form.color : 'rgba(255,255,255,0.05)'}`, background: form.icon === icon ? `${form.color}22` : 'rgba(255,255,255,0.02)', fontSize: 20, cursor: 'pointer', transition: 'all 0.2s' }}>
                   {icon}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Signature Color</label>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div className="form-group mb-6">
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 12, display: 'block' }}>Signature Glow</label>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               {COLORS.map(c => (
                 <button key={c} type="button" onClick={() => setForm(f => ({ ...f, color: c }))}
-                  style={{ width: 36, height: 36, borderRadius: '50%', background: c, border: `2px solid ${form.color === c ? 'white' : 'transparent'}`, cursor: 'pointer', boxShadow: form.color === c ? `0 0 12px ${c}` : 'none', transition: 'all 0.2s' }} />
+                  className="haptic-tap"
+                  style={{ width: 32, height: 32, borderRadius: '50%', background: c, border: `2.5px solid ${form.color === c ? 'white' : 'transparent'}`, cursor: 'pointer', boxShadow: form.color === c ? `0 0 15px ${c}` : 'none', transition: 'all 0.2s', padding: 0 }} />
               ))}
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
-            <div className="form-group" style={{ gridColumn: isMobile ? 'span 2' : '1 / 3' }}>
-              <label className="form-label">Frequency</label>
-              <select className="select" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
+          <div className="grid-2 mb-6">
+            <div className="form-group" style={{ gridColumn: isMobile ? 'span 2' : 'span 1' }}>
+              <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Frequency</label>
+              <select className="select premium-select" style={{ height: 48, borderRadius: 14 }} value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
                 {FREQ.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
               </select>
             </div>
-            <div className="form-group">
-              <label className="form-label">Target</label>
-              <input type="number" className="input" value={form.targetCount} onChange={e => setForm(f => ({ ...f, targetCount: parseInt(e.target.value) || 1 }))} min={1} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Unit</label>
-              <input className="input" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} placeholder="times" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Target</label>
+                <input type="number" className="auth-input haptic-feedback" style={{ height: 48, fontSize: 14 }} value={form.targetCount} onChange={e => setForm(f => ({ ...f, targetCount: parseInt(e.target.value) || 1 }))} min={1} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Unit</label>
+                <input className="auth-input haptic-feedback" style={{ height: 48, fontSize: 14 }} value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))} placeholder="times" />
+              </div>
             </div>
           </div>
 
-          <div style={{ background: 'var(--surface2)', borderRadius: 12, padding: '16px', display: 'flex', alignItems: 'center', gap: 16, marginTop: 8, border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '28px' }}>{form.icon}</div>
+          <div className="glass-card aura-iridescent" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: 20, borderRadius: 16 }}>
+            <div style={{ fontSize: '32px', filter: `drop-shadow(0 0 10px ${form.color}44)` }}>{form.icon}</div>
             <div style={{ flex: 1 }}>
               <SensitivityShield>
-                <div style={{ fontWeight: 800, fontSize: 18, fontFamily: 'Syne, sans-serif', color: 'var(--text)' }}>{form.name || 'Your new ritual'}</div>
+                <div style={{ fontWeight: 800, fontSize: 18, fontFamily: 'Syne, sans-serif', color: 'var(--text)', lineHeight: 1.2 }}>{form.name || 'Your new ritual'}</div>
               </SensitivityShield>
-              <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>{form.targetCount} {form.unit} • {form.frequency}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700, marginTop: 4, letterSpacing: 0.5 }}>{form.targetCount} {form.unit} • {form.frequency}</div>
             </div>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: form.color, boxShadow: `0 0 15px ${form.color}66` }} />
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: form.color, boxShadow: `0 0 15px ${form.color}` }} />
           </div>
         </div>
-        <div className="modal-footer" style={{ gap: 12, padding: isMobile ? '16px 20px 32px' : '20px 24px', borderTop: '1px solid var(--border)' }}>
-          <button className="btn btn-ghost" onClick={onClose} style={{ flex: isMobile ? 1 : 'none' }}>Cancel</button>
-          <button className="btn btn-primary" style={{ minWidth: 140, flex: isMobile ? 2 : 'none' }} onClick={() => { if (!form.name.trim()) return toast.error('Name required'); onSave(form); }}>
-            {habit ? 'Save Ritual' : 'Create Ritual'}
+        <div className="modal-footer" style={{ padding: '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12 }}>
+          <button className="btn btn-ghost" onClick={onClose} style={{ flex: 1, height: 52, borderRadius: 14 }}>Abort</button>
+          <button className="auth-button" style={{ flex: 2, height: 52, borderRadius: 14, fontSize: 16 }} onClick={() => { if (!form.name.trim()) return toast.error('Name required'); onSave(form); }}>
+            <div className="btn-glint" />
+            {habit ? 'Refine' : 'Manifest'}
           </button>
         </div>
       </motion.div>
@@ -211,15 +222,19 @@ export default function HabitsPage() {
 
   return (
     <div className="responsive-container">
-      <div className="page-header mb-6">
+      <div className="page-header mb-10" style={{ alignItems: 'flex-start' }}>
         <div>
-          <h1 className="page-title" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em' }}>
+          <div className="page-title flex items-center gap-4" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-display)', fontWeight: 800, letterSpacing: '-0.04em' }}>
+            <div className="auth-logo-icon" style={{ width: 48, height: 48, marginBottom: 0 }}>
+              <RefreshCcw size={24} color="white" strokeWidth={2.5} />
+            </div>
             Ritual Engine
-          </h1>
-          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.8 }}>Neural consistency for peak evolution</p>
+          </div>
+          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600 }}>Neural consistency for peak biological evolution</p>
         </div>
-        <button className="btn btn-primary btn-premium magnetic-btn" onClick={() => setModal({})} style={{ borderRadius: 14 }}>
-          <Plus size={18} /> Forge Ritual
+        <button className="auth-button hide-mobile" onClick={() => setModal({})} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
+          <div className="btn-glint" />
+          <Plus size={20} style={{ marginRight: 8 }} /> Forge Ritual
         </button>
       </div>
 
@@ -235,30 +250,38 @@ export default function HabitsPage() {
       </div>
 
       {/* Summary */}
-      <div className="stats-grid stats-carousel mb-6">
-        <div className="stat-card flex flex-col items-center gap-2">
-          <Activity size={16} style={{ color: 'var(--accent)', opacity: 0.7 }} />
-          <div className="stat-value">{habits.length}</div>
-          <div className="stat-label" style={{ fontWeight: 600 }}>Active</div>
-        </div>
-        <div className="stat-card flex flex-col items-center gap-2">
-          <Check size={16} style={{ color: 'var(--green)', opacity: 0.7 }} />
-          <div className="stat-value" style={{ color: 'var(--green)' }}>{completedToday}</div>
-          <div className="stat-label" style={{ fontWeight: 600 }}>Done Today</div>
-        </div>
-        <div className="stat-card flex flex-col items-center gap-2">
-          <Target size={16} style={{ color: 'var(--yellow)', opacity: 0.7 }} />
-          <div className="stat-value" style={{ color: 'var(--yellow)' }}>
-            {habits.length ? Math.round((completedToday / habits.length) * 100) : 0}%
+      <div className="stats-grid-auto mb-10">
+        <div className="stat-card-premium">
+          <div className="stat-card-glow" style={{ background: 'var(--accent)' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div className="stat-label">Active Rituals</div>
+            <SensitivityShield><div className="stat-value">{habits.length}</div></SensitivityShield>
           </div>
-          <div className="stat-label" style={{ fontWeight: 600 }}>Success</div>
         </div>
-        <div className="stat-card flex flex-col items-center gap-2">
-          <Flame size={16} style={{ color: 'var(--red)', opacity: 0.7 }} />
-          <div className="stat-value" style={{ color: 'var(--accent2)' }}>
-            {Math.max(...habits.map(h => h.streak?.current || 0), 0)}
+        <div className="stat-card-premium">
+          <div className="stat-card-glow" style={{ background: 'var(--green)' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div className="stat-label">Done Today</div>
+            <SensitivityShield><div className="stat-value" style={{ color: 'var(--green)' }}>{completedToday}</div></SensitivityShield>
           </div>
-          <div className="stat-label" style={{ fontWeight: 600 }}>Top Streak</div>
+        </div>
+        <div className="stat-card-premium">
+          <div className="stat-card-glow" style={{ background: 'var(--yellow)' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div className="stat-label">Synchronization</div>
+            <SensitivityShield><div className="stat-value" style={{ color: 'var(--yellow)' }}>
+              {habits.length ? Math.round((completedToday / habits.length) * 100) : 0}%
+            </div></SensitivityShield>
+          </div>
+        </div>
+        <div className="stat-card-premium hide-mobile">
+          <div className="stat-card-glow" style={{ background: 'var(--red)' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div className="stat-label">Top Streak</div>
+            <SensitivityShield><div className="stat-value" style={{ color: 'var(--red)' }}>
+              {Math.max(...habits.map(h => h.streak?.current || 0), 0)}
+            </div></SensitivityShield>
+          </div>
         </div>
       </div>
 
@@ -274,13 +297,13 @@ export default function HabitsPage() {
           </button>
         </div>
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+        <div className="premium-card aura-iridescent" style={{ padding: 0, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24 }}>
           {/* List Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: isMobile ? '12px 16px' : '20px 24px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800, opacity: 0.8 }}>Ritual Objectives</span>
-            <div style={{ display: 'flex', gap: isMobile ? 8 : 12, paddingRight: isMobile ? 0 : 84 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', padding: isMobile ? '16px 20px' : '24px 32px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 900, opacity: 0.7 }}>Active Rituals ({habits.length})</span>
+            <div style={{ display: 'flex', gap: isMobile ? 10 : 16, paddingRight: isMobile ? 0 : 88 }}>
               {last7.map(d => (
-                <div key={d.toISOString()} style={{ width: isMobile ? 32 : 40, textAlign: 'center', fontSize: 10, color: format(d, 'yyyy-MM-dd') === today ? 'var(--accent)' : 'var(--muted)', fontWeight: 800, textTransform: 'uppercase' }}>
+                <div key={d.toISOString()} style={{ width: isMobile ? 32 : 44, textAlign: 'center', fontSize: 10, color: format(d, 'yyyy-MM-dd') === today ? 'var(--accent)' : 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
                   {format(d, 'EEE').charAt(0)}
                 </div>
               ))}
@@ -299,50 +322,38 @@ export default function HabitsPage() {
                 </div>
 
                 <motion.div
-                  drag={isMobile ? "x" : false}
-                  dragConstraints={{ left: 0, right: 0 }}
-                  onDragEnd={(_, info) => {
-                    if (info.offset.x > 100) completeMutation.mutate({ id: habit._id, date: today });
-                    else if (info.offset.x < -100) {
-                      setConfirmDialog({
-                        open: true,
-                        title: 'Vanish Ritual',
-                        message: 'Are you sure you want to completely banish this ritual?',
-                        confirmText: 'Banish',
-                        onConfirm: () => { deleteMutation.mutate(habit._id); setConfirmDialog({ open: false }); }
-                      });
-                    }
-                  }}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.03 }}
-                  className="habit-row hover-lift haptic-tap"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="habit-row haptic-tap"
                   style={{
                     display: 'flex',
                     flexDirection: isMobile ? 'column' : 'row',
                     alignItems: isMobile ? 'flex-start' : 'center',
                     justifyContent: 'space-between',
-                    padding: isMobile ? '8px 12px' : 'var(--space-4) var(--space-6)',
-                    borderBottom: idx < habits.length - 1 ? '1px solid var(--border)' : 'none',
+                    padding: isMobile ? '16px' : '20px 32px',
+                    borderBottom: idx < habits.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                     position: 'relative',
                     zIndex: 2,
-                    background: 'var(--surface)'
+                    background: 'transparent',
+                    transition: 'background 0.3s ease'
                   }}
                   onClick={() => !isMobile && setModal(habit)}
                 >
+                  <div className="btn-glint" style={{ opacity: 0.02 }} />
                   {/* Habit info */}
-                  <div className="habit-row-info" style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16 }}>
-                    <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.1))' }}>{habit.icon}</div>
+                  <div className="habit-row-info" style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 16 : 24 }}>
+                    <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', filter: `drop-shadow(0 0 10px ${habit.color}44)` }}>{habit.icon}</div>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-base)', color: 'var(--text)' }}>{habit.name}</div>
-                      <div style={{ display: 'flex', gap: 12, marginTop: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ fontWeight: 800, fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-base)', color: 'var(--text)', letterSpacing: '-0.01em' }}>{habit.name}</div>
+                      <div style={{ display: 'flex', gap: 12, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
                         {habit.streak?.current > 0 && (
-                          <span style={{ fontSize: 10, color: 'var(--orange)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Flame size={10} /> {habit.streak.current}d
+                          <span style={{ fontSize: 11, color: habit.color, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Flame size={12} fill={habit.color} /> {habit.streak.current}d Streak
                           </span>
                         )}
-                        <span style={{ fontSize: 10, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <Zap size={10} /> {habit.frequency}
+                        <span style={{ fontSize: 11, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
+                          <Zap size={11} /> {habit.frequency}
                         </span>
                       </div>
                     </div>
@@ -350,19 +361,14 @@ export default function HabitsPage() {
 
                   <div style={{
                     display: 'flex',
-                    gap: 12,
+                    gap: 16,
                     alignItems: 'center',
                     justifyContent: isMobile ? 'space-between' : 'flex-end',
-                    marginTop: isMobile ? 12 : 0,
+                    marginTop: isMobile ? 16 : 0,
                     width: isMobile ? '100%' : 'auto',
                     position: 'relative'
                   }}>
-                    {/* Progression Chain Line */}
-                    {!isMobile && (
-                      <div style={{ position: 'absolute', right: 104, top: '50%', width: 280, height: 2, background: 'var(--border)', zIndex: 0, opacity: 0.3 }} />
-                    )}
-
-                    <div style={{ display: 'flex', gap: 12, flex: isMobile ? 1 : 'none', justifyContent: isMobile ? 'flex-start' : 'flex-end', position: 'relative', zIndex: 1 }}>
+                    <div style={{ display: 'flex', gap: isMobile ? 10 : 16, flex: isMobile ? 1 : 'none', justifyContent: isMobile ? 'flex-start' : 'flex-end', position: 'relative', zIndex: 1 }}>
                       {last7.map(d => {
                         const dateStr = format(d, 'yyyy-MM-dd');
                         const done = isCompleted(habit, dateStr);
@@ -376,25 +382,25 @@ export default function HabitsPage() {
                             disabled={!isToday && !done}
                             className={`habit-check ${done ? 'done' : ''}`}
                             style={{
-                              width: isMobile ? 32 : 40, height: isMobile ? 32 : 40, borderRadius: 10,
-                              border: `2px solid ${done ? habit.color : isToday ? 'var(--accent)' : 'var(--border)'}`,
-                              background: done ? habit.color : 'transparent',
+                              width: isMobile ? 32 : 44, height: isMobile ? 32 : 44, borderRadius: 12,
+                              border: `2px solid ${done ? habit.color : isToday ? 'var(--accent)' : 'rgba(255,255,255,0.08)'}`,
+                              background: done ? habit.color : 'rgba(255,255,255,0.02)',
                               cursor: isToday ? 'pointer' : 'default',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               color: 'white',
-                              boxShadow: done ? `0 0 20px ${habit.color}44, inset 0 0 10px rgba(255,255,255,0.2)` : 'none',
+                              boxShadow: done ? `0 8px 16px ${habit.color}44` : 'none',
                               transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                              opacity: !isToday && !done ? 0.3 : 1
+                              opacity: !isToday && !done ? 0.2 : 1
                             }}
                           >
                             <AnimatePresence mode="wait">
                               {done ? (
                                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                                  <Check size={20} strokeWidth={3.5} />
+                                  <Check size={20} strokeWidth={4} />
                                 </motion.div>
                               ) : isToday ? (
-                                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }}>
-                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+                                <motion.div animate={{ opacity: [0.3, 0.7, 0.3] }} transition={{ repeat: Infinity, duration: 2 }}>
+                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' }} />
                                 </motion.div>
                               ) : null}
                             </AnimatePresence>
@@ -404,17 +410,17 @@ export default function HabitsPage() {
                     </div>
 
                     {/* Actions */}
-                    <div style={{ display: 'flex', gap: 4, marginLeft: isMobile ? 8 : 16, borderLeft: '1px solid var(--border)', paddingLeft: isMobile ? 8 : 16 }}>
-                      <button className="btn btn-icon btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); setModal(habit); }} title="Refine"><Pencil size={16} /></button>
-                      <button className="btn btn-icon btn-ghost btn-sm" onClick={(e) => {
+                    <div style={{ display: 'flex', gap: 6, marginLeft: isMobile ? 8 : 16 }}>
+                      <button className="btn btn-icon glass btn-sm haptic-tap" onClick={(e) => { e.stopPropagation(); setModal(habit); }} title="Refine" style={{ width: 36, height: 36, borderRadius: 10 }}><Pencil size={18} /></button>
+                      <button className="btn btn-icon glass btn-sm haptic-tap" onClick={(e) => {
                         e.stopPropagation();
                         setConfirmDialog({
                           open: true,
-                          title: 'Vanish Ritual',
-                          message: 'Are you sure you want to completely banish this ritual?',
+                          title: 'Banish Ritual?',
+                          confirmText: 'Banish',
                           onConfirm: () => { deleteMutation.mutate(habit._id); setConfirmDialog({ open: false }); }
                         });
-                      }} style={{ color: 'var(--red)' }} title="Banish"><Trash2 size={16} /></button>
+                      }} style={{ color: 'var(--red)', width: 36, height: 36, borderRadius: 10 }} title="Banish"><Trash2 size={18} /></button>
                     </div>
                   </div>
                 </motion.div>

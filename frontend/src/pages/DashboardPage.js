@@ -112,32 +112,12 @@ const AnimatedStat = React.memo(({ value, label, color, icon: Icon }) => {
   const animated = useCountUp(typeof value === 'number' ? value : 0);
   const display = typeof value === 'string' ? value : animated;
   return (
-    <div className="glass-card gpu-accel haptic-tap" style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        gap: '8px',
-        padding: '24px',
-        borderRadius: 'var(--radius)',
-        border: '1px solid var(--border-premium)'
-    }}>
+    <div className="stat-card-premium gpu-accel haptic-tap">
       <div style={{ color, opacity: 0.9, marginBottom: 4 }}><Icon size={24} /></div>
       <SensitivityShield>
-        <div className="stat-value" style={{ 
-            color, 
-            fontSize: 'clamp(1.5rem, 5vw, 2rem)',
-            fontWeight: 800,
-            fontFamily: 'Syne, sans-serif',
-            letterSpacing: '-0.02em'
-        }}>{display}</div>
+        <div className="stat-value" style={{ color }}>{display}</div>
       </SensitivityShield>
-      <div className="stat-label" style={{ 
-          fontSize: '11px', 
-          fontWeight: 700, 
-          color: 'var(--muted)', 
-          textTransform: 'uppercase', 
-          letterSpacing: '1px' 
-      }}>{label}</div>
+      <div className="stat-label">{label}</div>
     </div>
   );
 });
@@ -177,9 +157,6 @@ function DashboardSkeleton() {
 
 function Clock() {
   const [time, setTime] = useState(new Date());
-  const width = useWindowWidth();
-  const isMobile = width <= 768;
-
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
@@ -198,25 +175,10 @@ function Clock() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8 }}
-      className="card clock-card premium-card" 
-      style={{ 
-        textAlign: 'center', 
-        padding: isMobile ? '40px 20px' : '64px 40px', 
-        position: 'relative', 
-        overflow: 'hidden',
-        background: 'rgba(13, 13, 22, 0.6)',
-        border: '1px solid var(--border-premium)'
-      }}
+      className="clock-card-premium"
     >
-      <div className="greeting-icon-bg" style={{ 
-        position: 'absolute', 
-        top: -30, 
-        right: -30, 
-        opacity: 0.08,
-        transform: 'rotate(15deg)',
-        color: 'var(--accent)'
-      }}>
-        <GreetingIcon size={isMobile ? 140 : 260} />
+      <div className="greeting-icon-bg" style={{ color: 'var(--accent)' }}>
+        <GreetingIcon size={window.innerWidth <= 768 ? 140 : 260} />
       </div>
       
       <motion.div 
@@ -224,27 +186,11 @@ function Clock() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1, ease: "easeOut" }}
       >
-        <div className="clock-time" style={{ 
-          fontSize: isMobile ? 'clamp(2.5rem, 12vw, 3.5rem)' : 'clamp(4rem, 12vw, 8rem)', 
-          letterSpacing: '-0.07em',
-          fontWeight: 800,
-          fontFamily: 'Syne, sans-serif',
-          background: 'linear-gradient(180deg, #fff, var(--text2))',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          textShadow: '0 20px 50px rgba(0,0,0,0.4)'
-        }}>
+        <div className="clock-time-display">
           {format(time, 'HH:mm:ss')}
         </div>
-        <div className="clock-date" style={{ 
-          fontSize: '14px', 
-          letterSpacing: '0.3em', 
-          marginTop: 16,
-          color: 'var(--accent)',
-          fontWeight: 800,
-          opacity: 0.9
-        }}>
-          {format(time, 'EEEE, MMMM do').toUpperCase()}
+        <div className="clock-date-display">
+          {format(time, 'EEEE, MMMM do')}
         </div>
       </motion.div>
 
@@ -341,93 +287,63 @@ export default function DashboardPage() {
     const topTask = d?.tasks?.today?.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2))[0];
     
     return (
-      <div className="mobile-feed" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 32 }}>
-        {/* Row 1: Key Items */}
-        <div style={{ display: 'grid', gridTemplateColumns: nextEvent ? '1.2fr 1fr' : '1fr', gap: 16 }}>
-          {nextEvent && (
-            <div className="glass-card feed-item next-up" onClick={() => navigate('/schedule')} style={{ padding: '20px', borderRadius: 24, border: '1px solid var(--border-premium)' }}>
-              <div className="feed-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)', letterSpacing: 1 }}>NEXT UP</div>
-              <div className="feed-time" style={{ fontSize: 22, fontWeight: 800, fontFamily: 'Syne', margin: '4px 0' }}>{nextEvent.startTime}</div>
-              <div className="feed-title" style={{ fontSize: 14, opacity: 0.8, fontWeight: 600 }}>{nextEvent.title}</div>
-            </div>
-          )}
-          {topTask && (
-            <div className="glass-card feed-item priority-task" onClick={() => navigate('/tasks')} style={{ padding: '20px', borderRadius: 24, border: '1px solid var(--border-premium)' }}>
-              <div className="feed-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--orange)', letterSpacing: 1 }}>TOP FOCUS</div>
-              <div className={`feed-priority-tag priority-${topTask.priority}`} style={{ fontSize: 9, margin: '8px 0' }}>{topTask.priority.toUpperCase()}</div>
-              <div className="feed-title" style={{ fontSize: 14, fontWeight: 700 }}>{topTask.title}</div>
-            </div>
-          )}
-        </div>
-
-        {/* Row 2: Rituals & Habits */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div className="glass-card feed-item habits-glance" onClick={() => navigate('/habits')} style={{ padding: '20px', borderRadius: 24 }}>
-            <div className="feed-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent3)', letterSpacing: 1, marginBottom: 12 }}>RITUALS</div>
-            <div className="feed-habits-grid" style={{ display: 'flex', gap: 8 }}>
-              {d?.habits?.list?.slice(0, 3).map(h => (
-                <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done' : ''}`} style={{ 
-                  width: 32, height: 32, borderRadius: 10, fontSize: 16,
-                  background: h.completedToday ? h.color : 'var(--surface2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1px solid var(--border)'
-                }}>
-                  {h.icon}
-                </div>
-              ))}
-            </div>
+      <div className="feed-grid">
+        {nextEvent && (
+          <div className="feed-item-premium" onClick={() => navigate('/schedule')}>
+            <div className="feed-label" style={{ color: 'var(--accent)' }}>NEXT UP</div>
+            <div className="text-xl fw-extrabold ls-tighter mt-1">{nextEvent.startTime}</div>
+            <div className="text-sm fw-semibold opacity-80">{nextEvent.title}</div>
           </div>
-          {d?.notes?.recent?.length > 0 && (
-            <div className="glass-card feed-item recent-note" onClick={() => navigate('/notes')} style={{ padding: '20px', borderRadius: 24 }}>
-              <div className="feed-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent2)', letterSpacing: 1, marginBottom: 8 }}>KNOWLEDGE</div>
-              <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {d.notes.recent[0].title}
+        )}
+        {topTask && (
+          <div className="feed-item-premium" onClick={() => navigate('/tasks')}>
+            <div className="feed-label" style={{ color: 'var(--orange)' }}>TOP FOCUS</div>
+            <div className={`badge badge-${topTask.priority} mt-1 mb-1`}>{topTask.priority.toUpperCase()}</div>
+            <div className="text-sm fw-bold">{topTask.title}</div>
+          </div>
+        )}
+        <div className="feed-item-premium" onClick={() => navigate('/habits')}>
+          <div className="feed-label" style={{ color: 'var(--accent3)' }}>RITUALS</div>
+          <div className="flex-items-center gap-2 mt-2">
+            {d?.habits?.list?.slice(0, 3).map(h => (
+              <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done' : ''}`} style={{ 
+                background: h.completedToday ? h.color : 'var(--surface2)'
+              }}>
+                {h.icon}
               </div>
-              <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>Recently captured</div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
+        {d?.notes?.recent?.length > 0 && (
+          <div className="feed-item-premium" onClick={() => navigate('/notes')}>
+            <div className="feed-label" style={{ color: 'var(--accent2)' }}>RECENT NOTE</div>
+            <div className="text-sm fw-bold truncate">{d.notes.recent[0].title}</div>
+            <div className="text-xs color-muted mt-1">Recently captured</div>
+          </div>
+        )}
       </div>
     );
   };
 
   return (
-    <>
     <div className="responsive-container">
-      <div className="page-header mb-8">
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="page-title flex items-center gap-4" style={{ 
-            fontSize: 'clamp(1.5rem, 7vw, 4rem)', 
-            fontWeight: 800,
-            fontFamily: 'Syne, sans-serif',
-            lineHeight: 1.05,
-            letterSpacing: '-0.05em'
-          }}>
-            <GreetingIcon className="text-accent" size={isMobile ? 32 : 56} style={{ flexShrink: 0, filter: 'drop-shadow(0 0 15px var(--accent-glow))' }} />
-            <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {greeting}, <span style={{ 
-                background: 'var(--grad-premium)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                display: 'inline-block'
-              }}>{user?.name?.split(' ')[0]}</span>
-            </div>
+      <div className="dashboard-header">
+        <div className="flex-items-center gap-4">
+          <GreetingIcon className="text-accent" size={isMobile ? 32 : 56} style={{ filter: 'drop-shadow(0 0 15px var(--accent-glow))' }} />
+          <div className="dashboard-title truncate">
+            {greeting}, <span className="holographic-text">{user?.name?.split(' ')[0]}</span>
           </div>
-          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--muted)', marginTop: 8, letterSpacing: '0.02em' }}>
-            Synchronizing your productivity pulse for today
-          </p>
         </div>
+        <p className="page-subtitle fw-semibold color-muted mt-2 ls-wide">
+          Synchronizing your productivity pulse for today
+        </p>
       </div>
 
       {/* Clock */}
       <Clock />
 
       {/* Stats Row */}
-      <div className="stats-grid mt-6" style={{ 
-          display: 'grid', 
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-          gap: 'clamp(12px, 2vw, 24px)'
-      }}>
+      <div className="stats-grid-auto">
         {[
           { label: 'Tasks', value: d?.tasks?.summary?.completed || 0, color: 'var(--green)', icon: CheckCircle2 },
           { label: 'Pending', value: d?.tasks?.summary?.pending || 0, color: 'var(--yellow)', icon: Zap },
@@ -772,106 +688,6 @@ export default function DashboardPage() {
 
         </div>
       </motion.div>
-
-      <style>{`
-        /* Utility */
-        .text-accent { color: var(--accent); }
-        .clock-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at top right, rgba(130, 114, 255, 0.05), transparent 70%); pointer-events: none; }
-        
-        .clock-time {
-          font-family: 'Syne', sans-serif;
-          font-weight: 800;
-          font-size: clamp(2rem, 8vw, 4rem);
-          line-height: 1.1;
-          letter-spacing: -0.05em;
-        }
-
-        .clock-date {
-          color: var(--muted);
-          font-weight: 700;
-          font-size: clamp(0.75rem, 3vw, 1rem);
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-        }
-
-        /* Stats Grid Optimization */        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
-        }
-
-        @media (max-width: 768px) {
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-          }
-        }
-
-        /* Mobile Feed Styles */
-        .mobile-feed {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          margin-top: 20px;
-        }
-
-        .feed-item {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 18px;
-          padding: 16px 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          position: relative;
-          box-shadow: var(--shadow-sm);
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .feed-item:active {
-          transform: scale(0.97);
-          background: var(--surface2);
-        }
-
-        .feed-label {
-          font-size: clamp(9px, 2.5vw, 11px);
-          font-weight: 800;
-          color: var(--muted);
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-        }
-
-        .feed-title {
-          font-size: clamp(15px, 4vw, 18px);
-          font-weight: 700;
-          color: var(--text);
-          line-height: 1.3;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .feed-note-title {
-          font-size: clamp(13px, 3.5vw, 16px);
-          font-weight: 600;
-          color: var(--text2);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .feed-content {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 0;
-        }
-
-        @media (min-width: 769px) {
-          .hover-lift:hover { transform: translateY(-2px); border-color: var(--border2); background: var(--surface3) !important; }
-        }
-      `}</style>
     </div>
-    </>
   );
 }

@@ -66,76 +66,80 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
   
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className={`task-row-container aura-iridescent gpu-accel ${selected ? 'selected' : ''}`}
-      style={{ borderRadius: 20, opacity: task.status === 'cancelled' ? 0.4 : 1, marginBottom: 12 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`task-row-container premium-card hover-lift ${selected ? 'selected' : ''}`}
+      style={{ opacity: task.status === 'cancelled' ? 0.4 : 1, marginBottom: 12, padding: 0, overflow: 'hidden' }}
     >
-      <div className="task-row-swipe-wrapper" style={{ position: 'relative', overflow: 'hidden', borderRadius: 20 }}>
-        <motion.div
-          className="task-row-main"
-          style={{ 
-            position: 'relative', 
-            zIndex: 2, 
-            background: 'var(--surface)', 
-            borderRadius: 20, 
-            border: '1px solid var(--border)',
-            padding: isMobile ? '10px 14px' : '16px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: isMobile ? 10 : 20
-          }}
-        >
-          <div className="task-row-check" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <input type="checkbox" checked={selected} onChange={() => toggleSelect(task._id)} />
-            <button
-              onClick={() => toggleComplete(task)}
-              className="status-checkbox haptic-tap"
-              style={{
-                width: 24, height: 24, borderRadius: 8, border: '2px solid var(--border)',
-                background: task.status === 'completed' ? 'var(--green)' : 'transparent',
-                borderColor: task.status === 'completed' ? 'var(--green)' : 'var(--muted)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-              }}
-            >
-              <AnimatePresence>
-                {task.status === 'completed' && (
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                    <Check size={14} color="white" strokeWidth={3} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </button>
-          </div>
-
-          <div className="task-row-content" onClick={() => setModal(task)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
-            <div style={{ 
-              fontSize: isMobile ? 14 : 17, fontWeight: 700,
-              textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-              color: task.status === 'completed' ? 'var(--muted)' : 'var(--text)',
-              marginBottom: 2
-            }}>
-              <SensitivityShield>
-                {task.title}
-              </SensitivityShield>
-            </div>
-            <div className="task-row-meta" style={{ display: 'flex', gap: 10, fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              {task.category && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Tag size={12} /> {task.category}</span>
+      <div className="task-row-main" style={{ 
+        display: 'flex',
+        alignItems: 'center',
+        gap: isMobile ? 12 : 20,
+        padding: isMobile ? '14px' : '18px 24px',
+        background: 'transparent'
+      }}>
+        <div className="task-row-check" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <input 
+            type="checkbox" 
+            checked={selected} 
+            onChange={() => toggleSelect(task._id)}
+            style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--accent)' }}
+          />
+          <button
+            onClick={() => toggleComplete(task)}
+            className="status-checkbox haptic-tap"
+            style={{
+              width: 26, height: 26, borderRadius: 10, 
+              border: `2.5px solid ${task.status === 'completed' ? 'var(--green)' : 'var(--border)'}`,
+              background: task.status === 'completed' ? 'var(--green)' : 'rgba(255,255,255,0.03)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: task.status === 'completed' ? '0 0 15px rgba(34, 197, 94, 0.3)' : 'none'
+            }}
+          >
+            <AnimatePresence>
+              {task.status === 'completed' && (
+                <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}>
+                  <Check size={14} color="white" strokeWidth={4} />
+                </motion.div>
               )}
-              {task.dueDate && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isOverdue ? 'var(--red)' : 'inherit' }}>
-                  <Calendar size={10} /> {format(new Date(task.dueDate), 'MMM d')}
-                </span>
-              )}
-            </div>
-          </div>
+            </AnimatePresence>
+          </button>
+        </div>
 
-          <div className="task-row-actions" style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-icon btn-ghost btn-sm" onClick={() => setModal(task)}><Pencil size={18} /></button>
-            <button className="btn btn-icon btn-ghost btn-sm text-red" onClick={() => setConfirmState({ open: true, task })}><Trash2 size={18} /></button>
+        <div className="task-row-content" onClick={() => setModal(task)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
+          <div style={{ 
+            fontSize: isMobile ? 15 : 17, fontWeight: 700,
+            textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+            color: task.status === 'completed' ? 'var(--muted)' : 'var(--text)',
+            marginBottom: 4,
+            transition: 'color 0.3s ease'
+          }}>
+            <SensitivityShield>
+              {task.title}
+            </SensitivityShield>
           </div>
-        </motion.div>
+          <div className="task-row-meta" style={{ display: 'flex', gap: 12, fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            {task.category && (
+              <span className="glass-badge" style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 6 }}>
+                <Tag size={12} /> {task.category}
+              </span>
+            )}
+            {task.dueDate && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isOverdue ? 'var(--red)' : 'inherit' }}>
+                <Calendar size={12} /> {format(new Date(task.dueDate), 'MMM d')}
+              </span>
+            )}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: `var(--${task.priority})` }}>
+              <Layers size={12} /> {task.priority}
+            </span>
+          </div>
+        </div>
+
+        <div className="task-row-actions" style={{ display: 'flex', gap: 4 }}>
+          <button className="btn btn-icon btn-ghost btn-sm haptic-tap" onClick={(e) => { e.stopPropagation(); setModal(task); }}><Pencil size={18} /></button>
+          <button className="btn btn-icon btn-ghost btn-sm text-red haptic-tap" onClick={(e) => { e.stopPropagation(); setConfirmState({ open: true, task }); }}><Trash2 size={18} /></button>
+        </div>
       </div>
     </motion.div>
   );
@@ -143,6 +147,7 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
   return prev.task._id === next.task._id && 
          prev.task.status === next.task.status && 
          prev.task.title === next.task.title &&
+         prev.task.priority === next.task.priority &&
          prev.selected === next.selected &&
          prev.isMobile === next.isMobile;
 });
@@ -206,26 +211,32 @@ function TaskModal({ task, onClose, onSave }) {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <motion.div
-        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
+        <motion.div
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
         animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
-        className={`modal ${isMobile ? 'bottom-sheet' : ''}`}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={`auth-card aura-iridescent ${isMobile ? 'bottom-sheet' : ''}`}
+        style={{ width: '100%', maxWidth: 540, padding: 0, overflow: 'hidden' }}
       >
-        <div className="modal-header">
-          <div className="modal-title">{task ? 'Edit Mission' : 'New Objective'}</div>
-          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+        <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="modal-title" style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22 }}>
+            {task ? 'Refine Mission' : 'New Objective'}
+          </div>
+          <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 8 }}>
+            <X size={20} />
+          </button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="modal-body" style={{ paddingBottom: isMobile ? 'calc(24px + env(safe-area-inset-bottom))' : 24 }}>
-            <div className="form-group">
-              <label style={{ fontSize: 12, fontWeight: 700 }}>Title</label>
+          <div className="modal-body" style={{ padding: '32px', paddingBottom: isMobile ? 'calc(32px + env(safe-area-inset-bottom))' : 32 }}>
+            <div className="form-group mb-6">
+              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Objective Title</label>
               <input 
-                className="input" 
-                style={{ height: 48, fontSize: 16 }}
+                className="auth-input haptic-feedback" 
+                style={{ height: 56, fontSize: 16 }}
                 value={form.title} 
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))} 
-                placeholder="Objective name" 
+                placeholder="Declare your intent..." 
                 autoFocus 
               />
             </div>
@@ -244,9 +255,12 @@ function TaskModal({ task, onClose, onSave }) {
               </div>
             </div>
           </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Proceed</button>
+          <div className="modal-footer" style={{ padding: '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12 }}>
+            <button type="button" className="btn btn-ghost" style={{ flex: 1, height: 52, borderRadius: 14 }} onClick={onClose}>Abort</button>
+            <button type="submit" className="auth-button" style={{ flex: 2, height: 52, borderRadius: 14, fontSize: 16 }}>
+              <div className="btn-glint" />
+              Manifest
+            </button>
           </div>
         </form>
       </motion.div>
@@ -321,59 +335,75 @@ export default function TasksPage() {
 
   return (
     <div className="responsive-container">
-      <div className="page-header mb-6">
+      <div className="page-header mb-10" style={{ alignItems: 'flex-start' }}>
         <div>
-          <div className="page-title flex items-center gap-3" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800 }}>
-            <ClipboardList size={isMobile ? 24 : 32} className="text-accent" />
+          <div className="page-title flex items-center gap-4" style={{ fontFamily: 'Syne, sans-serif', fontSize: 'var(--fs-display)', fontWeight: 800, letterSpacing: '-0.04em' }}>
+            <div className="auth-logo-icon" style={{ width: 48, height: 48, marginBottom: 0 }}>
+              <ClipboardList size={24} color="white" strokeWidth={2.5} />
+            </div>
             Mission Control
           </div>
-          <p className="page-subtitle">Track, manage and conquer your objectives</p>
+          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600 }}>Track, manage and conquer your tactical objectives</p>
         </div>
-        <button className="btn btn-primary hide-mobile" onClick={() => setModal('create')}>
-          <Plus size={18} /> New Objective
+        <button className="auth-button hide-mobile" onClick={() => setModal('create')} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
+          <div className="btn-glint" />
+          <Plus size={20} style={{ marginRight: 8 }} /> New Objective
         </button>
       </div>
 
       {statsData && (
-        <div className="stats-grid mb-6">
-          <div className="stat-card">
-            <SensitivityShield><div className="stat-value">{statsData.total}</div></SensitivityShield>
-            <div className="stat-label">Total</div>
+        <div className="stats-grid-auto mb-8">
+          <div className="stat-card-premium">
+            <div className="stat-card-glow" style={{ background: 'var(--accent)' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div className="stat-label">Total Objectives</div>
+              <SensitivityShield><div className="stat-value" style={{ fontSize: 'var(--fs-2xl)' }}>{statsData.total}</div></SensitivityShield>
+            </div>
           </div>
-          <div className="stat-card">
-            <SensitivityShield><div className="stat-value">{statsData.completed}</div></SensitivityShield>
-            <div className="stat-label">Done</div>
+          <div className="stat-card-premium">
+            <div className="stat-card-glow" style={{ background: 'var(--green)' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div className="stat-label">Objectives Secured</div>
+              <SensitivityShield><div className="stat-value" style={{ fontSize: 'var(--fs-2xl)', color: 'var(--green)' }}>{statsData.completed}</div></SensitivityShield>
+            </div>
+          </div>
+          <div className="stat-card-premium hide-mobile">
+            <div className="stat-card-glow" style={{ background: 'var(--secondary)' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div className="stat-label">Continuity</div>
+              <SensitivityShield><div className="stat-value" style={{ fontSize: 'var(--fs-2xl)' }}>{Math.round((statsData.completed / (statsData.total || 1)) * 100)}%</div></SensitivityShield>
+            </div>
           </div>
         </div>
       )}
 
       {/* Adaptive Filter Bar */}
-      <div className="card mb-6 p-4 aura-iridescent">
-        <div className="filter-grid">
+      <div className="glass-card aura-iridescent mb-8" style={{ padding: 'clamp(16px, 3vw, 24px)', borderRadius: 24 }}>
+        <div className="filter-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr', gap: 16 }}>
           <div style={{ position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+            <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', opacity: 0.6 }} />
             <input 
-              className="input" 
-              style={{ paddingLeft: 40, width: '100%', height: isMobile ? 38 : 42 }} 
+              className="auth-input" 
+              style={{ paddingLeft: 48, width: '100%', height: 52, borderRadius: 16, border: '1.5px solid rgba(255,255,255,0.08)' }} 
               placeholder="Search objectives..." 
               value={filters.search} 
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} 
             />
           </div>
  
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 8 : 12 }}>
-            <select className="select" style={{ height: isMobile ? 38 : 42 }} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <select className="select premium-select" style={{ height: 52, borderRadius: 16 }} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
               <option value="">Status</option>
               {STATUSES.map(s => <option key={s} value={s}>{s.replace('-', ' ')}</option>)}
             </select>
-            <select className="select" style={{ height: isMobile ? 38 : 42 }} value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
+            <select className="select premium-select" style={{ height: 52, borderRadius: 16 }} value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
               <option value="">Priority</option>
               {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
  
-          <div style={{ display: 'flex', gap: isMobile ? 8 : 12, alignItems: 'center' }}>
-            <select className="select" style={{ flex: 1, height: isMobile ? 38 : 42 }} value={filters.sortBy} onChange={e => setFilters(f => ({ ...f, sortBy: e.target.value }))}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <select className="select premium-select" style={{ flex: 1, height: 52, borderRadius: 16 }} value={filters.sortBy} onChange={e => setFilters(f => ({ ...f, sortBy: e.target.value }))}>
               <option value="createdAt">Date Created</option>
               <option value="dueDate">Due Date</option>
               <option value="priority">Priority</option>
@@ -381,10 +411,11 @@ export default function TasksPage() {
             </select>
             {(filters.search || filters.status || filters.priority) && (
               <button 
-                className="btn btn-ghost btn-icon haptic-tap" 
+                className="btn btn-icon glass haptic-tap" 
+                style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(255,255,255,0.05)' }}
                 onClick={() => setFilters({ status: '', priority: '', search: '', sortBy: 'createdAt' })}
               >
-                <X size={16} />
+                <X size={20} />
               </button>
             )}
           </div>

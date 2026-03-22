@@ -39,65 +39,70 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
         animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`modal glass-modal glass-card ${isMobile ? 'bottom-sheet' : ''}`}
-        style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100% - 60px)' : 'auto' }}
+        className={`auth-card aura-iridescent ${isMobile ? 'bottom-sheet' : ''}`}
+        style={{ width: '100%', maxWidth: 600, padding: 0, overflow: 'hidden' }}
       >
-        <div className="modal-header">
-          <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="text-accent"><CalendarIcon size={20} /></div>
-            {event ? 'Refine Event' : 'Schedule New Event'}
+        <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'Syne', fontWeight: 800, fontSize: 22 }}>
+            <div className="auth-logo-icon" style={{ width: 32, height: 32, marginBottom: 0 }}>
+              <CalendarIcon size={18} color="white" />
+            </div>
+            {event ? 'Refine Alignment' : 'New Temporal Objective'}
           </div>
-          <button className="modal-close" onClick={onClose}><X size={20} /></button>
+          <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 8 }}>
+            <X size={20} />
+          </button>
         </div>
-        <div className="modal-body">
-          <div className="form-group">
-            <label className="form-label">Objective Title</label>
-            <input className="input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Strategic Planning" autoFocus />
+        <div className="modal-body" style={{ padding: '32px', paddingBottom: isMobile ? 'calc(32px + env(safe-area-inset-bottom))' : 32 }}>
+          <div className="form-group mb-6">
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Objective Title</label>
+            <input className="auth-input haptic-feedback" style={{ height: 56, fontSize: 16 }} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Strategic Planning" autoFocus />
           </div>
-          <div className="form-group">
-            <label className="form-label">Context & Details</label>
-            <textarea className="textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Optional details..." />
+          <div className="form-group mb-6">
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Context & Details</label>
+            <textarea className="auth-input haptic-feedback" style={{ padding: '16px 20px', height: 'auto', minHeight: 80 }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Optional details..." />
           </div>
 
-          <div className="grid-3">
+          <div className="grid-3 mb-6">
             <div className="form-group">
-              <label className="form-label">Date</label>
-              <input type="date" className="input" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+              <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Date</label>
+              <input type="date" className="auth-input haptic-feedback" style={{ height: 48, fontSize: 14 }} value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
             </div>
             <div className="form-group">
-              <label className="form-label">Start</label>
-              <input type="time" className="input" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} />
+              <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Start</label>
+              <input type="time" className="auth-input haptic-feedback" style={{ height: 48, fontSize: 14 }} value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} />
             </div>
             <div className="form-group">
-              <label className="form-label">End</label>
-              <input type="time" className="input" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} />
+              <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>End</label>
+              <input type="time" className="auth-input haptic-feedback" style={{ height: 48, fontSize: 14 }} value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} />
             </div>
           </div>
 
           <div className="grid-2">
             <div className="form-group">
-              <label className="form-label">Domain</label>
-              <select className="select" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Domain</label>
+              <select className="select premium-select" style={{ height: 48, borderRadius: 14 }} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Connect Objective</label>
-              <select className="select" value={form.linkedTask} onChange={e => setForm(f => ({ ...f, linkedTask: e.target.value }))}>
+              <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Connect Objective</label>
+              <select className="select premium-select" style={{ height: 48, borderRadius: 14 }} value={form.linkedTask} onChange={e => setForm(f => ({ ...f, linkedTask: e.target.value }))}>
                 <option value="">No link</option>
                 {tasks?.map(t => <option key={t._id} value={t._id}>{t.title}</option>)}
               </select>
             </div>
           </div>
         </div>
-        <div className="modal-footer" style={{ gap: 12, padding: isMobile ? '16px 20px 32px' : '20px 24px', borderTop: '1px solid var(--border)' }}>
-          <button className="btn btn-ghost" onClick={onClose} style={{ flex: isMobile ? 1 : 'none' }}>Cancel</button>
-          <button className="btn btn-primary" style={{ flex: isMobile ? 2 : 'none' }} onClick={() => { if (!form.title.trim() || !form.startTime || !form.date) return toast.error('Title, date and start time required'); onSave({ ...form, linkedTask: form.linkedTask || null }); }}>
-            {event ? 'Update Chronology' : 'Commit to Schedule'}
+        <div className="modal-footer" style={{ padding: '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12 }}>
+          <button className="btn btn-ghost" onClick={onClose} style={{ flex: 1, height: 52, borderRadius: 14 }}>Abort</button>
+          <button className="auth-button" style={{ flex: 2, height: 52, borderRadius: 14, fontSize: 16 }} onClick={() => { if (!form.title.trim() || !form.startTime || !form.date) return toast.error('Title, date and start time required'); onSave({ ...form, linkedTask: form.linkedTask || null }); }}>
+            <div className="btn-glint" />
+            Commit Alignment
           </button>
         </div>
       </motion.div>
@@ -171,45 +176,41 @@ export default function SchedulePage() {
 
   return (
     <div className="responsive-container">
-      <div className="page-header mb-6">
+      <div className="page-header mb-10" style={{ alignItems: 'flex-start' }}>
         <div>
           <div className="page-title flex items-center gap-4">
-            <motion.div 
-              animate={{ rotate: [0, 15, -15, 0] }}
-              transition={{ repeat: Infinity, duration: 5 }}
-              className="text-accent"
-              style={{ flexShrink: 0 }}
-            >
-              <Sparkles size={isMobile ? 24 : 36} />
-            </motion.div>
-            <h1 style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.02em' }}>Temporal Nexus</h1>
+            <div className="auth-logo-icon" style={{ width: 48, height: 48, marginBottom: 0 }}>
+              <Sparkles size={24} color="white" strokeWidth={2.5} fill="white" />
+            </div>
+            <h1 style={{ fontSize: 'var(--fs-display)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em' }}>Temporal Nexus</h1>
           </div>
-          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.8 }}>Architect your temporal alignment & flow</p>
+          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600 }}>Architect your temporal alignment & cognitive flow</p>
         </div>
-        <button className="btn btn-primary btn-premium magnetic-btn" onClick={() => setModal('create')} style={{ borderRadius: 14, boxShadow: 'var(--shadow-lg)' }}>
-          <Plus size={18} /> Schedule Alignment
+        <button className="auth-button hide-mobile" onClick={() => setModal('create')} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
+          <div className="btn-glint" />
+          <Plus size={20} style={{ marginRight: 8 }} /> Schedule Alignment
         </button>
       </div>
 
       {/* Date navigation */}
-      <div className="card glass-card mb-6" style={{ padding: isMobile ? '8px 10px' : '12px 20px', display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 16, flexWrap: 'wrap', borderRadius: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: isMobile ? '1 1 100%' : '1', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
-          <motion.button whileHover={{ x: -4 }} className="btn btn-icon btn-ghost" onClick={prevDay}><ChevronLeft size={20} /></motion.button>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, fontFamily: 'Syne, sans-serif', color: 'var(--text)', whiteSpace: 'nowrap' }}>
-                {format(new Date(currentDate + 'T00:00:00'), 'EEEE,')}
+      <div className="glass-card mb-8" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', borderRadius: 24, border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: isMobile ? '1 1 100%' : '1', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
+          <motion.button whileHover={{ x: -4, background: 'rgba(255,255,255,0.05)' }} className="btn btn-icon glass haptic-tap" onClick={prevDay} style={{ borderRadius: 12 }}><ChevronLeft size={22} /></motion.button>
+          <div style={{ textAlign: 'center', minWidth: isMobile ? 'auto' : 200 }}>
+            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, fontFamily: 'Syne, sans-serif', color: 'var(--text)', lineHeight: 1 }}>
+                {format(new Date(currentDate + 'T00:00:00'), 'EEEE')}
               </div>
-              <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 800, fontFamily: 'Syne, sans-serif', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
-                {format(new Date(currentDate + 'T00:00:00'), 'MMMM d')}
+              <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent)', marginTop: 4, letterSpacing: 1 }}>
+                {format(new Date(currentDate + 'T00:00:00'), 'MMMM d, yyyy')}
               </div>
           </div>
-          <motion.button whileHover={{ x: 4 }} className="btn btn-icon btn-ghost" onClick={nextDay}><ChevronRight size={20} /></motion.button>
+          <motion.button whileHover={{ x: 4, background: 'rgba(255,255,255,0.05)' }} className="btn btn-icon glass haptic-tap" onClick={nextDay} style={{ borderRadius: 12 }}><ChevronRight size={22} /></motion.button>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, flex: isMobile ? '1 1 100%' : 'none', width: isMobile ? '100%' : 'auto', alignItems: 'center' }}>
-          <button className="btn btn-ghost btn-sm" style={{ fontWeight: 800, flex: isMobile ? 1 : 'none', borderRadius: 10 }} onClick={() => setCurrentDate(format(new Date(), 'yyyy-MM-dd'))}>Today</button>
-          <div style={{ height: 24, width: 1, background: 'var(--border)', margin: '0 4px' }} className="hide-mobile" />
-          <input type="date" className="input" style={{ flex: isMobile ? 2 : 'none', maxWidth: isMobile ? 'none' : 160, borderRadius: 12, border: '1px solid var(--border)', fontSize: 13, fontWeight: 700 }} value={currentDate} onChange={e => setCurrentDate(e.target.value)} />
+        <div style={{ display: 'flex', gap: 12, flex: isMobile ? '1 1 100%' : 'none', width: isMobile ? '100%' : 'auto', alignItems: 'center' }}>
+          <button className="btn glass btn-sm haptic-tap" style={{ fontWeight: 800, height: 42, padding: '0 20px', borderRadius: 12 }} onClick={() => setCurrentDate(format(new Date(), 'yyyy-MM-dd'))}>Today</button>
+          <div style={{ height: 32, width: 1, background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} className="hide-mobile" />
+          <input type="date" className="auth-input" style={{ flex: isMobile ? 1 : 'none', width: isMobile ? 'auto' : 160, height: 42, borderRadius: 12, fontSize: 13, fontWeight: 700, padding: '0 12px' }} value={currentDate} onChange={e => setCurrentDate(e.target.value)} />
         </div>
       </div>
 
@@ -217,11 +218,11 @@ export default function SchedulePage() {
       <div className="schedule-main-grid mt-8">
 
         {/* Timeline view */}
-        <div className="card glass-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
-          <div style={{ position: 'relative', paddingLeft: isMobile ? 48 : 84, paddingRight: isMobile ? 8 : 24, paddingTop: 32, paddingBottom: 32 }}>
+        <div className="premium-card aura-iridescent" style={{ padding: 0, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24 }}>
+          <div style={{ position: 'relative', paddingLeft: isMobile ? 56 : 96, paddingRight: isMobile ? 12 : 32, paddingTop: 40, paddingBottom: 40 }}>
             {hours.map(h => (
-              <div key={h} style={{ position: 'relative', height: 64, borderBottom: '1px solid var(--border)', zIndex: 1 }}>
-                <div style={{ position: 'absolute', left: isMobile ? -50 : -70, top: -10, fontSize: 'var(--fs-xs)', color: 'var(--muted)', fontWeight: 700, width: isMobile ? 40 : 60, textAlign: 'right', fontFamily: 'Syne' }}>
+              <div key={h} style={{ position: 'relative', height: 64, borderBottom: '1px solid rgba(255,255,255,0.03)', zIndex: 1 }}>
+                <div style={{ position: 'absolute', left: isMobile ? -50 : -80, top: -10, fontSize: 11, color: 'var(--muted)', fontWeight: 800, width: isMobile ? 40 : 60, textAlign: 'right', fontFamily: 'Syne', opacity: 0.6 }}>
                   {h === 12 ? '12 PM' : h < 12 ? `${h} AM` : `${h - 12} PM`}
                 </div>
               </div>
@@ -230,21 +231,22 @@ export default function SchedulePage() {
             {/* Current time indicator */}
             {currentDate === format(new Date(), 'yyyy-MM-dd') && now.getHours() >= 6 && now.getHours() <= 23 && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, scaleX: 0 }}
+                animate={{ opacity: 1, scaleX: 1 }}
                 style={{
                   position: 'absolute',
-                  top: getEventTop(`${now.getHours()}:${now.getMinutes()}`) + 32,
+                  top: getEventTop(`${now.getHours()}:${now.getMinutes()}`) + 40,
                   left: 0, right: 0,
                   height: 2,
-                  background: 'var(--accent)',
+                  background: 'linear-gradient(90deg, var(--accent), transparent)',
                   zIndex: 20,
-                  boxShadow: '0 0 15px var(--accent)'
+                  transformOrigin: 'left',
+                  boxShadow: '0 0 20px var(--accent)'
                 }}>
                 <motion.div 
-                  animate={{ scale: [1, 1.4, 1] }}
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
                   transition={{ repeat: Infinity, duration: 2 }}
-                  style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--accent)', marginTop: -5, marginLeft: -6, boxShadow: '0 0 15px var(--accent)' }} 
+                  style={{ width: 14, height: 14, borderRadius: '50%', background: 'var(--accent)', marginTop: -6, marginLeft: -7, boxShadow: '0 0 20px var(--accent)' }} 
                 />
               </motion.div>
             )}
@@ -260,43 +262,45 @@ export default function SchedulePage() {
                 return (
                   <motion.div
                     key={ev._id}
-                    initial={{ opacity: 0, scale: 0.95, x: 20 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     style={{
                       position: 'absolute',
-                      top: top + 33,
+                      top: top + 42,
                       left: 12, right: 12,
-                      height: height - 2,
-                      background: status === 'current' ? `linear-gradient(135deg, ${color}44, ${color}22)` : `linear-gradient(135deg, ${color}22, ${color}08)`,
-                      backdropFilter: 'blur(8px)',
-                      border: `1.5px solid ${color}${status === 'current' ? '99' : '44'}`,
-                      borderLeft: `6px solid ${color}`,
-                      borderRadius: 14,
-                      padding: isMobile ? '6px 10px' : '12px 16px',
+                      height: height - 4,
+                      background: status === 'current' ? `linear-gradient(135deg, ${color}33, ${color}11)` : `rgba(255,255,255,0.03)`,
+                      backdropFilter: 'blur(12px)',
+                      border: `1px solid ${color}${status === 'current' ? '88' : '33'}`,
+                      borderLeft: `4px solid ${color}`,
+                      borderRadius: 16,
+                      padding: isMobile ? '10px 14px' : '16px 20px',
                       overflow: 'hidden',
                       cursor: 'pointer',
-                      opacity: ev.isCompleted ? 0.3 : status === 'past' ? 0.5 : 1,
+                      opacity: ev.isCompleted ? 0.3 : status === 'past' ? 0.6 : 1,
                       zIndex: status === 'current' ? 15 : 5,
-                      boxShadow: status === 'current' ? `0 12px 32px ${color}33, inset 0 0 20px rgba(255,255,255,0.05)` : 'none',
+                      boxShadow: status === 'current' ? `0 12px 40px ${color}22` : 'none',
                     }}
-                    whileHover={{ scale: 1.02, zIndex: 16, boxShadow: `0 12px 24px ${color}44` }}
+                    whileHover={{ scale: 1.01, zIndex: 16, border: `1px solid ${color}88`, borderLeft: `4px solid ${color}` }}
                     onClick={() => setModal(ev)}
                   >
-                    <div style={{ fontWeight: 800, fontSize: 'var(--fs-sm)', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
-                      {ev.isCompleted && <CheckCircle2 size={16} className="text-green" style={{ filter: `drop-shadow(0 0 5px ${color})` }} />}
+                    <div className="btn-glint" style={{ opacity: status === 'current' ? 0.1 : 0 }} />
+                    <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 16, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '-0.01em' }}>
+                      {ev.isCompleted && <CheckCircle2 size={16} style={{ color: 'var(--green)' }} />}
                       {ev.title}
                     </div>
                     {height > 50 && (
-                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700, opacity: 0.8 }}>
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, opacity: 0.8 }}>
                         <Clock size={12} />
                         {ev.startTime} — {ev.endTime || '∞'}
                       </div>
                     )}
                     {status === 'current' && (
                         <motion.div 
-                          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                          style={{ position: 'absolute', top: 12, right: 12, fontSize: 9, fontWeight: 800, color: color, background: `${color}22`, padding: '2px 8px', borderRadius: 4, letterSpacing: 1 }}
+                          animate={{ opacity: [0.5, 1, 0.5] }}
+                          transition={{ repeat: Infinity, duration: 2 }}
+                          style={{ position: 'absolute', top: 16, right: 16, fontSize: 9, fontWeight: 900, color: color, background: `${color}22`, padding: '3px 10px', borderRadius: 6, letterSpacing: 1.5 }}
                         >
                           ACTIVE
                         </motion.div>
@@ -336,62 +340,63 @@ export default function SchedulePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="card glass-card hover-lift"
+                  className="premium-card hover-lift"
                   style={{
-                    padding: isMobile ? '12px' : '16px',
-                    borderLeft: `3px solid ${color}`,
-                    opacity: status === 'past' || ev.isCompleted ? 0.6 : 1,
+                    padding: isMobile ? '16px' : '20px',
+                    borderLeft: `4px solid ${color}`,
+                    opacity: status === 'past' || ev.isCompleted ? 0.5 : 1,
                     cursor: 'pointer',
+                    background: status === 'current' ? `linear-gradient(135deg, ${color}11, transparent)` : 'transparent'
                   }}
                   onClick={() => setModal(ev)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 'var(--fs-base)', color: ev.isCompleted ? 'var(--muted)' : 'var(--text)', textDecoration: ev.isCompleted ? 'line-through' : 'none' }}>
+                      <div style={{ fontWeight: 800, fontSize: 'var(--fs-base)', color: ev.isCompleted ? 'var(--muted)' : 'var(--text)', textDecoration: ev.isCompleted ? 'line-through' : 'none', letterSpacing: '-0.01em' }}>
                         {ev.title}
                       </div>
-                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
                         <Clock size={12} />
                         {ev.startTime} {ev.endTime && ` — ${ev.endTime}`}
                       </div>
                       {ev.linkedTask && (
-                        <div style={{ fontSize: 'var(--fs-xs)', color: color, marginTop: 8, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div className="glass-badge" style={{ marginTop: 12, color: color, background: `${color}11`, padding: '4px 10px', border: `1px solid ${color}33` }}>
                           <Target size={12} /> {ev.linkedTask.title}
                         </div>
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                       <button
-                        className="btn btn-icon btn-ghost btn-sm"
+                        className="btn btn-icon glass btn-sm haptic-tap"
                         onClick={() => toggleMutation.mutate(ev._id)}
-                        style={{ color: ev.isCompleted ? 'var(--green)' : 'var(--muted)', width: 32, height: 32 }}
+                        style={{ color: ev.isCompleted ? 'var(--green)' : 'var(--muted)', width: 36, height: 36, borderRadius: 10 }}
                       >
-                        {ev.isCompleted ? <CheckCircle2 size={18} /> : <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid' }} />}
+                        {ev.isCompleted ? <CheckCircle2 size={20} /> : <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid var(--border)' }} />}
                       </button>
                       <button
-                        className="btn btn-icon btn-ghost btn-sm"
+                        className="btn btn-icon glass btn-sm haptic-tap"
                         onClick={(e) => {
                           e.stopPropagation();
                           setConfirmDialog({
                             open: true,
-                            title: 'Vanish Event',
-                            message: 'Are you sure you want to completely banish this event from your timeline?',
+                            title: 'Banish Alignment?',
+                            confirmText: 'Banish',
                             onConfirm: () => { deleteMutation.mutate(ev._id); setConfirmDialog({ open: false }); }
                           });
                         }}
-                        style={{ color: 'var(--red)', width: 32, height: 32 }}
+                        style={{ color: 'var(--red)', width: 36, height: 36, borderRadius: 10 }}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </div>
 
                   {status === 'current' && (
                     <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}
+                      animate={{ opacity: [0.6, 1, 0.6] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: color, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5 }}
                     >
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, animation: 'pulse 2s ease infinite' }} />
+                      <div className="pulse-dot" style={{ background: color }} />
                       Active Alignment
                     </motion.div>
                   )}

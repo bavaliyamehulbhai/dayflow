@@ -60,101 +60,89 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <motion.div
-        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.98, y: 10 }}
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
         animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.98, y: 10 }}
-        transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-        className={`modal premium-card ${isMobile ? 'bottom-sheet' : ''}`}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={`auth-card aura-iridescent ${isMobile ? 'bottom-sheet' : ''}`}
         style={{
           maxWidth: 900,
-          background: `rgba(13, 13, 22, 0.65)`,
-          backdropFilter: 'blur(50px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(50px) saturate(200%)',
-          border: `1px solid ${color}44`,
           width: '100%',
-          margin: isMobile ? 0 : 'var(--space-2) auto',
+          padding: 0,
+          margin: isMobile ? 0 : '20px',
           display: 'flex',
           flexDirection: 'column',
           height: isMobile ? 'calc(100% - 40px)' : 'calc(100vh - 80px)',
-          borderRadius: isMobile ? '32px 32px 0 0' : 'var(--radius-xl)',
-          boxShadow: `0 40px 100px rgba(0,0,0,0.6), 0 0 40px ${color}11`,
-          position: 'relative',
-          overflow: 'hidden'
+          borderRadius: isMobile ? '24px 24px 0 0' : 32,
+          overflow: 'hidden',
+          border: `1px solid ${color}44`
         }}
       >
-        {/* Accent Glow */}
-        <div style={{ position: 'absolute', top: '-20%', right: '-20%', width: '50%', height: '50%', background: color, filter: 'blur(100px)', opacity: 0.15, pointerEvents: 'none' }} />
-        <div className="modal-header" style={{ border: 'none', padding: isMobile ? '12px 16px' : '32px 40px 12px' }}>
+        <div className="modal-header" style={{ padding: isMobile ? '20px' : '32px 40px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
-            <div style={{ color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: 10, borderRadius: 12 }}><FileText size={window.innerWidth <= 768 ? 16 : 20} /></div>
+            <div className="auth-logo-icon" style={{ width: 40, height: 40, marginBottom: 0, background: color }}>
+              <FileText size={20} color="white" />
+            </div>
             <input
+              className="no-border"
               style={{ 
                 flex: 1, background: 'none', border: 'none', 
                 fontFamily: 'Syne, sans-serif', 
-                fontSize: 'clamp(20px, 4vw, 32px)', 
+                fontSize: isMobile ? '24px' : '32px', 
                 fontWeight: 800, color: 'var(--text)', 
-                outline: 'none', letterSpacing: '-0.02em' 
+                outline: 'none', letterSpacing: '-0.02em',
+                padding: 0
               }}
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="Title of this Essence..."
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <motion.button
-              whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }}
+              whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.05)' }}
               whileTap={{ scale: 0.9 }}
-              style={{ background: 'none', border: 'none', color: note.isPinned ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', padding: 8, borderRadius: '50%' }}
+              className="btn-icon glass haptic-tap"
+              style={{ width: 40, height: 40, borderRadius: 12, color: note.isPinned ? 'var(--accent)' : 'var(--muted)' }}
               onClick={() => pinMutation.mutate(note._id)}
             >
               <Pin size={20} style={{ fill: note.isPinned ? 'var(--accent)' : 'none' }} />
             </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1, color: 'var(--red)' }}
-              whileTap={{ scale: 0.9 }}
-              style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: 8, borderRadius: '50%' }}
-              onClick={() => {
-                setConfirmDialog({
-                  open: true,
-                  title: 'Vanish Note',
-                  message: 'Are you sure you want to permanently delete this manifestation?',
-                  onConfirm: () => { deleteMutation.mutate(note._id); setConfirmDialog({ open: false }); }
-                });
-              }}
-            >
-              <Trash2 size={20} />
-            </motion.button>
-            <button className="modal-close" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: isMobile ? 32 : 40, height: isMobile ? 32 : 40, border: 'none', color: 'var(--text)', cursor: 'pointer' }}><X size={isMobile ? 18 : 20} /></button>
+            <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 8 }}>
+              <X size={20} />
+            </button>
           </div>
         </div>
         
         <div className="modal-body" style={{ 
-          paddingTop: 0, flex: 1, overflowY: 'auto', 
-          padding: isMobile ? '0 20px calc(24px + env(safe-area-inset-bottom))' : '0 40px 40px' 
+          padding: isMobile ? '20px' : '32px 40px',
+          flex: 1, overflowY: 'auto'
         }}>
-          <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, opacity: 0.6 }}>
-            <Tag size={14} />
-            <input
-              style={{ fontSize: 13, background: 'none', border: 'none', color: 'var(--text)', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', flex: 1, fontWeight: 600 }}
-              value={tags}
-              onChange={e => setTags(e.target.value)}
-              placeholder="Add labels manually..."
-            />
+          <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="glass-badge" style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.03)', color: 'var(--muted)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
+              <Tag size={12} />
+              <input
+                style={{ background: 'none', border: 'none', color: 'var(--text)', outline: 'none', width: 'auto', minWidth: 200, fontWeight: 700 }}
+                value={tags}
+                onChange={e => setTags(e.target.value)}
+                placeholder="Add labels..."
+              />
+            </div>
           </div>
 
           <textarea
+            className="no-border"
             style={{
               width: '100%', background: 'none', border: 'none', outline: 'none',
-              color: 'var(--text2)', 
-              fontSize: 'clamp(16px, 2.5vw, 18px)',
+              color: 'var(--text)', 
+              fontSize: '18px',
               fontFamily: 'Inter, sans-serif',
-              resize: 'none', lineHeight: 1.8, minHeight: '50vh',
-              fontWeight: 400
+              resize: 'none', lineHeight: 1.8, minHeight: '40vh',
+              fontWeight: 500, padding: 0
             }}
             value={content}
             onChange={e => setContent(e.target.value)}
             placeholder="Let the stream of consciousness flow here..."
-            autoFocus
           />
 
           <div style={{ display: 'flex', gap: 12, marginTop: 40, alignItems: 'center' }}>
@@ -163,26 +151,29 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
                 key={c.value}
                 whileHover={{ scale: 1.2, y: -2 }}
                 onClick={() => setColor(c.value)}
+                className="haptic-tap"
                 style={{
                   width: 24, height: 24, borderRadius: '50%', background: c.value,
-                  border: `2px solid ${color === c.value ? 'white' : 'rgba(255,255,255,0.1)'}`,
-                  cursor: 'pointer', boxShadow: color === c.value ? `0 0 15px ${c.value}` : 'none'
+                  border: `2.5px solid ${color === c.value ? 'white' : 'transparent'}`,
+                  cursor: 'pointer', boxShadow: color === c.value ? `0 0 15px ${c.value}` : 'none',
+                  padding: 0
                 }}
               />
             ))}
-            <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--muted)', fontWeight: 800, letterSpacing: 1 }}>
-              {wordCount} WORDS
+            <div style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--muted)', fontWeight: 900, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+              {wordCount} WORDS CAPTURED
             </div>
           </div>
         </div>
 
-        <div className="modal-footer" style={{ border: 'none', gap: 16, padding: isMobile ? '20px' : '24px 40px', background: 'rgba(0,0,0,0.2)' }}>
+        <div className="modal-footer" style={{ padding: '24px 40px', background: 'rgba(255,255,255,0.01)', borderTop: '10px solid transparent', display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: 'var(--green)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5 }}>
-            <div className="pulse-dot" style={{ background: 'var(--green)', width: 8, height: 8 }} /> Cloud Synchronized
+            <div className="pulse-dot" style={{ background: 'var(--green)', width: 8, height: 8 }} /> Optimized Synchrony
           </div>
-          <button className="btn btn-ghost" onClick={onClose} style={{ fontWeight: 800 }}>Dismiss</button>
-          <button className="btn btn-primary" onClick={() => onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, false)} style={{ gap: 10, padding: '0 24px', borderRadius: 14 }}>
-            <Save size={18} /> Preserve Note
+          <button className="btn btn-ghost haptic-tap" onClick={onClose} style={{ borderRadius: 14, height: 52, padding: '0 24px', fontWeight: 800 }}>Dismiss</button>
+          <button className="auth-button" onClick={() => onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, false)} style={{ width: 'auto', height: 52, padding: '0 32px', borderRadius: 16, fontSize: 16 }}>
+            <div className="btn-glint" />
+            <Save size={20} style={{ marginRight: 10 }} /> Preserve
           </button>
         </div>
       </motion.div>
@@ -268,43 +259,43 @@ export default function NotesPage() {
       transition={{ delay: index * 0.05 }}
       className="premium-card hover-lift aura-iridescent note-card"
       style={{
-        background: 'var(--surface)',
-        backdropFilter: 'var(--glass-premium)',
-        WebkitBackdropFilter: 'var(--glass-premium)',
-        border: `1px solid ${note.color ? note.color + '44' : 'var(--border)'}`,
-        padding: isMobile ? '20px' : '32px',
+        background: 'transparent',
+        border: `1px solid ${note.color ? note.color + '44' : 'rgba(255,255,255,0.05)'}`,
+        padding: isMobile ? '20px' : '28px',
         cursor: 'pointer',
         position: 'relative',
-        minHeight: view === 'grid' ? 240 : 'auto',
+        minHeight: view === 'grid' ? 220 : 'auto',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: 'var(--radius)',
-        boxShadow: note.color ? `0 20px 40px ${note.color}11` : 'var(--shadow-lg)',
-        overflow: 'hidden'
+        borderRadius: 24,
+        overflow: 'hidden',
+        transition: 'all 0.3s ease'
       }}
       onClick={() => setModal(note)}
     >
-      <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 6, zIndex: 20 }} className="note-actions">
+      <div className="btn-glint" style={{ opacity: 0.02 }} />
+      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8, zIndex: 20 }}>
         <motion.button
-          whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.15)' }}
+          whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }}
           whileTap={{ scale: 0.9 }}
-          className="btn-icon"
-          style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          className="btn-icon glass haptic-tap"
+          style={{ width: 36, height: 36, borderRadius: 10, color: note.isPinned ? 'var(--accent)' : 'var(--text)' }}
           onClick={e => { e.stopPropagation(); pinMutation.mutate(note._id); }}
         >
-          <Pin size={18} style={{ fill: note.isPinned ? 'var(--accent)' : 'none', color: note.isPinned ? 'var(--accent)' : 'inherit' }} />
+          <Pin size={18} style={{ fill: note.isPinned ? 'var(--accent)' : 'none' }} />
         </motion.button>
         <motion.button
-          whileHover={{ scale: 1.1, color: 'var(--red)', background: 'rgba(248, 113, 113, 0.2)' }}
+          whileHover={{ scale: 1.1, color: 'var(--red)', background: 'rgba(248, 113, 113, 0.1)' }}
           whileTap={{ scale: 0.9 }}
-          className="btn-icon"
-          style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          className="btn-icon glass haptic-tap"
+          style={{ width: 36, height: 36, borderRadius: 10, color: 'var(--text)' }}
           onClick={e => {
             e.stopPropagation();
             setConfirmDialog({
               open: true,
               title: 'Vanish Note',
               message: 'Are you sure you want to permanently delete this manifestation?',
+              confirmText: 'Banish',
               onConfirm: () => { deleteMutation.mutate(note._id); setConfirmDialog({ open: false }); }
             });
           }}
@@ -314,136 +305,121 @@ export default function NotesPage() {
       </div>
 
       <SensitivityShield>
-        <h3 style={{ fontWeight: 800, fontSize: isMobile ? 15 : 18, marginBottom: 6, color: 'var(--text)', fontFamily: 'Syne, sans-serif', paddingRight: 80 }}>{note.title || 'Untitled Fragment'}</h3>
+        <h3 style={{ fontWeight: 800, fontSize: isMobile ? 18 : 20, marginBottom: 8, color: 'var(--text)', fontFamily: 'Syne, sans-serif', paddingRight: 80, letterSpacing: '-0.02em' }}>{note.title || 'Untitled Fragment'}</h3>
       </SensitivityShield>
-      <SensitivityShield>
-          <p style={{ fontSize: isMobile ? 13 : 14, color: 'var(--text2)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: view === 'grid' ? 4 : 2, WebkitBoxOrient: 'vertical' }}>
-            {note.content}
-          </p>
-      </SensitivityShield>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: isMobile ? 16 : 24, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {note.tags?.slice(0, 2).map(t => (
-            <span key={t} style={{ fontSize: 10, background: 'rgba(255,255,255,0.1)', color: 'var(--accent)', padding: '3px 10px', borderRadius: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t}</span>
-          ))}
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>{format(new Date(note.updatedAt), 'MMM d')}</div>
+      <div style={{ flex: 1 }}>
+        <SensitivityShield>
+            <p style={{ fontSize: isMobile ? 13 : 14, color: 'var(--muted)', lineHeight: 1.6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: view === 'grid' ? 4 : 2, WebkitBoxOrient: 'vertical', fontWeight: 500 }}>
+              {note.content || <span style={{ fontStyle: 'italic', opacity: 0.4 }}>No essence captured yet...</span>}
+            </p>
+        </SensitivityShield>
       </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {note.tags?.slice(0, 2).map(t => (
+            <span key={t} className="glass-badge" style={{ fontSize: 10, color: 'var(--accent)', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: 8, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t}</span>
+          ))}
+          {note.tags?.length > 2 && <span className="glass-badge" style={{ fontSize: 10, color: 'var(--muted)', padding: '4px 8px' }}>+{note.tags.length - 2}</span>}
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>{format(new Date(note.updatedAt), 'MMM d')}</div>
+      </div>
+      {note.color && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: note.color, opacity: 0.5 }} />}
     </motion.div>
   );
 
   const DesktopSplitView = () => (
-    <div className="notes-split-container">
-      {/* Scrollable Sidebar List */}
-      <div className="notes-split-sidebar">
-        <div className="notes-sidebar-header" style={{ padding: '24px 20px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="notes-split-container" style={{ border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, background: 'rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+      {/* Sidebar List */}
+      <div className="notes-split-sidebar" style={{ borderRight: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
+        <div className="notes-sidebar-header" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: 800, letterSpacing: '-0.02em' }}>Repository</h2>
-            <button className="btn btn-primary magnetic-btn" onClick={handleNewNote} style={{ borderRadius: 10, height: 32, padding: '0 10px', fontSize: 11 }}>
-              <Plus size={14} /> Capture
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em' }}>Repository</h2>
+            <button className="btn btn-sm glass haptic-tap" onClick={handleNewNote} style={{ borderRadius: 10, padding: '0 12px', height: 32, fontSize: 11, fontWeight: 800 }}>
+              <Plus size={14} style={{ marginRight: 6 }} /> Capture
             </button>
           </div>
-          <div className="search-wrap-minimal">
+          <div className="auth-input no-border" style={{ height: 42, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.03)' }}>
             <Search size={14} className="text-muted" />
             <input 
-              placeholder="Filter essences..." 
+              placeholder="Search essences..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
+              style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: 13, outline: 'none', width: '100%', padding: 0 }}
             />
           </div>
         </div>
-        <div className="notes-sidebar-list">
+        <div className="notes-sidebar-list" style={{ padding: '0 16px 24px' }}>
           {[...pinned, ...unpinned].map((n, i) => (
-            <div
+            <motion.div
+              layout
               key={n._id}
               className={`notes-sidebar-item ${selectedNoteId === n._id ? 'active' : ''}`}
+              style={{
+                padding: '20px',
+                borderRadius: 16,
+                cursor: 'pointer',
+                marginBottom: 8,
+                background: selectedNoteId === n._id ? 'rgba(255,255,255,0.05)' : 'transparent',
+                border: `1px solid ${selectedNoteId === n._id ? 'rgba(255,255,255,0.1)' : 'transparent'}`,
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
               onClick={() => setSelectedNoteId(n._id)}
             >
+              {selectedNoteId === n._id && <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 4, background: n.color || 'var(--accent)' }} />}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div className="item-title">{n.title || 'Untitled'}</div>
-                <div className="sidebar-item-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                   {n.isPinned && <Pin size={14} style={{ fill: 'var(--accent)', color: 'var(--accent)' }} />}
-                   <motion.button
-                     whileHover={{ scale: 1.2, color: 'var(--red)' }}
-                     style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer', padding: 4 }}
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       setConfirmDialog({
-                         open: true,
-                         title: 'Vanish Note',
-                         message: 'Permanently delete this manifestation?',
-                         onConfirm: () => { deleteMutation.mutate(n._id); setConfirmDialog({ open: false }); }
-                       });
-                     }}
-                   >
-                     <Trash2 size={14} />
-                   </motion.button>
-                </div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'Syne' }}>{n.title || 'Untitled Fragment'}</div>
+                {n.isPinned && <Pin size={14} style={{ fill: 'var(--accent)', color: 'var(--accent)' }} />}
               </div>
-              <div className="item-preview">{n.content.slice(0, 60)}</div>
-              <div className="item-meta">
-                <span>{format(new Date(n.updatedAt), 'MMM d')}</span>
+              <div style={{ fontSize: 12, color: 'var(--muted)', opacity: 0.7, lineHeight: 1.5, height: 36, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                {n.content?.slice(0, 100) || 'No essence...'}
               </div>
-            </div>
+              <div style={{ marginTop: 12, fontSize: 10, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>{format(new Date(n.updatedAt), 'MMM d')}</div>
+            </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Main Editor Surface */}
-      <div className="notes-split-main">
+      {/* Main Area */}
+      <div className="notes-split-main" style={{ background: 'rgba(255,255,255,0.01)', overflowY: 'auto' }}>
         {selectedNote ? (
-          <div className="split-editor-wrap">
-            <div className="split-editor-toolbar" style={{ display: 'flex', justifyContent: 'flex-start', gap: 16, marginBottom: 12, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <motion.button
-                whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.1)' }}
-                whileTap={{ scale: 0.9 }}
-                className="toolbar-btn"
-                style={{ background: 'none', border: 'none', color: selectedNote.isPinned ? 'var(--accent)' : 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700 }}
-                onClick={() => pinMutation.mutate(selectedNote._id)}
-              >
-                <Pin size={18} style={{ fill: selectedNote.isPinned ? 'var(--accent)' : 'none' }} />
-                <span>{selectedNote.isPinned ? 'Pinned' : 'Pin Note'}</span>
-              </motion.button>
-              <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)' }} />
-              <motion.button
-                whileHover={{ scale: 1.1, color: 'var(--red)' }}
-                whileTap={{ scale: 0.9 }}
-                className="toolbar-btn"
-                style={{ background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700 }}
-                onClick={() => {
-                  setConfirmDialog({
-                    open: true,
-                    title: 'Vanish Note',
-                    message: 'Are you sure you want to permanently delete this manifestation?',
-                    onConfirm: () => { deleteMutation.mutate(selectedNote._id); setConfirmDialog({ open: false }); }
-                  });
-                }}
-              >
-                <Trash2 size={18} />
-                <span>Delete</span>
-              </motion.button>
-            </div>
-            <div className="split-editor-header" style={{ marginBottom: 24 }}>
+          <div className="split-editor-wrap" style={{ padding: '60px 80px', maxWidth: 900, margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40 }}>
+              <div className="auth-logo-icon" style={{ width: 40, height: 40, marginBottom: 0, background: selectedNote.color || 'var(--accent)' }}>
+                <FileText size={20} color="white" />
+              </div>
               <input
-                className="split-title-input"
-                style={{ width: '100%', fontSize: '48px' }}
+                className="no-border"
+                style={{ flex: 1, fontSize: '48px', fontWeight: 800, background: 'none', border: 'none', color: 'var(--text)', outline: 'none', fontFamily: 'Syne', letterSpacing: '-0.04em' }}
                 value={selectedNote.title}
                 onChange={e => handleSave({ ...selectedNote, title: e.target.value }, true)}
-                placeholder="Title"
+                placeholder="Essence Title"
               />
             </div>
             <textarea
-              className="split-content-textarea"
+              className="no-border"
+              style={{ width: '100%', flex: 1, minHeight: '50vh', background: 'none', border: 'none', outline: 'none', fontSize: '20px', color: 'var(--text)', lineHeight: 1.8, resize: 'none', fontWeight: 500 }}
               value={selectedNote.content}
               onChange={e => handleSave({ ...selectedNote, content: e.target.value }, true)}
-              placeholder="Start writing..."
+              placeholder="Manifest your thoughts..."
             />
+            <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 12 }}>
+                {NOTE_COLORS.map(c => (
+                  <button key={c.value} onClick={() => handleSave({ ...selectedNote, color: c.value }, true)} style={{ width: 24, height: 24, borderRadius: '50%', background: c.value, border: `2.5px solid ${selectedNote.color === c.value ? 'white' : 'transparent'}`, cursor: 'pointer' }} />
+                ))}
+              </div>
+              <div style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 900, letterSpacing: 1.5 }}>
+                 {selectedNote.content?.trim().split(/\s+/).filter(Boolean).length} WORDS
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="notes-empty-state">
-            <Sparkles size={48} className="text-muted" style={{ opacity: 0.2 }} />
-            <p>Select a manifestation to refine</p>
+          <div className="notes-empty-state" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
+            <Sparkles size={80} />
+            <p style={{ marginTop: 24, fontSize: 18, fontWeight: 800, fontFamily: 'Syne' }}>Select a manifestation</p>
           </div>
         )}
       </div>
@@ -454,30 +430,33 @@ export default function NotesPage() {
     <div className={isDesktopSplit ? "notes-page-root-split" : "responsive-container"}>
       {!isDesktopSplit && (
         <>
-          <div className="page-header mb-12">
+          <div className="page-header mb-10" style={{ alignItems: 'flex-start' }}>
             <div>
               <div className="page-title flex items-center gap-4" style={{ 
                 fontFamily: 'Syne, sans-serif', 
-                fontSize: 'clamp(2rem, 8vw, 4rem)', 
+                fontSize: 'var(--fs-display)', 
                 fontWeight: 800,
                 letterSpacing: '-0.05em',
                 lineHeight: 1
               }}>
-                <Sparkles size={isMobile ? 32 : 56} className="text-accent" style={{ filter: 'drop-shadow(0 0 15px var(--accent-glow))' }} />
-                Thought Sanctum
+                <div className="auth-logo-icon" style={{ width: 48, height: 48, marginBottom: 0 }}>
+                  <Sparkles size={24} color="white" strokeWidth={2.5} fill="white" />
+                </div>
+                Cognitive Archive
               </div>
-              <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--muted)', marginTop: 12, letterSpacing: '0.02em' }}>
-                Preserve your intellectual manifestations
+              <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--muted)', marginTop: 8, letterSpacing: '0.02em', opacity: 0.7 }}>
+                Preserve your intellectual manifestations in the digital sanctum
               </p>
             </div>
             <div style={{ display: 'flex', gap: 12, width: isMobile ? '100%' : 'auto' }}>
-              <button className="btn glass-card haptic-tap" onClick={() => setView(v => v === 'grid' ? 'list' : 'grid')} style={{ fontWeight: 800, flex: isMobile ? 1 : 'none', border: '1px solid var(--border)', borderRadius: 14 }}>
+              <button className="btn glass haptic-tap" onClick={() => setView(v => v === 'grid' ? 'list' : 'grid')} style={{ fontWeight: 800, flex: isMobile ? 1 : 'none', borderRadius: 14, height: 54, padding: '0 20px' }}>
                 {view === 'grid' ? <List size={18} /> : <Grid size={18} />}
-                <span style={{ marginLeft: 10 }} className="hide-mobile">{view === 'grid' ? 'Chronicle' : 'Matrix'}</span>
+                <span style={{ marginLeft: 10 }} className="hide-mobile">{view === 'grid' ? 'Sequential' : 'Matrix'}</span>
               </button>
-              <button className="btn btn-primary hide-mobile magnetic-btn" onClick={handleNewNote} disabled={createMutation.isPending} style={{ borderRadius: 14, padding: '0 24px' }}>
-                {createMutation.isPending ? <div className="loading-spinner" style={{ width: 18, height: 18 }} /> : <Plus size={18} />}
-                <span style={{ marginLeft: 8 }}>{createMutation.isPending ? 'Manifesting...' : 'Manifest'}</span>
+              <button className="auth-button hide-mobile magnetic-btn" onClick={handleNewNote} disabled={createMutation.isPending} style={{ borderRadius: 16, height: 54, width: 'auto', padding: '0 24px' }}>
+                <div className="btn-glint" />
+                {createMutation.isPending ? <div className="loading-spinner" style={{ width: 18, height: 18 }} /> : <Plus size={20} />}
+                <span style={{ marginLeft: 8 }}>Manifest Essence</span>
               </button>
             </div>
           </div>
@@ -494,16 +473,16 @@ export default function NotesPage() {
             </motion.button>
           </div>
 
-          <div className="premium-card" style={{ marginBottom: 48, padding: '8px 24px', display: 'flex', alignItems: 'center', gap: 16, background: 'var(--surface2)', border: '1px solid var(--border-premium)' }}>
+          <div className="premium-card mb-12" style={{ padding: '4px 20px', display: 'flex', alignItems: 'center', gap: 16, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20 }}>
             <Search size={22} className="text-muted" style={{ opacity: 0.6 }} />
             <input
-              className="input"
-              placeholder="Summon your thoughts..."
+              className="auth-input no-border"
+              placeholder="Summon your captured thoughts..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 600, fontFamily: 'Syne', height: 60, flex: 1 }}
+              style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 600, fontFamily: 'Syne', height: 64, flex: 1, boxShadow: 'none' }}
             />
-            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: 8, fontSize: 10, fontWeight: 900, color: 'var(--muted)', border: '1px solid var(--border)' }}>SEARCH</div>
+            <div className="hide-mobile" style={{ background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 10, fontSize: 10, fontWeight: 900, color: 'var(--muted)', border: '1px solid rgba(255,255,255,0.1)', letterSpacing: 1 }}>SEARCH</div>
           </div>
 
           {isLoading ? (
