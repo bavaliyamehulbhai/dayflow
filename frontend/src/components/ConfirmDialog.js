@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, X } from 'lucide-react';
 
@@ -21,7 +22,7 @@ export default function ConfirmDialog({ open, title, message, confirmText = 'Del
 
     return (
         <AnimatePresence>
-            {open && (
+            {open && createPortal(
                 <motion.div
                     key="confirm-backdrop"
                     initial={{ opacity: 0 }}
@@ -53,14 +54,14 @@ export default function ConfirmDialog({ open, title, message, confirmText = 'Del
                         <button className="modal-close" onClick={onCancel} style={{ position: 'absolute', top: 16, right: 16 }}>
                             <X size={18} />
                         </button>
-
+ 
                         <div className="confirm-icon" style={{ background: danger ? 'rgba(250,109,109,0.08)' : 'rgba(130,114,255,0.08)', borderColor: danger ? 'rgba(250,109,109,0.2)' : 'rgba(130,114,255,0.2)' }}>
                             <AlertTriangle size={22} style={{ color: danger ? 'var(--red)' : 'var(--accent)' }} />
                         </div>
-
+ 
                         <div className="confirm-title">{title}</div>
                         <div className="confirm-message">{message}</div>
-
+ 
                         <div className="confirm-actions">
                             <button className="btn btn-ghost" onClick={onCancel} style={{ flex: 1 }}>
                                 Cancel
@@ -75,7 +76,8 @@ export default function ConfirmDialog({ open, title, message, confirmText = 'Del
                             </button>
                         </div>
                     </motion.div>
-                </motion.div>
+                </motion.div>,
+                document.body
             )}
         </AnimatePresence>
     );

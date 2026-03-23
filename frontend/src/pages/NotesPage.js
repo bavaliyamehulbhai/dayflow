@@ -39,12 +39,15 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
   const [content, setContent] = useState(note?.content || '');
   const [color, setColor] = useState(note?.color || '#7c6dfa');
   const [tags, setTags] = useState(note?.tags?.join(', ') || '');
+  const [isSyncing, setIsSyncing] = useState(false);
   const saveTimer = useRef(null);
 
   const autoSave = () => {
     clearTimeout(saveTimer.current);
+    setIsSyncing(true);
     saveTimer.current = setTimeout(() => {
       onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, true);
+      setTimeout(() => setIsSyncing(false), 800);
     }, 2000);
   };
 
@@ -167,8 +170,9 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
         </div>
 
         <div className="modal-footer" style={{ padding: '24px 40px', background: 'rgba(255,255,255,0.01)', borderTop: '10px solid transparent', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: 'var(--green)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5 }}>
-            <div className="pulse-dot" style={{ background: 'var(--green)', width: 8, height: 8 }} /> Optimized Synchrony
+          <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: isSyncing ? 'var(--accent)' : 'var(--green)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, transition: 'all 0.3s ease' }}>
+            <div className={isSyncing ? "pulse-dot" : ""} style={{ background: isSyncing ? 'var(--accent)' : 'var(--green)', width: 8, height: 8, borderRadius: '50%', boxShadow: `0 0 10px ${isSyncing ? 'var(--accent)' : 'var(--green)'}` }} /> 
+            {isSyncing ? 'Spirit Syncing...' : 'Optimized Synchrony'}
           </div>
           <button className="btn btn-ghost haptic-tap" onClick={onClose} style={{ borderRadius: 14, height: 52, padding: '0 24px', fontWeight: 800 }}>Dismiss</button>
           <button className="auth-button" onClick={() => onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, false)} style={{ width: 'auto', height: 52, padding: '0 32px', borderRadius: 16, fontSize: 16 }}>
@@ -198,6 +202,16 @@ export default function NotesPage() {
   });
 
   const invalidate = () => qc.invalidateQueries(['notes']);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'create') {
+      handleNewNote();
+      // Clear URL params
+      const newUrl = window.location.pathname;
+      window.history.replaceState({ path: newUrl }, '', newUrl);
+    }
+  }, []);
 
   const createMutation = useMutation({
     mutationFn: notesAPI.create,

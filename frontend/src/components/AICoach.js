@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { createPortal } from 'react-dom';
 import { aiAPI } from '../utils/api';
 import { Sparkles, AlertCircle, CheckCircle2, Zap, Brain, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -93,7 +94,7 @@ const AICoach = () => {
             </div>
 
             <AnimatePresence>
-                {selectedInsight && (
+                {selectedInsight && createPortal(
                     <div className="modal-overlay" onClick={() => setSelectedInsight(null)} style={{ display: 'flex', alignItems: window.innerWidth <= 768 ? 'flex-end' : 'center' }}>
                         <motion.div
                             initial={window.innerWidth <= 768 ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
@@ -116,7 +117,7 @@ const AICoach = () => {
                                         width: 32, height: 32, borderRadius: 8,
                                         background: 'var(--surface2)',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}>
+                                     }}>
                                         {getIcon(selectedInsight.type)}
                                     </div>
                                     Focus Briefing
@@ -142,7 +143,8 @@ const AICoach = () => {
                             </div>
                             <div style={{ height: 4, background: 'linear-gradient(90deg, var(--accent), var(--accent2))', width: '100%' }} />
                         </motion.div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
             </AnimatePresence>
         </>

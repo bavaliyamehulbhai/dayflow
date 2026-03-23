@@ -108,16 +108,23 @@ function useCountUp(target, duration = 800) {
   return value;
 }
 
-const AnimatedStat = React.memo(({ value, label, color, icon: Icon }) => {
+const AnimatedStat = React.memo(({ value, label, color, icon: Icon, onClick }) => {
   const animated = useCountUp(typeof value === 'number' ? value : 0);
   const display = typeof value === 'string' ? value : animated;
   return (
-    <div className="stat-card-premium gpu-accel haptic-tap">
-      <div style={{ color, opacity: 0.9, marginBottom: 4 }}><Icon size={24} /></div>
-      <SensitivityShield>
-        <div className="stat-value" style={{ color }}>{display}</div>
-      </SensitivityShield>
-      <div className="stat-label">{label}</div>
+    <div 
+      className="stat-card-premium gpu-accel haptic-tap" 
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    >
+      <div className="stat-card-glow" style={{ background: color }} />
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ color, opacity: 0.9, marginBottom: 4 }}><Icon size={24} /></div>
+        <SensitivityShield>
+          <div className="stat-value" style={{ color }}>{display}</div>
+        </SensitivityShield>
+        <div className="stat-label">{label}</div>
+      </div>
     </div>
   );
 });
@@ -178,7 +185,7 @@ function Clock() {
       className="clock-card-premium"
     >
       <div className="greeting-icon-bg" style={{ color: 'var(--accent)' }}>
-        <GreetingIcon size={window.innerWidth <= 768 ? 100 : 180} />
+        <GreetingIcon size={window.innerWidth <= 768 ? 64 : 120} />
       </div>
       
       <motion.div 
@@ -354,13 +361,12 @@ export default function DashboardPage() {
       {/* Clock */}
       <Clock />
 
-      {/* Stats Row */}
       <div className="stats-grid-auto">
         {[
-          { label: 'Tasks', value: d?.tasks?.summary?.completed || 0, color: 'var(--green)', icon: CheckCircle2 },
-          { label: 'Pending', value: d?.tasks?.summary?.pending || 0, color: 'var(--yellow)', icon: Zap },
-          { label: 'Focus', value: d?.pomodoro?.todayMinutes || 0, color: 'var(--accent)', icon: Timer },
-          { label: 'Rituals', value: `${d?.habits?.completedToday || 0}/${d?.habits?.total || 0}`, color: 'var(--accent3)', icon: Trophy },
+          { label: 'Tasks', value: d?.tasks?.summary?.completed || 0, color: 'var(--green)', icon: CheckCircle2, onClick: () => navigate('/tasks?status=completed') },
+          { label: 'Pending', value: d?.tasks?.summary?.pending || 0, color: 'var(--yellow)', icon: Zap, onClick: () => navigate('/tasks?status=pending') },
+          { label: 'Focus', value: d?.pomodoro?.todayMinutes || 0, color: 'var(--accent)', icon: Timer, onClick: () => navigate('/pomodoro') },
+          { label: 'Rituals', value: `${d?.habits?.completedToday || 0}/${d?.habits?.total || 0}`, color: 'var(--accent3)', icon: Trophy, onClick: () => navigate('/habits') },
         ].map((s, i) => (
           <AnimatedStat key={i} {...s} />
         ))}

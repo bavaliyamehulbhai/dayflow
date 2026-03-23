@@ -7,6 +7,7 @@ import {
     Settings, LogOut, Plus, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { createPortal } from 'react-dom';
 
 const ACTIONS = [
     { id: 'dash', label: 'Go to Dashboard', icon: LayoutDashboard, path: '/', section: 'Navigation' },
@@ -15,6 +16,8 @@ const ACTIONS = [
     { id: 'habits', label: 'Track Rituals', icon: RefreshCw, path: '/habits', section: 'Navigation' },
     { id: 'focus', label: 'Pomodoro Timer', icon: Timer, path: '/pomodoro', section: 'Navigation' },
     { id: 'notes', label: 'Knowledge Base', icon: FileText, path: '/notes', section: 'Navigation' },
+    { id: 'new-task', label: 'New Objective', icon: Plus, path: '/tasks', search: 'create', section: 'Quick Actions' },
+    { id: 'new-note', label: 'New Essence', icon: Plus, path: '/notes', search: 'create', section: 'Quick Actions' },
     { id: 'profile', label: 'User Profile', icon: User, path: '/profile', section: 'Account' },
     { id: 'settings', label: 'Account Settings', icon: Settings, path: '/profile', section: 'Account' },
     { id: 'logout', label: 'Sign Out', icon: LogOut, action: 'logout', section: 'Danger' },
@@ -56,7 +59,9 @@ export default function CommandPalette() {
 
     const handleAction = (item) => {
         setIsOpen(false);
-        if (item.path) navigate(item.path);
+        if (item.path) {
+            navigate(item.search ? `${item.path}?action=${item.search}` : item.path);
+        }
         if (item.action === 'logout') logout();
     };
 
@@ -74,7 +79,7 @@ export default function CommandPalette() {
         }
     };
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <>
@@ -216,6 +221,7 @@ export default function CommandPalette() {
                     </motion.div>
                 </>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

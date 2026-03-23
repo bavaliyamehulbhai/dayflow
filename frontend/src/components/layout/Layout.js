@@ -184,11 +184,33 @@ export default function Layout({ children }) {
       {/* ─── Mobile Bottom Tab Bar ─────────────────────────────────────────── */}
       {
         isMobile && (
-          <nav className="bottom-tab-bar">
+          <nav className="bottom-tab-bar premium-glass-bottom">
             {mobileTabItems.map(Item => {
-              const isActive = Item.exact
+              const isAction = !!Item.action;
+              const isActive = !isAction && (Item.exact
                 ? location.pathname === Item.to
-                : location.pathname.startsWith(Item.to);
+                : location.pathname.startsWith(Item.to));
+              
+              if (isAction) {
+                return (
+                  <button 
+                    key={Item.id} 
+                    className="bottom-tab central-action"
+                    onClick={() => {
+                      if (Item.action === 'command') {
+                        // Dispatch a global event or trigger some global state
+                        window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'k' }));
+                      }
+                    }}
+                  >
+                    <div className="bottom-tab-icon-wrap action-bubble">
+                      <Item.icon size={26} strokeWidth={3} />
+                    </div>
+                    <span className="bottom-tab-label">{Item.label}</span>
+                  </button>
+                );
+              }
+
               return (
                 <NavLink
                   key={Item.to}
@@ -200,8 +222,8 @@ export default function Layout({ children }) {
                     className="bottom-tab-icon"
                     whileTap={{ scale: 0.9 }}
                     animate={{
-                      scale: isActive ? 1.1 : 1,
-                      y: isActive ? -2 : 0
+                      scale: isActive ? 1.15 : 1,
+                      y: isActive ? -4 : 0
                     }}
                     transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   >

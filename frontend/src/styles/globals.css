@@ -128,26 +128,48 @@
   backdrop-filter: var(--glass-premium);
   -webkit-backdrop-filter: var(--glass-premium);
   border: 1.5px solid var(--border-premium);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(130, 114, 255, 0.05);
   border-radius: var(--radius);
   position: relative;
   overflow: hidden;
+  transition: var(--transition);
+}
+
+.premium-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg), 0 0 60px rgba(130, 114, 255, 0.1);
 }
 
 .premium-card::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent 70%);
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(124, 109, 250, 0.1),
+    rgba(255, 77, 125, 0.05),
+    transparent
+  );
+  transform: skewX(-25deg);
+  transition: 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
+}
+
+.premium-card:hover::after {
+  left: 150%;
 }
 
 .responsive-container {
   width: 100%;
-  max-width: 100%; /* Fill the wrapper */
-  margin: 0;
-  padding: 0 var(--desktop-pad);
-  transition: padding 0.3s ease;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 5vw, 60px);
+  transition: padding 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
 }
 
@@ -449,6 +471,15 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+button {
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+  color: inherit;
 }
 
 html {
@@ -792,16 +823,22 @@ body {
   transition: var(--transition);
   margin-bottom: 2px;
   position: relative;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
 }
 
 .nav-link:hover {
   background: var(--surface2);
   color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-link.active {
-  background: rgba(124, 109, 250, 0.15);
+  background: rgba(124, 109, 250, 0.12);
   color: var(--accent);
+  border-color: rgba(124, 109, 250, 0.2);
 }
 
 .nav-link.active::before {
@@ -984,8 +1021,8 @@ body {
 
 .page-content {
   flex: 1;
-  padding: 28px;
-  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+  padding: clamp(20px, 4vw, 40px);
+  padding-bottom: calc(clamp(20px, 4vw, 40px) + env(safe-area-inset-bottom));
   position: relative;
   z-index: 1;
   width: 100%;
@@ -1427,14 +1464,16 @@ body {
 }
 
 .modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: var(--surface-solid);
+  backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 28px;
   width: 100%;
   max-width: 520px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: scaleIn 0.2s ease;
+  box-shadow: var(--shadow-lg), 0 0 100px rgba(0, 0, 0, 0.5);
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-header {
@@ -1703,14 +1742,6 @@ body {
 @media (max-width: 1024px) and (min-width: 769px) {
   :root {
     --sidebar-w: 68px;
-  }
-
-  .main-content {
-    margin-left: 68px;
-  }
-
-  .main-content::before {
-    margin-left: 68px;
   }
 
   .stats-grid {
@@ -2758,10 +2789,6 @@ a:hover {
     --sidebar-w: 280px;
   }
 
-  .main-content {
-    margin-left: 280px;
-  }
-
   .stat-card {
     padding: 20px;
   }
@@ -3214,13 +3241,104 @@ img {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ─── Habit Row (with swipe) ─────────────────────────────────────── */
-.habit-row-swipe-wrapper {
-  border-bottom: 1px solid var(--border);
+/* ─── Habit Rituals PREMIUM ────────────────────────────────────────── */
+.rituals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+  margin-top: var(--space-6);
 }
 
-.habit-row-swipe-wrapper:last-child {
-  border-bottom: none;
+@media (max-width: 768px) {
+  .rituals-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
+
+.ritual-card-premium {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6);
+  background: var(--surface2);
+  backdrop-filter: var(--glass-premium);
+  border: 1.5px solid var(--border-premium);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.ritual-card-premium:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(130, 114, 255, 0.1);
+}
+
+.ritual-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.ritual-icon-container {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.02);
+}
+
+.ritual-streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 124, 109, 0.1);
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ff7c6d;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 124, 109, 0.2);
+}
+
+.ritual-consistency-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ritual-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.ritual-dot.completed {
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+.ritual-dot.today {
+  border: 1.5px solid var(--accent);
+  background: transparent;
+}
+
+.habit-row-swipe-wrapper {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.3s ease;
 }
 
 /* ─── Notes Split - Better Scrollbar ─────────────────────────────── */
@@ -3901,34 +4019,37 @@ img {
 
 .clock-card-premium {
   text-align: center;
-  padding: var(--space-8) var(--space-6);
+  padding: var(--space-12) var(--space-6);
   position: relative;
   overflow: hidden;
-  background: rgba(13, 13, 22, 0.6);
+  background: radial-gradient(circle at 50% -20%, rgba(130, 114, 255, 0.15), rgba(13, 13, 22, 0.8));
+  backdrop-filter: blur(40px) saturate(200%);
   border: 1.5px solid var(--border-premium);
   border-radius: var(--radius-xl);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5), inset 0 0 80px rgba(255,255,255,0.02);
 }
 
 @media (max-width: 768px) {
   .clock-card-premium {
-    padding: var(--space-6) var(--space-4);
+    padding: var(--space-4) var(--space-4);
   }
   
   .clock-time-display {
-    font-size: clamp(2rem, 18vw, 4rem);
-    margin: var(--space-4) 0;
+    font-size: clamp(2rem, 14vw, 3.5rem);
+    margin: var(--space-2) 0;
   }
   
   .clock-date-display {
     margin-top: 0;
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-2);
+    font-size: 10px;
   }
 }
 
 .clock-time-display {
   font-family: 'Syne', sans-serif;
   font-weight: 800;
-  font-size: clamp(2.5rem, 15vw, 7rem);
+  font-size: clamp(2.5rem, 12vw, 6rem);
   letter-spacing: -0.07em;
   background: linear-gradient(180deg, #fff, var(--text2));
   -webkit-background-clip: text;

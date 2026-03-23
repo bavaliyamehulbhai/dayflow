@@ -285,6 +285,30 @@ export default function TasksPage() {
     queryFn: () => tasksAPI.getAll(filters).then(r => r.data)
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const action = params.get('action');
+    const status = params.get('status');
+    const priority = params.get('priority');
+
+    if (action === 'create') {
+      setModal('create');
+    }
+    
+    if (status || priority) {
+      setFilters(f => ({ 
+        ...f, 
+        status: status || f.status, 
+        priority: priority || f.priority 
+      }));
+    }
+
+    if (action || status || priority) {
+      // Clear URL params to avoid persistent filtering on refresh
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
+
   const { data: statsData } = useQuery({
     queryKey: ['task-stats'],
     queryFn: () => tasksAPI.stats().then(r => r.data.stats)
@@ -331,6 +355,31 @@ export default function TasksPage() {
 
   const handleDelete = (task) => {
     deleteMutation.mutate(task._id);
+  };
+
+  const handleBulkComplete = () => {
+    selected.forEach(id => {
+      const task = tasks.find(t => t._id === id);
+      if (task && task.status !== 'completed') {
+        updateMutation.mutate({ id, data: { status: 'completed' } });
+      }
+    });
+    setSelected([]);
+    toast.success('Objectives Secured');
+    feedback('success');
+  };
+
+  const handleBulkDelete = () => {
+    setConfirmState({
+      open: true,
+      title: `Remove ${selected.length} Objectives?`,
+      message: 'This action cannot be undone. Are you sure you want to proceed?',
+      onConfirm: () => {
+        selected.forEach(id => deleteMutation.mutate(id));
+        setSelected([]);
+        setConfirmState({ open: false, task: null });
+      }
+    });
   };
 
   return (
@@ -444,6 +493,46 @@ export default function TasksPage() {
           ))}
         </div>
       )}
+
+      <AnimatePresence>
+        {selected.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="floating-bulk-actions"
+            style={{
+              position: 'fixed', bottom: isMobile ? 80 : 40, left: '50%', x: '-50%',
+              zIndex: 900, background: 'rgba(23, 23, 33, 0.8)', padding: '12px 24px',
+              borderRadius: 24, backdropFilter: 'blur(20px) saturate(180%)',
+              border: '1px solid rgba(124, 109, 250, 0.3)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              display: 'flex', alignItems: 'center', gap: 24
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ background: 'var(--accent)', color: 'white', fontWeight: 900, borderRadius: 10, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>
+                {selected.length}
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }}>Selected</span>
+            </div>
+            
+            <div style={{ height: 24, width: 1, background: 'rgba(255,255,255,0.1)' }} />
+            
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-sm btn-primary haptic-tap" onClick={handleBulkComplete} style={{ height: 40, borderRadius: 12 }}>
+                <CheckCircle2 size={16} style={{ marginRight: 8 }} /> Complete
+              </button>
+              <button className="btn btn-sm btn-ghost haptic-tap text-red" onClick={handleBulkDelete} style={{ height: 40, borderRadius: 12, border: '1px solid rgba(248, 113, 113, 0.2)' }}>
+                <Trash2 size={16} />
+              </button>
+              <button className="btn btn-icon btn-sm glass haptic-tap" onClick={() => setSelected([])} style={{ width: 40, height: 40, borderRadius: 12 }}>
+                <X size={18} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {modal && <TaskModal task={modal === 'create' ? null : modal} onClose={() => setModal(null)} onSave={handleSave} />}
