@@ -160,35 +160,23 @@ export default function ProfilePage() {
   const activityData = activityResponse.logs || [];
   const analytics = activityResponse.analytics || {};
 
-  // ── Activity Stats Calculation ─────────────────────────────────────────────
-  const activityStats = useMemo(() => {
-    if (!activityData?.length) return { totalSubmissions: 0, activeDays: 0, maxStreak: 0 };
-
+  const activityStatsRaw = useMemo(() => {
     let totalSubmissions = 0;
-    const dates = activityData.map(l => {
+    activityData.forEach(l => {
       totalSubmissions += (l.tasksCompleted || 0) + (l.pomodoros || 0) + (l.habitsCompleted || 0) + (l.notesCreated || 0);
-      return new Date(l.date);
-    }).sort((a, b) => a - b);
-
-    let maxStreak = 0;
-    let currentStreak = 0;
-
-    if (dates.length > 0) {
-      currentStreak = 1;
-      maxStreak = 1;
-      for (let i = 1; i < dates.length; i++) {
-        const diff = (dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24);
-        if (Math.round(diff) === 1) {
-          currentStreak++;
-          maxStreak = Math.max(maxStreak, currentStreak);
-        } else {
-          currentStreak = 1;
-        }
-      }
-    }
-
-    return { totalSubmissions, activeDays: activityData.length, maxStreak };
+    });
+    return { totalSubmissions };
   }, [activityData]);
+
+  // ── Activity Stats Calculation (Unified with Backend) ─────────────────────
+  const activityStats = useMemo(() => {
+    const records = analytics.records || {};
+    return {
+      totalSubmissions: activityStatsRaw.totalSubmissions, // Keep local count for real-time feel
+      activeDays: activityData.length,
+      maxStreak: records.maxStreak || 0
+    };
+  }, [activityData, analytics, activityStatsRaw]);
 
   useEffect(() => {
     badgesAPI.check().then(r => {
@@ -983,15 +971,40 @@ export default function ProfilePage() {
 
               <div style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', display: 'grid', gap: 24 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  <div className="premium-card" style={{ padding: isMobile ? 20 : 32, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: 'white' }}>Neural Activity Map</div>
-                      <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Last 365 Cycles</div>
+                  <div className="premium-card" style={{ padding: isMobile ? 20 : 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, position: 'relative', zIndex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <Brain size={20} className="text-accent" />
+                        <div style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>Neural Activity Map</div>
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2 }}>Synchrony Analysis</div>
                     </div>
-                    <ActivityHeatmapYear data={activityData} isMobile={isMobile} onSelectDay={(date, log) => setSelectedDayData({ date, log })} />
-                    <div style={{ marginTop: 32, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 24 }}>
-                      <ActivityTimeline selectedDay={selectedDayData.date} data={selectedDayData.log} />
-                    </div>
+                    
+                    {activityData.length > 0 ? (
+                      <ActivityHeatmapYear data={activityData} isMobile={isMobile} onSelectDay={(date, log) => setSelectedDayData({ date, log })} />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed rgba(255,255,255,0.1)' }}>
+                        <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--grad-mesh-vibrant)', opacity: 0.1, margin: '0 auto 24px', position: 'relative' }}>
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Zap size={40} className="text-accent" style={{ opacity: 0.5 }} />
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginBottom: 12, fontFamily: 'Syne' }}>Sequence Uninitiated</div>
+                        <p style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 400, margin: '0 auto 24px', lineHeight: 1.6 }}>
+                          Your neuro-activity logs are currently empty. Complete your first Tactical Objective or Habit to begin the synchronization.
+                        </p>
+                        <button className="auth-button haptic-tap" onClick={() => navigate('/tasks')} style={{ width: 'auto', padding: '0 32px', height: 48, fontSize: 13 }}>
+                          Initialize First Mission
+                        </button>
+                      </div>
+                    )}
+
+                    {activityData.length > 0 && (
+                      <div style={{ marginTop: 40, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 32 }}>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>Event Timeline</div>
+                        <ActivityTimeline selectedDay={selectedDayData.date} data={selectedDayData.log} />
+                      </div>
+                    )}
                   </div>
                 </div>
 
