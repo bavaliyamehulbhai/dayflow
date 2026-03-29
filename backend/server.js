@@ -195,9 +195,6 @@ app.use((req, res, next) => {
 
   // Use the same allowedOrigins list for CSRF protection
   if (req.method !== 'GET' && origin && !allowedOrigins.includes(origin) && !isVercelPreview) {
-
-  // Use the same allowedOrigins list for CSRF protection
-  if (req.method !== 'GET' && origin && !allowedOrigins.includes(origin)) {
     console.warn(`⚠️ CSRF origin check failed for: ${origin}`);
     return res.status(403).json({ error: 'CSRF Protection: Invalid origin.' });
   }
