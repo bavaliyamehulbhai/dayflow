@@ -13,38 +13,9 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
 import SensitivityShield from '../components/layout/SensitivityShield';
 import { useNavigate } from 'react-router-dom';
+import MagneticButton from '../components/common/MagneticButton';
 
-// ─── Magnetic Effect Component ──────────────────────────────────────────────
-const MagneticButton = ({ children, className, onClick, style, whileHover }) => {
-  const ref = useRef(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  const handleMouseMove = (e) => {
-    const { clientX, clientY } = e;
-    const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const x = clientX - (left + width / 2);
-    const y = clientY - (top + height / 2);
-    setPosition({ x, y });
-  };
-
-  const handleMouseLeave = () => setPosition({ x: 0, y: 0 });
-
-  return (
-    <motion.button
-      ref={ref}
-      className={className}
-      onClick={onClick}
-      style={{ ...style, position: 'relative' }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      animate={{ x: position.x * 0.2, y: position.y * 0.2 }}
-      whileHover={whileHover}
-      transition={{ type: 'spring', stiffness: 150, damping: 15, mass: 0.1 }}
-    >
-      {children}
-    </motion.button>
-  );
-};
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const STATUSES = ['pending', 'in-progress', 'completed', 'cancelled'];
@@ -219,45 +190,45 @@ function TaskModal({ task, onClose, onSave }) {
         className={`auth-card aura-iridescent ${isMobile ? 'bottom-sheet' : ''}`}
         style={{ width: '100%', maxWidth: 540, padding: 0, overflow: 'hidden' }}
       >
-        <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="modal-title" style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22 }}>
+        <div className="modal-header" style={{ padding: isMobile ? '16px 20px' : '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="modal-title" style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: isMobile ? 18 : 22 }}>
             {task ? 'Refine Mission' : 'New Objective'}
           </div>
-          <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 8 }}>
-            <X size={20} />
+          <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: isMobile ? 6 : 8 }}>
+            <X size={isMobile ? 18 : 20} />
           </button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="modal-body" style={{ padding: '32px', paddingBottom: isMobile ? 'calc(32px + env(safe-area-inset-bottom))' : 32 }}>
-            <div className="form-group mb-6">
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Objective Title</label>
+          <div className="modal-body" style={{ padding: isMobile ? '20px' : '32px', paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32 }}>
+            <div className="form-group mb-4">
+              <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Objective Title</label>
               <input 
                 className="auth-input haptic-feedback" 
-                style={{ height: 56, fontSize: 16 }}
+                style={{ height: isMobile ? 48 : 56, fontSize: isMobile ? 15 : 16 }}
                 value={form.title} 
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))} 
                 placeholder="Declare your intent..." 
                 autoFocus 
               />
             </div>
-            <div className="grid-2">
+            <div className="grid-2" style={{ gap: isMobile ? 12 : 20 }}>
               <div className="form-group">
-                <label>Priority</label>
-                <select className="select" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
+                <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Priority</label>
+                <select className="select" style={{ height: isMobile ? 44 : 52, borderRadius: 12 }} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
                   {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div className="form-group">
-                <label>Status</label>
-                <select className="select" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+                <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Status</label>
+                <select className="select" style={{ height: isMobile ? 44 : 52, borderRadius: 12 }} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
                   {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
             </div>
           </div>
-          <div className="modal-footer" style={{ padding: '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12 }}>
-            <button type="button" className="btn btn-ghost" style={{ flex: 1, height: 52, borderRadius: 14 }} onClick={onClose}>Abort</button>
-            <button type="submit" className="auth-button" style={{ flex: 2, height: 52, borderRadius: 14, fontSize: 16 }}>
+          <div className="modal-footer" style={{ padding: isMobile ? '16px 20px' : '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 10 }}>
+            <button type="button" className="btn btn-ghost" style={{ flex: 1, height: isMobile ? 48 : 52, borderRadius: 14 }} onClick={onClose}>Abort</button>
+            <button type="submit" className="auth-button" style={{ flex: 2, height: isMobile ? 48 : 52, borderRadius: 14, fontSize: isMobile ? 15 : 16 }}>
               <div className="btn-glint" />
               Manifest
             </button>
@@ -400,10 +371,7 @@ export default function TasksPage() {
           </div>
           <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600 }}>Track, manage and conquer your tactical objectives</p>
         </div>
-        <button className="auth-button hide-mobile glow-on-hover" onClick={() => setModal('create')} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
-          <div className="btn-glint" />
-          <Plus size={20} style={{ marginRight: 8 }} /> New Objective
-        </button>
+        {/* Removed old New Objective button - repositioned to filter bar for mobile consistency */}
       </div>
 
       {statsData && (
@@ -435,15 +403,24 @@ export default function TasksPage() {
       {/* Adaptive Filter Bar */}
       <div className="glass-holographic aura-iridescent mb-8" style={{ padding: 'clamp(16px, 3vw, 24px)', borderRadius: 24, border: 'none' }}>
         <div className="filter-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr', gap: 16 }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', opacity: 0.6 }} />
-            <input 
-              className="auth-input" 
-              style={{ paddingLeft: 48, width: '100%', height: 52, borderRadius: 16, border: '1.5px solid rgba(255,255,255,0.08)' }} 
-              placeholder="Search objectives..." 
-              value={filters.search} 
-              onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} 
-            />
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', opacity: 0.6 }} />
+              <input 
+                className="auth-input" 
+                style={{ paddingLeft: 48, width: '100%', height: 52, borderRadius: 16, border: '1.5px solid rgba(255,255,255,0.08)' }} 
+                placeholder="Search objectives..." 
+                value={filters.search} 
+                onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} 
+              />
+            </div>
+            <button 
+              onClick={() => setModal('create')} 
+              className="auth-button magnetic-btn haptic-tap" 
+              style={{ height: 52, padding: '0 18px', borderRadius: 16, width: 'auto', flexShrink: 0 }}
+            >
+              <Plus size={22} /> {!isMobile && <span style={{ marginLeft: 8 }}>OBJECTIVE</span>}
+            </button>
           </div>
  
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

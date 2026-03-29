@@ -30,6 +30,7 @@ export default function CommandPalette() {
     const { logout } = useAuth();
     const navigate = useNavigate();
     const inputRef = useRef(null);
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -83,7 +84,6 @@ export default function CommandPalette() {
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -95,26 +95,26 @@ export default function CommandPalette() {
                         }}
                     />
 
-                    {/* Palette */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         style={{
-                            position: 'fixed', top: '20%', left: '50%', x: '-50%',
-                            width: '100%', maxWidth: 600, zIndex: 1001,
-                            background: 'rgba(23, 23, 23, 0.4)', 
-                            backdropFilter: 'blur(50px) saturate(180%)',
-                            WebkitBackdropFilter: 'blur(50px) saturate(180%)',
+                            position: 'fixed', top: isMobile ? '10%' : '20%', left: '50%', x: '-50%',
+                            width: isMobile ? '92%' : '100%', maxWidth: 600, zIndex: 1001,
+                            background: 'rgba(12, 12, 22, 0.9)', 
+                            backdropFilter: 'blur(40px)', 
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: 24, 
-                            boxShadow: '0 40px 100px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.05)',
+                            boxShadow: '0 40px 100px rgba(0,0,0,0.8), 0 0 30px rgba(124, 109, 250, 0.1)',
                             overflow: 'hidden'
                         }}
                     >
-                        <div style={{ padding: '24px 28px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 16 }}>
-                            <Search size={22} className="text-muted" style={{ opacity: 0.6 }} />
+                        <div className="aura-pulse" style={{ position: 'absolute', top: -50, right: -50, width: 150, height: 150, background: 'var(--grad-mesh-vibrant)', opacity: 0.05, zIndex: -1 }} />
+                        
+                        <div style={{ padding: isMobile ? '16px 20px' : '24px 28px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }}>
+                            <Search size={isMobile ? 18 : 22} className="text-muted" style={{ opacity: 0.6 }} />
                             <input
                                 ref={inputRef}
                                 value={query}
@@ -123,18 +123,20 @@ export default function CommandPalette() {
                                 placeholder="Quantum search commands..."
                                 style={{
                                     flex: 1, background: 'none', border: 'none', outline: 'none',
-                                    fontSize: 20, color: 'var(--text)', fontFamily: 'Syne, sans-serif',
+                                    fontSize: isMobile ? 16 : 20, color: 'var(--text)', fontFamily: 'Syne, sans-serif',
                                     fontWeight: 700, letterSpacing: '-0.02em'
                                 }}
                             />
-                            <div style={{ 
-                                display: 'flex', alignItems: 'center', gap: 6, 
-                                background: 'rgba(255,255,255,0.05)', padding: '6px 12px', 
-                                borderRadius: 8, fontSize: 11, fontWeight: 900, color: 'var(--muted)',
-                                border: '1px solid rgba(255,255,255,0.05)'
-                            }}>
-                                <Command size={11} /> <span style={{ opacity: 0.8 }}>K</span>
-                            </div>
+                            {!isMobile && (
+                              <div style={{ 
+                                  display: 'flex', alignItems: 'center', gap: 6, 
+                                  background: 'rgba(255,255,255,0.05)', padding: '6px 12px', 
+                                  borderRadius: 8, fontSize: 11, fontWeight: 900, color: 'var(--muted)',
+                                  border: '1px solid rgba(255,255,255,0.05)'
+                              }}>
+                                  <Command size={11} /> <span style={{ opacity: 0.8 }}>K</span>
+                              </div>
+                            )}
                         </div>
 
                         <div style={{ maxHeight: 400, overflowY: 'auto', padding: 8 }}>
@@ -146,57 +148,66 @@ export default function CommandPalette() {
                                 </div>
                             ) : (
                                 <>
-                                    {['Navigation', 'Account', 'Danger'].map(section => {
+                                    {['Quick Actions', 'Navigation', 'Account', 'Danger'].map(section => {
                                         const sectionActions = filteredActions.filter(a => a.section === section);
                                         if (sectionActions.length === 0) return null;
 
                                         return (
                                             <div key={section} style={{ marginBottom: 8 }}>
-                                                <div style={{ padding: '8px 12px', fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                                                <div style={{ padding: '8px 12px', fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5 }}>
                                                     {section}
                                                 </div>
                                                 {sectionActions.map((item) => {
                                                     const isSelected = filteredActions[activeIndex]?.id === item.id;
                                                     return (
-                                                        <motion.div
-                                                            key={item.id}
-                                                            onClick={() => handleAction(item)}
-                                                            onMouseEnter={() => setActiveIndex(filteredActions.indexOf(item))}
-                                                            animate={isSelected ? { scale: 1.02, x: 4 } : { scale: 1, x: 0 }}
-                                                            className={isSelected ? 'aura-iridescent' : ''}
-                                                            style={{
-                                                                display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px',
-                                                                borderRadius: 16, cursor: 'pointer',
-                                                                background: isSelected ? 'var(--accent)' : 'transparent',
-                                                                color: isSelected ? 'white' : 'rgba(255,255,255,0.7)',
-                                                                transition: 'background 0.2s ease',
-                                                                margin: '2px 0'
-                                                            }}
-                                                        >
-                                                            <div style={{
-                                                                width: 38, height: 38, borderRadius: 12,
-                                                                background: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.03)',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                border: '1px solid rgba(255,255,255,0.05)'
-                                                            }}>
-                                                                <item.icon size={18} />
-                                                            </div>
-                                                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                                                <span style={{ fontSize: 15, fontWeight: 700 }}>{item.label}</span>
-                                                                {isSelected && item.path && (
-                                                                    <span style={{ fontSize: 10, opacity: 0.7, fontWeight: 800, textTransform: 'uppercase' }}>
-                                                                        Go to {item.path.replace('/', '') || 'Dashboard'}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            {isSelected ? (
-                                                                <ArrowRight size={16} className="animate-pulse" />
-                                                            ) : (
-                                                                <div style={{ fontSize: 10, fontWeight: 900, opacity: 0.3, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4 }}>
-                                                                    {item.id.toUpperCase()}
+                                                        <React.Fragment key={item.id}>
+                                                            <style>{`
+                                                                .palette-item-selected {
+                                                                    background: linear-gradient(90deg, var(--accent) 0%, rgba(124, 109, 250, 0.4) 100%) !important;
+                                                                    box-shadow: 0 10px 30px rgba(124, 109, 250, 0.2);
+                                                                }
+                                                            `}</style>
+                                                            <motion.div
+                                                                onClick={() => handleAction(item)}
+                                                                onMouseEnter={() => setActiveIndex(filteredActions.indexOf(item))}
+                                                                animate={isSelected ? { scale: 1.01, x: 4 } : { scale: 1, x: 0 }}
+                                                                className={isSelected ? 'palette-item-selected holographic-shimmer' : ''}
+                                                                style={{
+                                                                    display: 'flex', alignItems: 'center', gap: 14, padding: isMobile ? '10px 12px' : '12px 16px',
+                                                                    borderRadius: 16, cursor: 'pointer',
+                                                                    background: isSelected ? 'var(--accent)' : 'transparent',
+                                                                    color: isSelected ? 'white' : 'rgba(255,255,255,0.7)',
+                                                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                                    margin: '2px 0',
+                                                                    position: 'relative', overflow: 'hidden'
+                                                                }}
+                                                            >
+                                                                <div className="btn-glint" style={{ opacity: isSelected ? 0.1 : 0 }} />
+                                                                <div style={{
+                                                                    width: 38, height: 38, borderRadius: 12,
+                                                                    background: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.03)',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                    border: '1px solid rgba(255,255,255,0.05)'
+                                                                }}>
+                                                                    <item.icon size={18} />
                                                                 </div>
-                                                            )}
-                                                        </motion.div>
+                                                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                                                    <span style={{ fontSize: 15, fontWeight: 700 }}>{item.label}</span>
+                                                                    {isSelected && item.path && (
+                                                                        <span style={{ fontSize: 10, opacity: 0.7, fontWeight: 800, textTransform: 'uppercase' }}>
+                                                                            Go to {item.path.replace('/', '') || 'Dashboard'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {isSelected ? (
+                                                                    <ArrowRight size={16} />
+                                                                ) : (
+                                                                    <div style={{ fontSize: 10, fontWeight: 900, opacity: 0.3, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4 }}>
+                                                                        {item.id.toUpperCase()}
+                                                                    </div>
+                                                                )}
+                                                            </motion.div>
+                                                        </React.Fragment>
                                                     );
                                                 })}
                                             </div>
@@ -206,14 +217,14 @@ export default function CommandPalette() {
                             )}
                         </div>
 
-                        <div style={{ padding: '12px 20px', background: 'var(--surface2)', borderTop: '1px solid var(--border)', display: 'flex', gap: 16 }}>
+                        <div style={{ padding: '12px 20px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 16 }}>
                             {[
                                 { key: 'Enter', label: 'Select' },
                                 { key: '↑↓', label: 'Navigate' },
                                 { key: 'Esc', label: 'Close' },
                             ].map(k => (
                                 <div key={k.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--muted)', fontWeight: 700 }}>
-                                    <kbd style={{ background: 'var(--surface3)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text2)' }}>{k.key}</kbd>
+                                    <kbd style={{ background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>{k.key}</kbd>
                                     <span>{k.label}</span>
                                 </div>
                             ))}

@@ -474,17 +474,20 @@ export default function ProfilePage() {
       {/* ─── TAB NAVIGATION ────────────────────────────────────────────────── */}
       <div style={{ 
         display: 'flex', 
-        gap: 8, 
+        gap: isMobile ? 6 : 8, 
         marginBottom: 40, 
         padding: 6, 
         borderRadius: 24, 
         background: 'rgba(255,255,255,0.03)', 
         border: '1px solid rgba(255,255,255,0.05)',
-        width: 'fit-content',
-        margin: '0 auto 40px',
+        width: isMobile ? 'auto' : 'fit-content',
+        maxWidth: '100%',
+        margin: isMobile ? '0 0 40px' : '0 auto 40px',
         overflowX: 'auto',
-        scrollbarWidth: 'none'
-      }}>
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        scrollSnapType: 'x mandatory'
+      }} className="no-scrollbar">
         {TABS.map(tab => {
           const active = activeTab === tab.id;
           return (
@@ -506,6 +509,7 @@ export default function ProfilePage() {
                 gap: 10,
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 whiteSpace: 'nowrap',
+                scrollSnapAlign: 'start',
                 boxShadow: active ? '0 10px 20px rgba(255,255,255,0.1)' : 'none'
               }}
             >

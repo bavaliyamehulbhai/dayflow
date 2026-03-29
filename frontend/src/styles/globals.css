@@ -96,6 +96,8 @@
 }
 
 /* Responsive Typography Adjustments */
+.hide { display: none !important; }
+
 @media (max-width: 768px) {
   :root {
     --fs-display: clamp(2.2rem, 10vw, 3rem);
@@ -680,6 +682,22 @@ body {
 
 .aura-float { animation: auraFloat 8s ease-in-out infinite; }
 .aura-pulse { animation: auraPulse 6s ease-in-out infinite; }
+
+@keyframes shimmerPulse {
+  0% { background-position: -200% 0; opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { background-position: 200% 0; opacity: 0.5; }
+}
+
+.shimmer-sweep {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.05) 50%, 
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerPulse 3s linear infinite;
+}
 
 .heavy-blur {
     backdrop-filter: blur(20px);
@@ -3790,9 +3808,16 @@ img {
 
 @media (max-width: 480px) {
   .tab-group {
-    overflow-x: auto;
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    width: auto !important;
+    max-width: 100%;
+    margin: 0 !important;
+    padding: 4px;
+    gap: 6px;
   }
 
   .tab-group::-webkit-scrollbar {
@@ -3801,8 +3826,9 @@ img {
 
   .tab-item {
     flex: 0 0 auto;
-    padding: 6px 10px;
-    font-size: 11px;
+    scroll-snap-align: start;
+    padding: 8px 14px;
+    font-size: 12px;
   }
 }
 
@@ -4077,8 +4103,29 @@ img {
 
 @media (max-width: 640px) {
   .stats-grid-auto {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-3);
+    display: flex !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory;
+    gap: 12px !important;
+    padding: 10px 4px 20px 4px;
+    margin: 0 -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stats-grid-auto::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stats-grid-auto .stat-card-premium {
+    min-width: 140px;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    padding: 16px 12px !important;
   }
 }
 
@@ -4284,9 +4331,11 @@ img {
 
 .bottom-tab-glow {
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   background: var(--accent);
-  filter: blur(15px);
-  opacity: 0.3;
+  filter: blur(12px);
+  opacity: 0.4;
+  border-radius: 50%;
+  box-shadow: 0 0 20px var(--accent);
 }

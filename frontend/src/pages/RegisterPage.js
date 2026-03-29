@@ -210,7 +210,7 @@ export default function RegisterPage() {
           </Magnetic>
           <motion.div className="auth-title">DayFlow</motion.div>
           <div style={{ color: 'var(--muted)', fontSize: 'clamp(12px, 1.8vw, 14px)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
-            Architecting Your <span className="holographic-text">Infinite Potential</span>
+            Your <span className="holographic-text">Personal Dashboard</span>
           </div>
         </div>
 
@@ -235,8 +235,8 @@ export default function RegisterPage() {
             transition={{ delay: 0.6 }}
             style={{ marginBottom: 20, transform: 'translateZ(30px)' }}
           >
-            <h2 style={{ fontSize: 26, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.04em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Synchronize</h2>
-            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 700, marginTop: 4, opacity: 0.8 }}>Forge your portal to cognitive clarity.</p>
+            <h2 style={{ fontSize: 26, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.04em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Create Account</h2>
+            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 700, marginTop: 4, opacity: 0.8 }}>Join DayFlow to start your journey.</p>
           </motion.div>
 
           {error && (
@@ -266,12 +266,12 @@ export default function RegisterPage() {
             <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span style={{ width: 10, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
-                Full Manifestation
+                Full Name
               </label>
               <input
                 type="text"
                 className="auth-input haptic-feedback"
-                placeholder="Mehul Shah"
+                placeholder="Enter your name"
                 value={form.name}
                 onChange={handleChange('name')}
                 onBlur={() => handleBlur('name')}
@@ -283,12 +283,12 @@ export default function RegisterPage() {
             <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span style={{ width: 10, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
-                Cognitive Relay
+                Email
               </label>
               <input
                 type="email"
                 className="auth-input haptic-feedback"
-                placeholder="you@presence.app"
+                placeholder="Enter your email"
                 value={form.email}
                 onChange={handleChange('email')}
                 onBlur={() => handleBlur('email')}
@@ -300,13 +300,13 @@ export default function RegisterPage() {
             <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span style={{ width: 10, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
-                Security Cipher
+                Password
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   className="auth-input haptic-feedback"
-                  placeholder="The complex key..."
+                  placeholder="Create a password"
                   value={form.password}
                   onChange={handleChange('password')}
                   onBlur={() => handleBlur('password')}
@@ -330,13 +330,13 @@ export default function RegisterPage() {
             <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span style={{ width: 10, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
-                Affirm Cipher
+                Confirm Password
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showConfirm ? 'text' : 'password'}
                   className="auth-input haptic-feedback"
-                  placeholder="Repeat the key..."
+                  placeholder="Confirm your password"
                   value={form.confirm}
                   onChange={handleChange('confirm')}
                   onBlur={() => handleBlur('confirm')}
@@ -354,15 +354,13 @@ export default function RegisterPage() {
               <div className="btn-glint" />
               {loading
                 ? <div className="loading-spinner" style={{ width: 24, height: 24, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                : <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>CONSTRUCT IDENTITY <ArrowRight size={22} strokeWidth={2.5} /></span>
+                : <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>CREATE ACCOUNT <ArrowRight size={22} strokeWidth={2.5} /></span>
               }
             </motion.button>
           </motion.form>
 
-          <div style={{ marginTop: 32, textAlign: 'center', fontSize: 14, color: 'var(--muted)', fontWeight: 600, transform: 'translateZ(10px)' }}>
-            Already part of the ecosystem?{' '}
-            <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'none' }}>Alignment Portal</Link>
-          </div>
+            Already have an account?{' '}
+            <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'none' }}>Login here</Link>
         </motion.div>
       </motion.div>
 

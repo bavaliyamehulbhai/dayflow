@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scheduleAPI, tasksAPI } from '../utils/api';
 import toast from 'react-hot-toast';
@@ -10,19 +10,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDialog from '../components/ConfirmDialog';
 import SensitivityShield from '../components/layout/SensitivityShield';
+import MagneticButton from '../components/common/MagneticButton';
 
 const CATEGORIES = ['work', 'personal', 'health', 'learning', 'social', 'other'];
 const CAT_COLORS = { work: '#7c6dfa', personal: '#fa6d8a', health: '#6dfacc', learning: '#fad96d', social: '#fa9a6d', other: '#a3a3a3' };
-
-function useWindowWidth() {
-  const [w, setW] = useState(window.innerWidth);
-  useEffect(() => {
-    const h = () => setW(window.innerWidth);
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return w;
-}
 
 function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
   const [form, setForm] = useState({
@@ -46,39 +37,39 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
         className={`auth-card aura-iridescent ${isMobile ? 'bottom-sheet' : ''}`}
         style={{ width: '100%', maxWidth: 600, padding: 0, overflow: 'hidden' }}
       >
-        <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'Syne', fontWeight: 800, fontSize: 22 }}>
-            <div className="auth-logo-icon" style={{ width: 32, height: 32, marginBottom: 0 }}>
-              <CalendarIcon size={18} color="white" />
+        <div className="modal-header" style={{ padding: isMobile ? '16px 20px' : '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'Syne', fontWeight: 800, fontSize: isMobile ? 18 : 22 }}>
+            <div className="auth-logo-icon" style={{ width: isMobile ? 28 : 32, height: isMobile ? 28 : 32, marginBottom: 0 }}>
+              <CalendarIcon size={isMobile ? 16 : 18} color="white" />
             </div>
             {event ? 'Refine Alignment' : 'New Temporal Objective'}
           </div>
-          <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 8 }}>
-            <X size={20} />
+          <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: isMobile ? 6 : 8 }}>
+            <X size={isMobile ? 18 : 20} />
           </button>
         </div>
-        <div className="modal-body" style={{ padding: '32px', paddingBottom: isMobile ? 'calc(32px + env(safe-area-inset-bottom))' : 32 }}>
-          <div className="form-group mb-6">
-            <label className="form-label" style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Objective Title</label>
-            <input className="auth-input haptic-feedback" style={{ height: 56, fontSize: 16 }} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Strategic Planning" autoFocus />
+        <div className="modal-body" style={{ padding: isMobile ? '20px' : '32px', paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32 }}>
+          <div className="form-group mb-4">
+            <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Objective Title</label>
+            <input className="auth-input haptic-feedback" style={{ height: isMobile ? 48 : 56, fontSize: isMobile ? 15 : 16 }} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Strategic Planning" autoFocus />
           </div>
-          <div className="form-group mb-6">
-            <label className="form-label" style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Context & Details</label>
-            <textarea className="auth-input haptic-feedback" style={{ padding: '16px 20px', height: 'auto', minHeight: 80 }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Optional details..." />
+          <div className="form-group mb-4">
+            <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Context & Details</label>
+            <textarea className="auth-input haptic-feedback" style={{ padding: isMobile ? '12px 16px' : '16px 20px', height: 'auto', minHeight: isMobile ? 60 : 80, fontSize: isMobile ? 14 : 15 }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Optional details..." />
           </div>
 
-          <div className="grid-3 mb-6">
+          <div className="grid-3 mb-4" style={{ gap: isMobile ? 10 : 16 }}>
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Date</label>
-              <input type="date" className="auth-input haptic-feedback" style={{ height: 48, fontSize: 14 }} value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+              <label className="form-label" style={{ fontSize: 9, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>Date</label>
+              <input type="date" className="auth-input haptic-feedback" style={{ height: isMobile ? 44 : 48, fontSize: 13 }} value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
             </div>
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Start</label>
-              <input type="time" className="auth-input haptic-feedback" style={{ height: 48, fontSize: 14 }} value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} />
+              <label className="form-label" style={{ fontSize: 9, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>Start</label>
+              <input type="time" className="auth-input haptic-feedback" style={{ height: isMobile ? 44 : 48, fontSize: 13 }} value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} />
             </div>
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>End</label>
-              <input type="time" className="auth-input haptic-feedback" style={{ height: 48, fontSize: 14 }} value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} />
+              <label className="form-label" style={{ fontSize: 9, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>End</label>
+              <input type="time" className="auth-input haptic-feedback" style={{ height: isMobile ? 44 : 48, fontSize: 13 }} value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} />
             </div>
           </div>
 
@@ -98,9 +89,9 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
             </div>
           </div>
         </div>
-        <div className="modal-footer" style={{ padding: '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12 }}>
-          <button className="btn btn-ghost" onClick={onClose} style={{ flex: 1, height: 52, borderRadius: 14 }}>Abort</button>
-          <button className="auth-button" style={{ flex: 2, height: 52, borderRadius: 14, fontSize: 16 }} onClick={() => { if (!form.title.trim() || !form.startTime || !form.date) return toast.error('Title, date and start time required'); onSave({ ...form, linkedTask: form.linkedTask || null }); }}>
+        <div className="modal-footer" style={{ padding: isMobile ? '16px 20px' : '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 10 }}>
+          <button className="btn btn-ghost" onClick={onClose} style={{ flex: 1, height: isMobile ? 48 : 52, borderRadius: 14 }}>Abort</button>
+          <button className="auth-button" style={{ flex: 2, height: isMobile ? 48 : 52, borderRadius: 14, fontSize: isMobile ? 15 : 16 }} onClick={() => { if (!form.title.trim() || !form.startTime || !form.date) return toast.error('Title, date and start time required'); onSave({ ...form, linkedTask: form.linkedTask || null }); }}>
             <div className="btn-glint" />
             Commit Alignment
           </button>
@@ -108,6 +99,16 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
       </motion.div>
     </div>
   );
+}
+
+function useWindowWidth() {
+  const [w, setW] = useState(window.innerWidth);
+  useEffect(() => {
+    const h = () => setW(window.innerWidth);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return w;
 }
 
 export default function SchedulePage() {
@@ -192,10 +193,10 @@ export default function SchedulePage() {
           </div>
           <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600 }}>Architect your temporal alignment & cognitive flow</p>
         </div>
-        <button className="auth-button hide-mobile glow-on-hover" onClick={() => setModal('create')} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
+        <MagneticButton className="auth-button hide-mobile glow-on-hover" onClick={() => setModal('create')} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
           <div className="btn-glint" />
           <Plus size={20} style={{ marginRight: 8 }} /> Schedule Alignment
-        </button>
+        </MagneticButton>
       </div>
 
       {/* Date navigation */}
@@ -247,7 +248,8 @@ export default function SchedulePage() {
                   background: 'linear-gradient(90deg, var(--accent), transparent)',
                   zIndex: 20,
                   transformOrigin: 'left',
-                  boxShadow: '0 0 20px var(--accent)'
+                  boxShadow: '0 0 20px var(--accent)',
+                  willChange: 'transform'
                 }}>
                 <motion.div 
                   animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
@@ -287,6 +289,7 @@ export default function SchedulePage() {
                       opacity: ev.isCompleted ? 0.3 : status === 'past' ? 0.6 : 1,
                       zIndex: status === 'current' ? 15 : 5,
                       boxShadow: status === 'current' ? `0 12px 40px ${color}22` : 'none',
+                      willChange: 'transform, opacity'
                     }}
                     whileHover={{ scale: 1.01, zIndex: 16, border: `1px solid ${color}88`, borderLeft: `4px solid ${color}` }}
                     onClick={() => setModal(ev)}
@@ -330,11 +333,11 @@ export default function SchedulePage() {
           {isLoading ? (
             <div className="loading-page"><div className="loading-spinner" /></div>
           ) : events.length === 0 ? (
-            <div className="card glass-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <div className="empty-icon" style={{ fontSize: 40 }}>🧘</div>
-              <div className="empty-title" style={{ marginTop: 16 }}>Undisturbed Time</div>
-              <div className="empty-desc" style={{ marginTop: 8, fontSize: 12 }}>No alignments registered.</div>
-              <button className="btn btn-primary btn-sm" style={{ marginTop: 24 }} onClick={() => setModal('create')}>Manifest Alignment</button>
+            <div className="card glass-card aura-iridescent" style={{ padding: '64px 24px', textAlign: 'center', borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+              <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ repeat: Infinity, duration: 4, repeatType: 'reverse' }} style={{ fontSize: 64, marginBottom: 24 }}>🧘</motion.div>
+              <div style={{ fontSize: 22, fontWeight: 900, fontFamily: 'Syne', marginBottom: 12 }}>Undisturbed Time</div>
+              <div style={{ color: 'var(--muted)', fontSize: 14, maxWidth: 300, margin: '0 auto', lineHeight: 1.6 }}>No temporal alignments registered for this cycle.</div>
+              <MagneticButton className="auth-button glow-on-hover" style={{ marginTop: 32, width: 'auto', marginInline: 'auto', padding: '0 32px' }} onClick={() => setModal('create')}>Manifest Alignment</MagneticButton>
             </div>
           ) : (
             events.map((ev, i) => {

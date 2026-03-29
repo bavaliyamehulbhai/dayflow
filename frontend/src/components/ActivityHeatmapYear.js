@@ -85,7 +85,7 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
             background: 'rgba(255,255,255,0.01)',
             border: '1px solid rgba(255,255,255,0.05)',
             borderRadius: 32,
-            padding: isMobile ? '24px' : '40px',
+            padding: isMobile ? '20px 16px' : '40px',
             width: '100%',
             color: 'var(--text)',
             position: 'relative',
@@ -104,54 +104,70 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: 40,
-                flexWrap: 'wrap',
-                gap: 24,
+                alignItems: isMobile ? 'flex-start' : 'center',
+                marginBottom: isMobile ? 32 : 40,
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: isMobile ? 24 : 24,
                 position: 'relative',
                 zIndex: 1
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: isMobile ? 16 : 20,
+                    width: isMobile ? '100%' : 'auto'
+                }}>
                     <div style={{ 
-                        width: 64, height: 64, borderRadius: 20, 
+                        width: isMobile ? 52 : 64, 
+                        height: isMobile ? 52 : 64, 
+                        borderRadius: isMobile ? 16 : 20, 
                         background: 'rgba(255,255,255,0.03)', 
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         border: '1px solid rgba(255,255,255,0.05)',
-                        boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+                        boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
+                        flexShrink: 0
                     }}>
-                        <div style={{ fontSize: 32, fontWeight: 900, color: 'white', fontFamily: 'Syne' }}>{stats.totalSubmissions}</div>
+                        <div style={{ fontSize: isMobile ? 24 : 32, fontWeight: 900, color: 'white', fontFamily: 'Syne' }}>{stats.totalSubmissions}</div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ fontSize: 13, color: 'white', fontWeight: 800, letterSpacing: -0.2 }}>SYNCHRONIZED EVENTS</div>
-                        <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>Past {isMobile ? '90' : '365'} cycles</div>
+                        <div style={{ fontSize: isMobile ? 12 : 13, color: 'white', fontWeight: 800, letterSpacing: -0.2 }}>SYNCHRONIZED EVENTS</div>
+                        <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>Past {isMobile ? '90' : '365'} cycles</div>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Active Presence</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent)', fontFamily: 'Syne' }}>{stats.activeDays}<span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 4, fontWeight: 600 }}>CYCLES</span></div>
+                <div style={{ 
+                    display: 'flex', 
+                    gap: isMobile ? 24 : 32, 
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: isMobile ? '100%' : 'auto'
+                }}>
+                    <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
+                        <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Active Presence</div>
+                        <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: 'var(--accent)', fontFamily: 'Syne' }}>{stats.activeDays}<span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 4, fontWeight: 600 }}>CYCLES</span></div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Peak Sequence</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--red)', fontFamily: 'Syne' }}>{stats.maxStreak}<span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 4, fontWeight: 600 }}>DAYS</span></div>
+                    <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
+                        <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Peak Sequence</div>
+                        <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: 'var(--red)', fontFamily: 'Syne' }}>{stats.maxStreak}<span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 4, fontWeight: 600 }}>DAYS</span></div>
                     </div>
                     <select className="glass haptic-tap" style={{
                         background: 'rgba(255,255,255,0.05)',
-                        padding: '8px 16px',
+                        padding: isMobile ? '8px 12px' : '8px 16px',
                         borderRadius: 14,
                         border: '1px solid rgba(255,255,255,0.1)',
                         color: 'var(--text)',
-                        fontSize: 10,
+                        fontSize: 9,
                         fontWeight: 900,
                         cursor: 'pointer',
                         outline: 'none',
                         textTransform: 'uppercase',
                         letterSpacing: 1,
-                        appearance: 'none'
+                        appearance: 'none',
+                        maxWidth: isMobile ? '80px' : 'none',
+                        textAlign: 'center'
                     }}>
-                        <option>CURRENT ERA</option>
-                        <option>2025 CYCLE</option>
+                        <option>CURR</option>
+                        <option>2025</option>
                     </select>
                 </div>
             </div>

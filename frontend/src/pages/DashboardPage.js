@@ -19,37 +19,9 @@ import AICoach from '../components/AICoach';
 import ProductivityCircle from '../components/ProductivityCircle';
 import SensitivityShield from '../components/layout/SensitivityShield';
 import Skeleton, { CardSkeleton, ListSkeleton } from '../components/Skeleton';
+import MagneticButton from '../components/common/MagneticButton';
 
-// ─── Magnetic Effect Component ──────────────────────────────────────────────
-const MagneticButton = ({ children, className, onClick, style }) => {
-  const ref = useRef(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  const handleMouseMove = (e) => {
-    const { clientX, clientY } = e;
-    const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const x = clientX - (left + width / 2);
-    const y = clientY - (top + height / 2);
-    setPosition({ x, y });
-  };
-
-  const handleMouseLeave = () => setPosition({ x: 0, y: 0 });
-
-  return (
-    <motion.button
-      ref={ref}
-      className={className}
-      onClick={onClick}
-      style={{ ...style, position: 'relative' }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      animate={{ x: position.x * 0.2, y: position.y * 0.2 }}
-      transition={{ type: 'spring', stiffness: 150, damping: 15, mass: 0.1 }}
-    >
-      {children}
-    </motion.button>
-  );
-};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -161,6 +133,36 @@ function DashboardSkeleton() {
     </div>
   );
 }
+
+const AuraOrb = ({ color, size, top, left, delay, duration = 15 }) => (
+  <motion.div
+    animate={{
+      x: [0, 50, -30, 0],
+      y: [0, -40, 60, 0],
+      scale: [1, 1.2, 0.9, 1],
+      opacity: [0.1, 0.2, 0.1]
+    }}
+    transition={{
+      duration,
+      repeat: Infinity,
+      ease: "easeInOut",
+      delay
+    }}
+    style={{
+      position: 'absolute',
+      width: size,
+      height: size,
+      background: color,
+      borderRadius: '50%',
+      filter: 'blur(80px)',
+      zIndex: -1,
+      top,
+      left,
+      pointerEvents: 'none',
+      willChange: 'transform, opacity'
+    }}
+  />
+);
 
 function Clock() {
   const [time, setTime] = useState(new Date());
@@ -294,38 +296,52 @@ export default function DashboardPage() {
     const topTask = d?.tasks?.today?.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2))[0];
     
     return (
-      <div className="feed-grid">
+      <div className="feed-grid" style={{ gap: 12 }}>
         {nextEvent && (
-          <div className="feed-item-premium" onClick={() => navigate('/schedule')}>
-            <div className="feed-label" style={{ color: 'var(--accent)' }}>NEXT UP</div>
-            <div className="text-xl fw-extrabold ls-tighter mt-1">{nextEvent.startTime}</div>
-            <div className="text-sm fw-semibold opacity-80">{nextEvent.title}</div>
+          <div className="feed-item-premium glass-holographic hover-lift haptic-tap" onClick={() => navigate('/schedule')} style={{ border: '1px solid rgba(124, 109, 250, 0.2)' }}>
+            <div className="flex-between">
+              <div className="feed-label" style={{ color: 'var(--accent)' }}>UPCOMING</div>
+              <ClockIcon size={12} className="color-muted" />
+            </div>
+            <div className="text-xl fw-extrabold ls-tighter mt-2 color-accent">{nextEvent.startTime}</div>
+            <div className="text-sm fw-bold opacity-90 truncate">{nextEvent.title}</div>
           </div>
         )}
         {topTask && (
-          <div className="feed-item-premium" onClick={() => navigate('/tasks')}>
-            <div className="feed-label" style={{ color: 'var(--orange)' }}>TOP FOCUS</div>
-            <div className={`badge badge-${topTask.priority} mt-1 mb-1`}>{topTask.priority.toUpperCase()}</div>
-            <div className="text-sm fw-bold">{topTask.title}</div>
+          <div className="feed-item-premium glass-holographic hover-lift haptic-tap" onClick={() => navigate('/tasks')} style={{ border: '1px solid rgba(251, 146, 60, 0.2)' }}>
+            <div className="flex-between">
+              <div className="feed-label" style={{ color: 'var(--orange)' }}>PRIORITY</div>
+              <Zap size={12} className="color-muted" />
+            </div>
+            <div className={`badge badge-${topTask.priority} mt-2 mb-1`}>{topTask.priority.toUpperCase()}</div>
+            <div className="text-sm fw-bold truncate">{topTask.title}</div>
           </div>
         )}
-        <div className="feed-item-premium" onClick={() => navigate('/habits')}>
-          <div className="feed-label" style={{ color: 'var(--accent3)' }}>RITUALS</div>
-          <div className="flex-items-center gap-2 mt-2">
-            {d?.habits?.list?.slice(0, 3).map(h => (
-              <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done' : ''}`} style={{ 
-                background: h.completedToday ? h.color : 'var(--surface2)'
+        <div className="feed-item-premium glass-holographic hover-lift haptic-tap" onClick={() => navigate('/habits')} style={{ border: '1px solid rgba(0, 242, 254, 0.2)' }}>
+          <div className="flex-between">
+            <div className="feed-label" style={{ color: 'var(--accent3)' }}>FLOW</div>
+            <RefreshCw size={12} className="color-muted" />
+          </div>
+          <div className="flex-items-center gap-2 mt-3">
+            {d?.habits?.list?.slice(0, 4).map(h => (
+              <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done success-pop' : ''}`} style={{ 
+                width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13,
+                background: h.completedToday ? h.color : 'rgba(255,255,255,0.03)',
+                border: h.completedToday ? 'none' : '1px solid var(--border)'
               }}>
-                {h.icon}
+                {h.completedToday ? <Check size={14} color="white" strokeWidth={3} /> : h.icon}
               </div>
             ))}
           </div>
         </div>
         {d?.notes?.recent?.length > 0 && (
-          <div className="feed-item-premium" onClick={() => navigate('/notes')}>
-            <div className="feed-label" style={{ color: 'var(--accent2)' }}>RECENT NOTE</div>
-            <div className="text-sm fw-bold truncate">{d.notes.recent[0].title}</div>
-            <div className="text-xs color-muted mt-1">Recently captured</div>
+          <div className="feed-item-premium glass-holographic hover-lift haptic-tap" onClick={() => navigate('/notes')} style={{ border: '1px solid rgba(255, 77, 125, 0.2)' }}>
+            <div className="flex-between">
+              <div className="feed-label" style={{ color: 'var(--accent2)' }}>BRAIN DUMP</div>
+              <Sparkles size={12} className="color-muted" />
+            </div>
+            <div className="text-sm fw-bold truncate mt-2">{d.notes.recent[0].title}</div>
+            <div className="text-xs color-muted mt-1 opacity-70">Recently archived</div>
           </div>
         )}
       </div>
@@ -335,12 +351,9 @@ export default function DashboardPage() {
   return (
     <div className="responsive-container">
       <div className="dashboard-header" style={{ position: 'relative', overflow: 'visible' }}>
-        <div className="aura-pulse" style={{ 
-          position: 'absolute', top: -100, left: -100, 
-          width: 300, height: 300, 
-          background: 'var(--grad-mesh-vibrant)', 
-          opacity: 0.15, zIndex: -1 
-        }} />
+        <AuraOrb color="var(--accent)" size={300} top="-100px" left="-50px" delay={0} />
+        <AuraOrb color="var(--accent2)" size={250} top="20px" left="200px" delay={2} duration={12} />
+        <AuraOrb color="var(--accent3)" size={200} top="-40px" left="400px" delay={4} duration={18} />
         <div className="flex-items-center gap-4">
           <GreetingIcon className="text-accent aura-float" size={isMobile ? 28 : 44} style={{ filter: 'drop-shadow(0 0 15px var(--accent-glow))' }} />
           <div className="dashboard-title text-display truncate" style={{ fontSize: 'var(--fs-2xl)' }}>
@@ -530,8 +543,9 @@ export default function DashboardPage() {
                 <span>Daily Progress</span>
                 <span style={{ color: 'var(--accent)' }}>{completionPct}%</span>
               </div>
-              <div style={{ height: 8, background: 'var(--bg)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ width: `${completionPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--green))', borderRadius: 4, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: 'var(--shadow-accent)' }} />
+              <div style={{ height: 10, background: 'var(--bg)', borderRadius: 5, overflow: 'hidden', position: 'relative' }}>
+                <div className="shimmer-sweep" style={{ position: 'absolute', inset: 0, zIndex: 1 }} />
+                <div style={{ width: `${completionPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--green))', borderRadius: 5, transition: 'width 1.2s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 0 15px var(--accent-glow)', position: 'relative', zIndex: 2 }} />
               </div>
             </div>
 

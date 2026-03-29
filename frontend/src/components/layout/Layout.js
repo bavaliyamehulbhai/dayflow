@@ -216,7 +216,7 @@ export default function Layout({ children }) {
                   key={Item.to}
                   to={Item.to}
                   end={Item.exact}
-                  className={`bottom-tab ${isActive ? 'active' : ''}`}
+                  className={({ isActive }) => `bottom-tab ${isActive ? 'active' : ''} haptic-tap`}
                 >
                   <motion.div
                     className="bottom-tab-icon"

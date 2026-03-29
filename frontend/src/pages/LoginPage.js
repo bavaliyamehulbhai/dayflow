@@ -184,7 +184,7 @@ export default function LoginPage() {
           </Magnetic>
           <motion.div className="auth-title">DayFlow</motion.div>
           <div style={{ color: 'var(--muted)', fontSize: 'clamp(13px, 1.8vw, 15px)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
-            Architecting Your <span className="holographic-text">Infinite Potential</span>
+            Your <span className="holographic-text">Personal Dashboard</span>
           </div>
         </div>
 
@@ -209,8 +209,8 @@ export default function LoginPage() {
             transition={{ delay: 0.6 }}
             style={{ marginBottom: 24, transform: 'translateZ(30px)' }}
           >
-            <h2 style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.03em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Welcome back, architect.</h2>
-            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600, marginTop: 2 }}>Enter your credentials to re-align with the flow.</p>
+            <h2 style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.03em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Welcome back</h2>
+            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600, marginTop: 2 }}>Enter your details to login.</p>
           </motion.div>
 
           {error && (
@@ -241,12 +241,12 @@ export default function LoginPage() {
             <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <span style={{ width: 12, height: 1.2, background: 'var(--accent)', borderRadius: 1 }}></span>
-                Cognitive Portal
+                Email
               </label>
               <input
                 type="email"
                 className="auth-input haptic-feedback"
-                placeholder="you@presence.app"
+                placeholder="Enter your email"
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 required autoFocus autoComplete="email"
@@ -256,13 +256,13 @@ export default function LoginPage() {
             <div className="form-group">
               <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <span style={{ width: 12, height: 1.2, background: 'var(--accent2)', borderRadius: 1 }}></span>
-                Security Cipher
+                Password
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   className="auth-input haptic-feedback"
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   required autoComplete="current-password"
@@ -292,7 +292,7 @@ export default function LoginPage() {
                 <div className="loading-spinner" style={{ width: 24, height: 24 }} />
               ) : (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  INITIATE ALIGNMENT <ArrowRight size={22} strokeWidth={2.5} />
+                  LOGIN <ArrowRight size={22} strokeWidth={2.5} />
                 </span>
               )}
             </motion.button>
@@ -317,15 +317,13 @@ export default function LoginPage() {
               transform: 'translateZ(10px)'
             }}
           >
-            ⚡ Experience the Flow (Demo)
+            ⚡ Try Demo Account
           </motion.button>
 
-          <div style={{ marginTop: 28, textAlign: 'center', fontSize: 13, color: 'var(--muted)', fontWeight: 600, transform: 'translateZ(10px)' }}>
-            New to the ecosystem?{' '}
+            New here?{' '}
             <Link to="/register" style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'none' }}>
-              Manifest Identity
+              Create Account
             </Link>
-          </div>
         </motion.div>
 
         {/* Floating elements behind card */}
