@@ -26,7 +26,6 @@ export default function ConfirmDialog({ open, title, message, confirmText = 'Del
 
     if (!mounted) return null;
 
-    console.log("ConfirmDialog rendered, open:", open, "title:", title, "danger:", danger);
 
     return createPortal(
         <AnimatePresence>

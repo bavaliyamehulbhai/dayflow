@@ -185,37 +185,36 @@ export default function Layout({ children }) {
       {
         isMobile && (
           <nav className="bottom-tab-bar premium-glass-bottom">
-            {mobileTabItems.map(Item => {
-              const isAction = !!Item.action;
-              const isActive = !isAction && (Item.exact
-                ? location.pathname === Item.to
-                : location.pathname.startsWith(Item.to));
+            {mobileTabItems.map(item => {
+              const isAction = !!item.action;
+              const isActive = !isAction && (item.exact
+                ? location.pathname === item.to
+                : location.pathname.startsWith(item.to));
               
               if (isAction) {
                 return (
                   <button 
-                    key={Item.id} 
+                    key={item.id} 
                     className="bottom-tab central-action"
                     onClick={() => {
-                      if (Item.action === 'command') {
-                        // Dispatch a global event or trigger some global state
+                      if (item.action === 'command') {
                         window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'k' }));
                       }
                     }}
                   >
                     <div className="bottom-tab-icon-wrap action-bubble">
-                      <Item.icon size={26} strokeWidth={3} />
+                      <item.icon size={26} strokeWidth={3} />
                     </div>
-                    <span className="bottom-tab-label">{Item.label}</span>
+                    <span className="bottom-tab-label">{item.label}</span>
                   </button>
                 );
               }
 
               return (
                 <NavLink
-                  key={Item.to}
-                  to={Item.to}
-                  end={Item.exact}
+                  key={item.to}
+                  to={item.to}
+                  end={item.exact}
                   className={({ isActive }) => `bottom-tab ${isActive ? 'active' : ''} haptic-tap`}
                 >
                   <motion.div
@@ -228,9 +227,9 @@ export default function Layout({ children }) {
                     transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   >
                     {isActive && <div className="bottom-tab-glow" />}
-                    <Item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                    <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                   </motion.div>
-                  <span className="bottom-tab-label">{Item.label}</span>
+                  <span className="bottom-tab-label">{item.label}</span>
                 </NavLink>
               );
             })}
