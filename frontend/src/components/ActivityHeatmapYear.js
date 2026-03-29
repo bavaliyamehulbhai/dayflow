@@ -7,15 +7,16 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
     const [selectedDay, setSelectedDay] = useState(null);
 
     const intensityColors = [
-        '#1a1a26',              // level 0 (subtle dark for empty cells)
-        '#dcfce7',              // level 1 (light green)
-        '#86efac',              // level 2 
-        '#22c55e',              // level 3
-        '#166534'               // level 4 (vibrant green)
+        'rgba(255,255,255,0.03)', // level 0
+        '#7c6dfa',              // level 1 (Indigo)
+        '#00f2fe',              // level 2 (Cyan)
+        '#ff4d7d',              // level 3 (Rose)
+        '#fa6d8a'               // level 4 (Vibrant)
     ];
 
     const today = new Date();
-    const yearAgo = subMonths(today, 11);
+    const monthsToShow = isMobile ? 3 : 12;
+    const startDate = subMonths(today, monthsToShow - 1);
 
     // Stats calculations
     const stats = useMemo(() => {
@@ -53,7 +54,7 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
 
     // Group days by month
     const monthsData = useMemo(() => {
-        const interval = eachMonthOfInterval({ start: startOfMonth(yearAgo), end: today });
+        const interval = eachMonthOfInterval({ start: startOfMonth(startDate), end: today });
         return interval.map(monthStart => {
             const mStart = startOfMonth(monthStart);
             const mEnd = endOfMonth(monthStart);
@@ -66,7 +67,7 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
                 startOffset: startDayOfWeek
             };
         });
-    }, [today, yearAgo]);
+    }, [today, startDate]);
 
     const handleSelect = (day, log) => {
         const dateStr = format(day, 'yyyy-MM-dd');
@@ -80,65 +81,115 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
     }, [data]);
 
     return (
-        <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 16,
-            padding: '24px',
+        <div className="premium-card aura-iridescent hover-lift" style={{
+            background: 'rgba(255,255,255,0.01)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: 32,
+            padding: isMobile ? '20px 16px' : '40px',
             width: '100%',
             color: 'var(--text)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.3), inset 0 0 40px rgba(255,255,255,0.02)'
         }}>
+            <div className="aura-pulse" style={{ 
+                position: 'absolute', top: '-20%', right: '-20%', 
+                width: '60%', height: '60%', 
+                background: 'var(--accent)', opacity: 0.05, 
+                filter: 'blur(100px)', zIndex: 0 
+            }} />
+            <div className="btn-glint" style={{ opacity: 0.02 }} />
+
             {/* Header Stats */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 24,
-                flexWrap: 'wrap',
-                gap: 16
+                alignItems: isMobile ? 'flex-start' : 'center',
+                marginBottom: isMobile ? 32 : 40,
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: isMobile ? 24 : 24,
+                position: 'relative',
+                zIndex: 1
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{stats.totalSubmissions}</span>
-                    <span style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>submissions in the past one year</span>
-                    <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: 'var(--muted)', cursor: 'help' }}>i</div>
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: isMobile ? 16 : 20,
+                    width: isMobile ? '100%' : 'auto'
+                }}>
+                    <div style={{ 
+                        width: isMobile ? 52 : 64, 
+                        height: isMobile ? 52 : 64, 
+                        borderRadius: isMobile ? 16 : 20, 
+                        background: 'rgba(255,255,255,0.03)', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: '1px solid rgba(255,255,255,0.05)',
+                        boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
+                        flexShrink: 0
+                    }}>
+                        <div style={{ fontSize: isMobile ? 24 : 32, fontWeight: 900, color: 'white', fontFamily: 'Syne' }}>{stats.totalSubmissions}</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontSize: isMobile ? 12 : 13, color: 'white', fontWeight: 800, letterSpacing: -0.2 }}>SYNCHRONIZED EVENTS</div>
+                        <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>Past {isMobile ? '90' : '365'} cycles</div>
+                    </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 24, fontSize: 13, color: 'var(--muted)', fontWeight: 500, alignItems: 'center' }}>
-                    <div>Total active days: <span style={{ color: 'var(--text)', fontWeight: 700 }}>{stats.activeDays}</span></div>
-                    <div>Max streak: <span style={{ color: 'var(--text)', fontWeight: 700 }}>{stats.maxStreak}</span></div>
-                    <select style={{
-                        background: 'var(--surface2)',
-                        padding: '4px 12px',
-                        borderRadius: 8,
-                        border: '1px solid var(--border)',
+                <div style={{ 
+                    display: 'flex', 
+                    gap: isMobile ? 24 : 32, 
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: isMobile ? '100%' : 'auto'
+                }}>
+                    <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
+                        <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Active Presence</div>
+                        <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: 'var(--accent)', fontFamily: 'Syne' }}>{stats.activeDays}<span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 4, fontWeight: 600 }}>CYCLES</span></div>
+                    </div>
+                    <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
+                        <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Peak Sequence</div>
+                        <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: 'var(--red)', fontFamily: 'Syne' }}>{stats.maxStreak}<span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 4, fontWeight: 600 }}>DAYS</span></div>
+                    </div>
+                    <select className="glass haptic-tap" style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        padding: isMobile ? '8px 12px' : '8px 16px',
+                        borderRadius: 14,
+                        border: '1px solid rgba(255,255,255,0.1)',
                         color: 'var(--text)',
-                        fontSize: 12,
-                        fontWeight: 600,
+                        fontSize: 9,
+                        fontWeight: 900,
                         cursor: 'pointer',
-                        outline: 'none'
+                        outline: 'none',
+                        textTransform: 'uppercase',
+                        letterSpacing: 1,
+                        appearance: 'none',
+                        maxWidth: isMobile ? '80px' : 'none',
+                        textAlign: 'center'
                     }}>
-                        <option>Current Year</option>
+                        <option>CURR</option>
                         <option>2025</option>
-                        <option>2024</option>
                     </select>
                 </div>
             </div>
 
             {/* Heatmap Grid Container */}
-            <div style={{ overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
-                <div style={{ display: 'flex', gap: 6, minWidth: 'max-content' }}>
+            <div style={{ overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none', position: 'relative', zIndex: 1 }}>
+                <div style={{ 
+                    display: 'flex', 
+                    gap: isMobile ? 10 : 8, 
+                    minWidth: 'max-content'
+                }}>
                     {monthsData.map((month, mIdx) => (
-                        <div key={mIdx} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div key={mIdx} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                             <div style={{
                                 display: 'grid',
-                                gridTemplateRows: 'repeat(7, 10px)',
-                                gap: 3,
+                                gridTemplateRows: `repeat(7, ${isMobile ? '14px' : '12px'})`,
+                                gap: isMobile ? 5 : 4,
                                 gridAutoFlow: 'column'
                             }}>
                                 {/* Offset cells */}
                                 {Array.from({ length: month.startOffset }).map((_, i) => (
-                                    <div key={`offset-${i}`} style={{ width: 10, height: 10, visibility: 'hidden' }} />
+                                    <div key={`offset-${i}`} style={{ width: isMobile ? 14 : 12, height: isMobile ? 14 : 12, visibility: 'hidden' }} />
                                 ))}
 
                                 {month.days.map((day) => {
@@ -146,88 +197,79 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
                                     const log = data.find(l => l.date === dateStr);
                                     const intensity = log ? (log.intensity || 0) : 0;
                                     const isFuture = day > today;
+                                    const isToday = dateStr === format(today, 'yyyy-MM-dd');
                                     const isSelected = selectedDay === dateStr;
                                     const isRecord = log && log.score > 0 && log.score >= maxScore * 0.95 && maxScore > 0;
 
                                     return (
                                         <div key={dateStr} style={{ position: 'relative' }}>
                                             <motion.div
-                                                whileHover={{ scale: 1.2, zIndex: 10 }}
+                                                whileHover={{ scale: 1.3, zIndex: 10 }}
                                                 onClick={() => !isFuture && handleSelect(day, log)}
                                                 onMouseEnter={() => setHoveredDay({ date: day, log, id: dateStr })}
                                                 onMouseLeave={() => setHoveredDay(null)}
+                                                initial={isToday ? { boxShadow: '0 0 0px var(--accent)' } : false}
+                                                animate={isToday ? { boxShadow: ['0 0 0px var(--accent)', '0 0 10px var(--accent)', '0 0 0px var(--accent)'] } : false}
+                                                transition={isToday ? { repeat: Infinity, duration: 2 } : false}
                                                 style={{
-                                                    width: 10,
-                                                    height: 10,
-                                                    borderRadius: 2,
+                                                    width: isMobile ? 14 : 12,
+                                                    height: isMobile ? 14 : 12,
+                                                    borderRadius: 3,
                                                     background: intensityColors[intensity],
-                                                    opacity: isFuture ? 0.2 : 1,
+                                                    opacity: isFuture ? 0.1 : 1,
                                                     cursor: isFuture ? 'default' : 'pointer',
-                                                    boxShadow: isSelected ? '0 0 0 2px var(--accent)' : 'none',
+                                                    border: isSelected ? '1.5px solid white' : (isToday ? '1px solid var(--accent)' : 'none'),
                                                     position: 'relative',
-                                                    border: intensity === 0 ? '1px solid var(--border)' : 'none'
+                                                    boxShadow: isSelected ? '0 0 15px rgba(255,255,255,0.4)' : 'none'
                                                 }}
                                             >
                                                 {isRecord && (
-                                                    <motion.div
-                                                        animate={{ opacity: [0.4, 1, 0.4] }}
-                                                        transition={{ repeat: Infinity, duration: 2 }}
-                                                        style={{
-                                                            position: 'absolute',
-                                                            top: -3, right: -3,
-                                                            fontSize: 6,
-                                                            zIndex: 11
-                                                        }}
-                                                    >
-                                                        ✨
-                                                    </motion.div>
+                                                    <div style={{ position: 'absolute', top: -4, right: -4, fontSize: 8, zIndex: 11 }}>✨</div>
                                                 )}
                                             </motion.div>
 
                                             <AnimatePresence>
                                                 {hoveredDay && hoveredDay.id === dateStr && (
                                                     <motion.div
-                                                        initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
                                                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.9 }}
                                                         style={{
                                                             position: 'absolute',
                                                             bottom: '100%',
                                                             left: '50%',
                                                             transform: 'translateX(-50%)',
-                                                            marginBottom: 8,
-                                                            background: 'var(--surface)',
-                                                            border: '1px solid var(--border)',
-                                                            borderRadius: 12,
-                                                            padding: '12px',
-                                                            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
+                                                            marginBottom: 12,
+                                                            background: 'rgba(20, 20, 35, 0.95)',
+                                                            border: '1px solid rgba(255,255,255,0.1)',
+                                                            borderRadius: 20,
+                                                            padding: '16px',
+                                                            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
                                                             zIndex: 100,
                                                             pointerEvents: 'none',
-                                                            minWidth: 160,
-                                                            backdropFilter: 'blur(10px)'
+                                                            minWidth: 180,
+                                                            backdropFilter: 'blur(20px)'
                                                         }}
                                                     >
-                                                        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text)' }}>
-                                                            {((log?.tasksCompleted || 0) + (log?.habitsCompleted || 0) + (log?.scheduleEventsCompleted || 0))} submissions
+                                                        <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+                                                            {format(day, 'MMMM d, yyyy')}
                                                         </div>
-                                                        <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 8, fontWeight: 600 }}>
-                                                            on {format(day, 'MMM d, yyyy')}
+                                                        <div style={{ fontSize: 18, fontWeight: 900, color: 'white', marginBottom: 12, fontFamily: 'Syne' }}>
+                                                            {log?.score || 0} <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>COGNITIVE XP</span>
                                                         </div>
-                                                        <div style={{ display: 'grid', gap: 4, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
-                                                            <div style={{ fontSize: 10, display: 'flex', justifyContent: 'space-between' }}>
-                                                                <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Deep Work Sessions</span>
-                                                                <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{log?.pomodoros || 0}</span>
-                                                            </div>
-                                                            <div style={{ fontSize: 10, display: 'flex', justifyContent: 'space-between' }}>
-                                                                <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Focus Time</span>
-                                                                <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{log?.focusMinutes || 0}m</span>
-                                                            </div>
+                                                        
+                                                        <div style={{ display: 'grid', gap: 6, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
+                                                            {[
+                                                                { label: 'Tactical Objectives', val: log?.tasksCompleted || 0, color: 'var(--accent)' },
+                                                                { label: 'Neural Focus', val: `${log?.pomodoros || 0} sessions`, color: 'var(--green)' },
+                                                                { label: 'Rituals Secured', val: log?.habitsCompleted || 0, color: 'var(--accent2)' },
+                                                            ].map(item => (
+                                                                <div key={item.label} style={{ fontSize: 10, display: 'flex', justifyContent: 'space-between' }}>
+                                                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{item.label}</span>
+                                                                    <span style={{ fontWeight: 800, color: item.color }}>{item.val}</span>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                        {isRecord && (
-                                                            <div style={{ marginTop: 8, fontSize: 9, color: 'gold', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                                ✨ PERSONAL BEST
-                                                            </div>
-                                                        )}
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>
@@ -241,8 +283,9 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
                                 textAlign: 'center',
                                 fontSize: 10,
                                 color: 'var(--muted)',
-                                fontWeight: 600,
-                                marginTop: 6
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                letterSpacing: 1
                             }}>
                                 {month.label}
                             </div>
@@ -252,12 +295,14 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
             </div>
 
             {/* Visual Legend */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 16, justifyContent: 'flex-end', fontSize: 11, color: 'var(--muted)', fontWeight: 500 }}>
-                <span>Less</span>
-                {intensityColors.map((color, i) => (
-                    <div key={i} style={{ width: 10, height: 10, background: color, borderRadius: 2, border: i === 0 ? '1px solid var(--border)' : 'none' }} />
-                ))}
-                <span>More</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 24, justifyContent: 'flex-end', fontSize: 10, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
+                <span>Inert</span>
+                <div style={{ display: 'flex', gap: 4 }}>
+                    {intensityColors.map((color, i) => (
+                        <div key={i} style={{ width: 12, height: 12, background: color, borderRadius: 3, border: i === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }} />
+                    ))}
+                </div>
+                <span>Zenith</span>
             </div>
         </div>
     );

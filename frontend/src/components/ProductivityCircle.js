@@ -13,10 +13,11 @@ const ProductivityCircle = ({ stats }) => {
     ];
 
     const total = tasks + habits + focus + schedule;
-    const size = 160;
+    const isMobile = window.innerWidth <= 768;
+    const size = isMobile ? 140 : 160;
     const center = size / 2;
-    const radius = 65;
-    const strokeWidth = 12;
+    const radius = isMobile ? 55 : 65;
+    const strokeWidth = isMobile ? 10 : 12;
     const circumference = 2 * Math.PI * radius;
 
     let currentOffset = 0;
@@ -25,28 +26,30 @@ const ProductivityCircle = ({ stats }) => {
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="card glass-card"
+            className="premium-card aura-iridescent"
             style={{
                 borderRadius: 24,
-                padding: '24px',
+                padding: '32px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 24,
                 width: '100%',
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid var(--border)',
-                backdropFilter: 'blur(12px)'
+                background: 'rgba(255,255,255,0.01)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                position: 'relative',
+                overflow: 'hidden'
             }}
         >
-            <h3 style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)', margin: 0, textTransform: 'uppercase', letterSpacing: 1 }}>Output Distribution</h3>
+            <div className="btn-glint" style={{ opacity: 0.02 }} />
+            <h3 style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', margin: 0, textTransform: 'uppercase', letterSpacing: 2 }}>Output Distribution Protocol</h3>
 
-            <div style={{ position: 'relative', width: size, height: size, margin: '0 auto' }}>
+            <div style={{ position: 'relative', width: size, height: size, margin: '10px auto' }}>
                 <svg viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
                     {/* Background Track */}
-                    <circle cx={center} cy={center} r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} />
+                    <circle cx={center} cy={center} r={radius} fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth={strokeWidth} />
 
                     {total === 0 ? (
-                        <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--border)" strokeWidth={strokeWidth} strokeDasharray="4 4" />
+                        <circle cx={center} cy={center} r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} strokeDasharray="4 4" />
                     ) : (
                         categories.map((cat, i) => {
                             if (cat.count === 0) return null;
@@ -68,7 +71,7 @@ const ProductivityCircle = ({ stats }) => {
                                     initial={{ pathLength: 0 }}
                                     animate={{ pathLength: 1 }}
                                     transition={{ duration: 1.5, ease: "circOut", delay: 0.2 }}
-                                    style={{ filter: `drop-shadow(0 0 8px ${cat.color}66)` }}
+                                    style={{ filter: `drop-shadow(0 0 12px ${cat.color}44)` }}
                                 />
                             );
                         })
@@ -85,28 +88,29 @@ const ProductivityCircle = ({ stats }) => {
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        style={{ fontSize: 32, fontWeight: 900, color: 'var(--text)', fontFamily: 'Syne, sans-serif' }}
+                        style={{ fontSize: 36, fontWeight: 800, color: 'white', fontFamily: 'Syne, sans-serif', letterSpacing: '-0.05em' }}
                     >
                         {total}
                     </motion.div>
-                    <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2 }}>Total Unit</div>
+                    <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5 }}>Aggregated Units</div>
                 </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {categories.map((cat, idx) => (
                     <div key={idx} style={{
-                        padding: '10px 12px',
-                        background: 'rgba(255,255,255,0.03)',
-                        borderRadius: 14,
+                        padding: '12px 16px',
+                        background: 'rgba(255,255,255,0.02)',
+                        borderRadius: 16,
                         border: '1px solid rgba(255,255,255,0.05)',
-                        opacity: cat.count > 0 ? 1 : 0.4
+                        opacity: cat.count > 0 ? 1 : 0.3,
+                        transition: 'all 0.3s ease'
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: cat.color, boxShadow: `0 0 6px ${cat.color}` }} />
-                            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase' }}>{cat.label}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: cat.color, boxShadow: `0 0 10px ${cat.color}` }} />
+                            <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{cat.label}</span>
                         </div>
-                        <div style={{ fontSize: 16, fontWeight: 800 }}>{cat.count}</div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: 'white', fontFamily: 'Syne' }}>{cat.count}</div>
                     </div>
                 ))}
             </div>

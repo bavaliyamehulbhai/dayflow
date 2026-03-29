@@ -1,7 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { createPortal } from 'react-dom';
 import { aiAPI } from '../utils/api';
-import { Sparkles, AlertCircle, CheckCircle2, Zap, Brain, ChevronRight } from 'lucide-react';
+import { Sparkles, AlertCircle, CheckCircle2, Zap, Brain, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AICoach = () => {
@@ -30,19 +31,19 @@ const AICoach = () => {
 
     return (
         <>
-            <div className="card" style={{
-                background: 'linear-gradient(135deg, rgba(130, 114, 255, 0.08), rgba(255, 107, 139, 0.05))',
-                border: '1px solid rgba(130, 114, 255, 0.2)',
+            <div className="card glass-holographic" style={{
                 overflow: 'hidden',
-                position: 'relative'
+                position: 'relative',
+                border: 'none',
+                background: 'linear-gradient(135deg, rgba(130, 114, 255, 0.08), rgba(255, 107, 139, 0.05))',
             }}>
                 <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, background: 'var(--accent)', filter: 'blur(50px)', opacity: 0.1, pointerEvents: 'none' }}></div>
 
-                <div className="card-title" style={{ color: 'var(--accent)', fontWeight: 800 }}>
-                    <Sparkles size={14} /> AI Productivity Coach
+                <div className="card-title" style={{ color: 'var(--accent)', fontWeight: 800, fontSize: 'var(--fs-xs)', textTransform: 'uppercase', letterSpacing: 2 }}>
+                    <Sparkles size={14} /> AI Perspective
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <AnimatePresence mode="popLayout">
                         {insights.map((insight, idx) => (
                             <motion.div
@@ -93,23 +94,30 @@ const AICoach = () => {
             </div>
 
             <AnimatePresence>
-                {selectedInsight && (
-                    <div className="modal-overlay" onClick={() => setSelectedInsight(null)}>
+                {selectedInsight && createPortal(
+                    <div className="modal-overlay" onClick={() => setSelectedInsight(null)} style={{ display: 'flex', alignItems: window.innerWidth <= 768 ? 'flex-end' : 'center' }}>
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            initial={window.innerWidth <= 768 ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
+                            animate={window.innerWidth <= 768 ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+                            exit={window.innerWidth <= 768 ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 20 }}
                             className="modal"
-                            style={{ maxWidth: 500, overflow: 'hidden' }}
+                            style={{ 
+                                maxWidth: 500, 
+                                overflow: 'hidden', 
+                                margin: window.innerWidth <= 768 ? 0 : 'auto',
+                                width: window.innerWidth <= 768 ? '100%' : undefined,
+                                borderRadius: window.innerWidth <= 768 ? '24px 24px 0 0' : 24,
+                                paddingBottom: window.innerWidth <= 768 ? 'calc(16px + env(safe-area-inset-bottom))' : 16
+                            }}
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+                            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 10 }}>
                                 <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     <div style={{
                                         width: 32, height: 32, borderRadius: 8,
                                         background: 'var(--surface2)',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}>
+                                     }}>
                                         {getIcon(selectedInsight.type)}
                                     </div>
                                     Focus Briefing
@@ -118,8 +126,8 @@ const AICoach = () => {
                                     <X size={20} />
                                 </button>
                             </div>
-                            <div className="modal-body" style={{ paddingTop: 20 }}>
-                                <div style={{ fontSize: 22, fontWeight: 900, fontFamily: 'Syne, sans-serif', marginBottom: 16, color: 'var(--text)' }}>
+                            <div className="modal-body" style={{ paddingTop: 0 }}>
+                                <div style={{ fontSize: 'clamp(1.2rem, 5vw, 1.4rem)', fontWeight: 900, fontFamily: 'Syne, sans-serif', marginBottom: 12, color: 'var(--text)', lineHeight: 1.2 }}>
                                     {selectedInsight.title}
                                 </div>
                                 <div style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.7, marginBottom: 24 }}>
@@ -135,7 +143,8 @@ const AICoach = () => {
                             </div>
                             <div style={{ height: 4, background: 'linear-gradient(90deg, var(--accent), var(--accent2))', width: '100%' }} />
                         </motion.div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
             </AnimatePresence>
         </>

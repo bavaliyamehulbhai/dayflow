@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { authAPI, badgesAPI, dashboardAPI } from '../utils/api';
@@ -18,9 +20,8 @@ import {
   Palette, Sun, Moon
 } from 'lucide-react';
 import { useZenTheme } from '../hooks/useZenTheme';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../components/ConfirmDialog';
+import SensitivityShield from '../components/layout/SensitivityShield';
 
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
@@ -159,35 +160,23 @@ export default function ProfilePage() {
   const activityData = activityResponse.logs || [];
   const analytics = activityResponse.analytics || {};
 
-  // ── Activity Stats Calculation ─────────────────────────────────────────────
-  const activityStats = useMemo(() => {
-    if (!activityData?.length) return { totalSubmissions: 0, activeDays: 0, maxStreak: 0 };
-
+  const activityStatsRaw = useMemo(() => {
     let totalSubmissions = 0;
-    const dates = activityData.map(l => {
+    activityData.forEach(l => {
       totalSubmissions += (l.tasksCompleted || 0) + (l.pomodoros || 0) + (l.habitsCompleted || 0) + (l.notesCreated || 0);
-      return new Date(l.date);
-    }).sort((a, b) => a - b);
-
-    let maxStreak = 0;
-    let currentStreak = 0;
-
-    if (dates.length > 0) {
-      currentStreak = 1;
-      maxStreak = 1;
-      for (let i = 1; i < dates.length; i++) {
-        const diff = (dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24);
-        if (Math.round(diff) === 1) {
-          currentStreak++;
-          maxStreak = Math.max(maxStreak, currentStreak);
-        } else {
-          currentStreak = 1;
-        }
-      }
-    }
-
-    return { totalSubmissions, activeDays: activityData.length, maxStreak };
+    });
+    return { totalSubmissions };
   }, [activityData]);
+
+  // ── Activity Stats Calculation (Unified with Backend) ─────────────────────
+  const activityStats = useMemo(() => {
+    const records = analytics.records || {};
+    return {
+      totalSubmissions: activityStatsRaw.totalSubmissions, // Keep local count for real-time feel
+      activeDays: activityData.length,
+      maxStreak: records.maxStreak || 0
+    };
+  }, [activityData, analytics, activityStatsRaw]);
 
   useEffect(() => {
     badgesAPI.check().then(r => {
@@ -324,68 +313,99 @@ export default function ProfilePage() {
   }, [user]);
 
   return (
-    <div className="responsive-container pb-10">
-
-      {/* ─── HERO CARD ─────────────────────────────────────────────────────── */}
+    <div className="responsive-container pb-20">
+      
+      {/* ─── IDENTITY HERO ─────────────────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: -16 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card"
+        className="glass-holographic aura-iridescent aura-float"
         style={{
-          marginBottom: 20, padding: 'var(--space-6) var(--space-8)',
-          background: 'linear-gradient(135deg,rgba(130,114,255,0.07),rgba(250,109,138,0.05),rgba(109,250,204,0.03))',
-          border: '1px solid var(--border)', position: 'relative', overflow: 'hidden'
+          marginBottom: 32, 
+          padding: isMobile ? '24px 16px' : '48px 64px',
+          borderRadius: 40,
+          position: 'relative',
+          overflow: 'visible',
+          border: 'none'
         }}
       >
-        {/* BG orbs */}
-        <div style={{ position: 'absolute', top: -80, right: -80, width: 250, height: 250, background: 'var(--accent)', opacity: 0.05, borderRadius: '50%', filter: 'blur(70px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 200, height: 200, background: 'var(--accent2)', opacity: 0.05, borderRadius: '50%', filter: 'blur(60px)', pointerEvents: 'none' }} />
-
+        <div className="aura-pulse" style={{ 
+          position: 'absolute', top: '50%', left: '50%', 
+          width: '80%', height: '80%', 
+          background: 'var(--grad-mesh-vibrant)', 
+          opacity: 0.15, filter: 'blur(80px)', 
+          transform: 'translate(-50%, -50%)', zIndex: -1 
+        }} />
+        <div className="btn-glint" style={{ opacity: 0.1 }} />
+        
         <div style={{
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'center' : 'center',
-          gap: isMobile ? 24 : 32,
+          alignItems: 'center',
+          gap: isMobile ? 32 : 48,
           position: 'relative',
-          zIndex: 1,
-          textAlign: isMobile ? 'center' : 'left',
-          maxWidth: 1000,
-          margin: '0 auto'
+          zIndex: 10,
+          textAlign: isMobile ? 'center' : 'left'
         }}>
-          {/* Avatar with gradient picker */}
+          {/* Avatar Section */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            <div
+            <motion.div
+              whileHover={{ scale: 1.05 }}
               style={{
-                width: isMobile ? 72 : 90, height: isMobile ? 72 : 90, borderRadius: '50%',
-                background: avatarGrad, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: isMobile ? 26 : 32,
-                color: 'white', boxShadow: `0 8px 32px rgba(130,114,255,0.4),0 0 0 3px rgba(130,114,255,0.15)`,
-                cursor: 'pointer', transition: 'transform 0.2s', position: 'relative'
+                width: isMobile ? 100 : 160, 
+                height: isMobile ? 100 : 160, 
+                borderRadius: '50%',
+                background: avatarGrad, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                fontFamily: 'Syne, sans-serif', 
+                fontWeight: 800, 
+                fontSize: isMobile ? '40px' : '64px',
+                color: 'white', 
+                boxShadow: `0 20px 60px ${profileForm.avatarGradient === 'purple' ? 'rgba(124,109,250,0.5)' : 'rgba(0,0,0,0.3)'}`,
+                cursor: 'pointer',
+                border: '4px solid rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(10px)'
               }}
               onClick={() => setShowGradientPicker(v => !v)}
             >
+              <div style={{ position: 'absolute', inset: -8, border: '1.5px solid rgba(255,255,255,0.05)', borderRadius: '50%' }} />
               {initials}
-              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: '50%', background: 'var(--surface)', border: '2px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Camera size={11} color="var(--muted)" />
+              <div style={{ position: 'absolute', bottom: 8, right: 8, width: 32, height: 32, borderRadius: '50%', background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                <Edit3 size={14} color="var(--text)" />
               </div>
-            </div>
-            {/* Online dot */}
-            <div style={{ position: 'absolute', bottom: 4, left: 4, width: 12, height: 12, borderRadius: '50%', background: 'var(--green)', border: '2px solid var(--bg)', boxShadow: '0 0 8px var(--green)' }} />
+            </motion.div>
 
-            {/* Gradient picker dropdown */}
+            {/* Gradient Picker */}
             <AnimatePresence>
               {showGradientPicker && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 8 }}
-                  style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 10, display: 'flex', flexWrap: 'wrap', gap: 6, width: 168, zIndex: 100, boxShadow: '0 12px 40px rgba(0,0,0,0.4)' }}
+                  initial={{ opacity: 0, scale: 0.9, y: 12, x: isMobile ? '-50%' : 0 }} 
+                  animate={{ opacity: 1, scale: 1, y: 0, x: isMobile ? '-50%' : 0 }} 
+                  exit={{ opacity: 0, scale: 0.9, y: 12, x: isMobile ? '-50%' : 0 }}
+                  style={{ 
+                    position: 'absolute', 
+                    top: '110%', 
+                    left: isMobile ? '50%' : 0, 
+                    background: 'rgba(15, 15, 25, 0.95)', 
+                    border: '1px solid rgba(255,255,255,0.1)', 
+                    borderRadius: 24, 
+                    padding: 16, 
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: 12, 
+                    width: 200, 
+                    zIndex: 1000, 
+                    boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+                    backdropFilter: 'blur(20px)'
+                  }}
                 >
-                  <div style={{ width: '100%', fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Pick Color</div>
                   {Object.entries(AVATAR_GRADIENTS).map(([key, grad]) => (
                     <button
                       key={key}
                       onClick={() => { setProfileForm(f => ({ ...f, avatarGradient: key })); setShowGradientPicker(false); }}
-                      style={{ width: 28, height: 28, borderRadius: '50%', background: grad, border: profileForm.avatarGradient === key ? '2.5px solid white' : '2px solid transparent', cursor: 'pointer', boxShadow: profileForm.avatarGradient === key ? '0 0 10px rgba(255,255,255,0.4)' : 'none', transition: 'all 0.2s', flexShrink: 0 }}
-                      title={key}
+                      style={{ width: 34, height: 34, borderRadius: '50%', background: grad, border: profileForm.avatarGradient === key ? '2.5px solid white' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
                     />
                   ))}
                 </motion.div>
@@ -393,146 +413,108 @@ export default function ProfilePage() {
             </AnimatePresence>
           </div>
 
-          {/* Name, bio, meta */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 'var(--fs-2xl)', fontWeight: 800, letterSpacing: -0.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start', marginBottom: 8 }}>
+              <div style={{ fontFamily: 'Syne, sans-serif', fontSize: isMobile ? '32px' : '48px', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, color: 'white' }}>
                 {user?.name}
               </div>
               {earnedCount >= 5 && (
-                <span className="badge badge-gold">
-                  ⭐ PRO
-                </span>
+                <div style={{ 
+                  background: 'linear-gradient(135deg, #ffd700, #ffaa00)', 
+                  color: 'black', padding: '4px 12px', borderRadius: 50, 
+                  fontSize: 10, fontWeight: 900, letterSpacing: 1.5,
+                  boxShadow: '0 4px 15px rgba(255,215,0,0.3)'
+                }}>ZENITH ADHERENT</div>
               )}
             </div>
 
-            {/* Bio editable */}
-            {editingBio ? (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
-                <input
-                  ref={bioRef}
-                  className="input"
-                  value={profileForm.bio}
-                  onChange={e => setProfileForm(f => ({ ...f, bio: e.target.value.slice(0, 250) }))}
-                  placeholder="Add a personal tagline..."
-                  style={{ fontSize: 13, padding: '6px 12px', flex: 1, maxWidth: 320 }}
-                  autoFocus
-                  onKeyDown={e => { if (e.key === 'Enter') handleProfileSave(); if (e.key === 'Escape') setEditingBio(false); }}
-                />
-                <button className="btn btn-primary btn-sm" onClick={handleProfileSave} style={{ padding: '6px 14px', fontSize: 12 }}>Save</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setEditingBio(false)} style={{ fontSize: 12 }}>✕</button>
-              </div>
-            ) : (
-              <div
-                style={{
-                  fontSize: 14,
-                  color: user?.bio ? 'var(--text2)' : 'var(--muted)',
-                  marginTop: 8,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  maxWidth: 420,
-                  justifyContent: isMobile ? 'center' : 'flex-start'
-                }}
-                onClick={() => setEditingBio(true)}
-              >
-                <span style={{ fontStyle: !user?.bio ? 'italic' : 'normal' }}>{user?.bio || 'Add a bio or tagline...'}</span>
-                <Edit3 size={13} style={{ color: 'var(--muted)', flexShrink: 0 }} />
-              </div>
-            )}
-
-            {/* Meta pills */}
-            <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-              <span className="badge badge-accent">
-                <Zap size={10} /> {memberDays}d member
-              </span>
-              <span className="badge badge-yellow">
-                <Trophy size={10} /> {tasksCompleted} tasks
-              </span>
-              <span
-                onClick={() => setActiveTab('badges')}
-                className="badge"
-                style={{
-                  background: earnedCount > 0 ? 'rgba(255,215,0,0.1)' : 'var(--surface2)',
-                  color: earnedCount > 0 ? '#ffd700' : 'var(--muted)',
-                  cursor: 'pointer'
-                }}
-              >
-                🏅 {earnedCount}/{totalBadges}
-              </span>
-            </div>
-          </div>
-
-          {/* Score ring */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <ScoreRing score={productivityScore} size={isMobile ? 80 : 110} />
-            <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Productivity</div>
-          </div>
-        </div>
-
-        {/* Profile completeness bar */}
-        {completeness < 100 && (
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 20, padding: '12px 16px', background: 'var(--surface2)', borderRadius: 12, border: '1px solid var(--border)', maxWidth: 600, margin: '20px auto 0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Profile Completeness</span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)' }}>{completeness}%</span>
-            </div>
-            <div style={{ height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
-              <motion.div initial={{ width: 0 }} animate={{ width: `${completeness}%` }} transition={{ duration: 1 }} style={{ height: '100%', background: 'linear-gradient(90deg,var(--accent),var(--accent2))', borderRadius: 3 }} />
-            </div>
-          </motion.div>
-        )}
-
-        {/* Quick action shortcuts */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-          {[
-            { label: 'Tasks', icon: Target, path: '/tasks', color: 'var(--accent)' },
-            { label: 'Focus', icon: Timer, path: '/pomodoro', color: 'var(--green)' },
-            { label: 'Habits', icon: Flame, path: '/habits', color: 'var(--orange)' },
-            { label: 'Journal', icon: BookOpen, path: '/notes', color: 'var(--accent2)' },
-          ].map(s => (
-            <motion.button
-              key={s.label}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate(s.path)}
-              className="btn btn-ghost btn-sm"
-              style={{ borderRadius: 50, padding: '8px 16px', gap: 8 }}
+            <div
+              style={{
+                fontSize: 16,
+                color: user?.bio ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                justifyContent: isMobile ? 'center' : 'flex-start',
+                fontStyle: user?.bio ? 'normal' : 'italic'
+              }}
+              onClick={() => setEditingBio(true)}
             >
-              <s.icon size={14} style={{ color: s.color }} />
-              {s.label}
-            </motion.button>
-          ))}
+              {user?.bio || 'Initialize your personality core...'}
+              <Edit3 size={14} style={{ opacity: 0.5 }} />
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+              <div className="glass-badge" style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', color: 'var(--green)', fontSize: 11, fontWeight: 800 }}>
+                <Zap size={12} style={{ marginRight: 8 }} /> {memberDays} CYCLES
+              </div>
+              <div className="glass-badge" style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', color: 'var(--accent)', fontSize: 11, fontWeight: 800 }}>
+                <Trophy size={12} style={{ marginRight: 8 }} /> {earnedCount} ACHIEVEMENTS
+              </div>
+              <div className="glass-badge" style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', color: '#ff4d7d', fontSize: 11, fontWeight: 800 }}>
+                <Flame size={12} style={{ marginRight: 8 }} /> {currentStreak}D STREAK
+              </div>
+            </div>
+          </div>
+
+          {!isMobile && (
+            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 900, letterSpacing: 3, textTransform: 'uppercase' }}>Cognitive Score</div>
+              <div style={{ fontSize: 48, fontFamily: 'Syne', fontWeight: 800, lineHeight: 1, color: productivityScore > 80 ? 'var(--green)' : 'var(--text)' }}>
+                {productivityScore}<span style={{ fontSize: 20, opacity: 0.3, marginLeft: 2 }}>/100</span>
+              </div>
+              <div className="glass-badge" style={{ background: 'rgba(255,255,255,0.05)', padding: '6px 12px', fontSize: 10, fontWeight: 800, color: 'var(--muted)' }}>RANK: ASCENDANT</div>
+            </div>
+          )}
         </div>
       </motion.div>
 
-      {/* ─── TAB BAR ───────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: isMobile ? 4 : 8, marginBottom: 20, background: 'var(--surface)', padding: 6, borderRadius: 16, border: '1px solid var(--border)', overflowX: 'auto', scrollbarWidth: 'none', maxWidth: 800, margin: '0 auto 20px' }}>
+      {/* ─── TAB NAVIGATION ────────────────────────────────────────────────── */}
+      <div style={{ 
+        display: 'flex', 
+        gap: isMobile ? 6 : 8, 
+        marginBottom: 40, 
+        padding: 6, 
+        borderRadius: 24, 
+        background: 'rgba(255,255,255,0.03)', 
+        border: '1px solid rgba(255,255,255,0.05)',
+        width: isMobile ? 'auto' : 'fit-content',
+        maxWidth: '100%',
+        margin: isMobile ? '0 0 40px' : '0 auto 40px',
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        scrollSnapType: 'x mandatory'
+      }} className="no-scrollbar">
         {TABS.map(tab => {
           const active = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              className="haptic-tap"
               style={{
-                flex: isMobile ? '0 0 auto' : 1, padding: '10px 14px', borderRadius: 11, border: 'none',
-                background: active ? 'var(--accent)' : 'transparent',
-                color: active ? 'white' : 'var(--muted)',
-                fontWeight: 700, fontSize: 'var(--fs-sm)', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                transition: 'all 0.2s ease',
-                boxShadow: active ? '0 4px 16px rgba(130,114,255,0.35)' : 'none',
-                whiteSpace: 'nowrap', position: 'relative'
+                padding: isMobile ? '12px 16px' : '14px 28px',
+                borderRadius: 20,
+                border: 'none',
+                background: active ? 'white' : 'transparent',
+                color: active ? 'black' : 'var(--muted)',
+                fontWeight: 800,
+                fontSize: 14,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                whiteSpace: 'nowrap',
+                scrollSnapAlign: 'start',
+                boxShadow: active ? '0 10px 20px rgba(255,255,255,0.1)' : 'none'
               }}
             >
-              <tab.icon size={15} />
-              <span style={{ fontSize: 'var(--fs-sm)' }}>{tab.label}</span>
-              {tab.id === 'badges' && earnedCount > 0 && (
-                <span style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: '#ffd700', color: '#000', fontSize: 9, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {earnedCount}
-                </span>
-              )}
+              <tab.icon size={18} strokeWidth={active ? 2.5 : 2} />
+              <span className={isMobile && !active ? 'hide' : ''}>{tab.label}</span>
             </button>
           );
         })}
@@ -544,71 +526,120 @@ export default function ProfilePage() {
 
           {/* ── PROFILE ─────────────────────────────── */}
           {activeTab === 'profile' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
-                <div className="card-title mb-6"><User size={15} className="text-accent" /> Personal Info</div>
-                <form onSubmit={handleProfileSave}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              
+              {/* Bio Editor (Overlay-like when active) */}
+              <AnimatePresence>
+                {editingBio && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="premium-card aura-iridescent"
+                    style={{ padding: 32, borderRadius: 32, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20, 20, 30, 0.95)', backdropFilter: 'blur(30px)' }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--muted)', letterSpacing: 2, marginBottom: 20, textTransform: 'uppercase' }}>Update Personality Core</div>
+                    <textarea 
+                      className="auth-input"
+                      rows={4}
+                      value={profileForm.bio}
+                      onChange={e => setProfileForm(f => ({ ...f, bio: e.target.value.slice(0, 250) }))}
+                      placeholder="Declare your identity..."
+                      style={{ fontSize: 15, borderRadius: 20, padding: 20, minHeight: 120, marginBottom: 20 }}
+                      autoFocus
+                    />
+                    <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                      <button className="btn glass haptic-tap" onClick={() => setEditingBio(false)} style={{ borderRadius: 14, padding: '0 24px', height: 48, fontWeight: 800 }}>Cancel</button>
+                      <button className="auth-button haptic-tap" onClick={handleProfileSave} style={{ width: 'auto', padding: '0 32px', height: 48, fontSize: 14 }}>
+                        <div className="btn-glint" /> Save Bio
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="premium-card" style={{ padding: isMobile ? 24 : 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+                  <User size={20} className="text-accent" />
+                  <div style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: -0.5 }}>Identity Parameters</div>
+                </div>
+                
+                <form onSubmit={handleProfileSave} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   <div className="form-group">
-                    <label className="form-label">Full Name</label>
-                    <input className="input" value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" />
+                    <label style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10, display: 'block' }}>Legal Designation</label>
+                    <input className="auth-input" value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" style={{ height: 56, borderRadius: 16 }} />
                   </div>
+                  
                   <div className="form-group">
-                    <label className="form-label">Bio / Tagline <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: 11 }}>(max 250 chars)</span></label>
-                    <textarea className="textarea" rows={2} value={profileForm.bio} onChange={e => setProfileForm(f => ({ ...f, bio: e.target.value.slice(0, 250) }))} placeholder="Your personal tagline or bio..." style={{ resize: 'vertical' }} />
-                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, textAlign: 'right' }}>{profileForm.bio.length}/250</div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Email Address</label>
+                    <label style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10, display: 'block' }}>Communication Channel</label>
                     <div style={{ position: 'relative' }}>
-                      <input className="input" value={user?.email || ''} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} />
-                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 9, fontWeight: 700, color: 'var(--muted)', background: 'var(--surface2)', padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Fixed</span>
+                      <input className="auth-input" value={user?.email || ''} disabled style={{ height: 56, borderRadius: 16, borderStyle: 'dashed', opacity: 0.6 }} />
+                      <div style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: 8, fontSize: 10, fontWeight: 900, color: 'var(--muted)', border: '1px solid rgba(255,255,255,0.1)' }}>VERIFIED</div>
                     </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Avatar Color</label>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                      {Object.entries(AVATAR_GRADIENTS).map(([key, grad]) => (
-                        <button
-                          key={key} type="button"
-                          onClick={() => setProfileForm(f => ({ ...f, avatarGradient: key }))}
-                          style={{ width: 36, height: 36, borderRadius: '50%', background: grad, border: profileForm.avatarGradient === key ? '3px solid white' : '3px solid transparent', cursor: 'pointer', boxShadow: profileForm.avatarGradient === key ? '0 0 14px rgba(255,255,255,0.5)' : 'none', transition: 'all 0.2s', flexShrink: 0 }}
-                        />
-                      ))}
-                    </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <button type="submit" className="auth-button haptic-tap" disabled={profileMutation.isPending} style={{ width: isMobile ? '100%' : 220, height: 56, fontSize: 15 }}>
+                      <div className="btn-glint" />
+                      {profileMutation.isPending ? 'Syncing...' : <><Save size={18} style={{ marginRight: 10 }} /> Update Identity</>}
+                    </button>
                   </div>
-                  <button type="submit" className="btn btn-primary" disabled={profileMutation.isPending} style={{ width: isMobile ? '100%' : 160 }}>
-                    {profileMutation.isPending ? 'Saving...' : <><Save size={15} /> Save Changes</>}
-                  </button>
                 </form>
               </div>
 
-              {/* Account Info card */}
-              <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
-                <div className="card-title mb-4"><Activity size={14} className="text-accent2" /> Account Overview</div>
-                <div className="stats-grid" style={{ gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)' }}>
+              {/* Growth Stats card */}
+              <div className="premium-card aura-iridescent" style={{ padding: isMobile ? 24 : 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+                  <TrendingUp size={20} className="text-accent2" />
+                  <div style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: -0.5 }}>Expansion Metrics</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 24 }}>
                   {[
-                    { label: 'Member Since', value: memberSince },
-                    { label: 'Days Active', value: `${memberDays}d` },
-                    { label: 'Account ID', value: user?._id?.slice(-8)?.toUpperCase() || '—' },
-                    { label: 'Region', value: 'Atlas' },
-                  ].map((s, i) => (
-                    <div key={i} className="stat-card p-3 flex justify-between items-center bg-surface2 border border-border rounded-xl">
-                      <span className="text-xs text-muted font-bold uppercase">{s.label}</span>
-                      <span className="text-sm font-bold text-text">{s.value}</span>
-                    </div>
-                  ))}
+                    { label: 'Tasks Mastered', value: tasksCompleted, target: 500, icon: Target, color: '#7c6dfa' },
+                    { label: 'Deep Focus (hrs)', value: Math.floor(focusMinutes / 60), target: 100, icon: Clock, color: '#22c55e' },
+                    { label: 'Active Streak (days)', value: currentStreak, target: 30, icon: Flame, color: '#f59e0b' },
+                    { label: 'Rituals Maintained', value: analytics.habitsTotal || 0, target: 100, icon: Zap, color: '#ec4899' },
+                  ].map((s, i) => {
+                    const progress = Math.min(100, (s.value / s.target) * 100);
+                    return (
+                      <div key={i} className="glass" style={{ padding: 24, borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 12, background: `${s.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${s.color}33` }}>
+                              <s.icon size={18} style={{ color: s.color }} />
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{s.label}</span>
+                          </div>
+                          <span style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Syne', color: s.color }}>{s.value}</span>
+                        </div>
+                        <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden' }}>
+                          <motion.div 
+                            initial={{ width: 0 }} 
+                            animate={{ width: `${progress}%` }} 
+                            style={{ height: '100%', background: s.color, borderRadius: 10, boxShadow: `0 0 15px ${s.color}44` }} 
+                          />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: 10, color: 'var(--muted)', fontWeight: 900, letterSpacing: 1 }}>
+                          <span>LVL 14</span>
+                          <span>{Math.round(progress)}% TO ASCENSION</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Danger zone */}
-              <div className="card" style={{ border: '1px solid rgba(255,107,107,0.2)', padding: '20px 24px', maxWidth: 800, margin: '0 auto' }}>
-                <div className="card-title" style={{ marginBottom: 16, color: 'var(--red)' }}>⚠ Danger Zone</div>
+              <div className="premium-card" style={{ padding: 24, borderRadius: 24, border: '1px solid rgba(255,107,107,0.1)', background: 'rgba(255,107,107,0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: 1.5 }}>System Override</div>
+                </div>
                 <button
-                  className="btn btn-ghost"
+                  className="btn glass haptic-tap"
                   onClick={() => { logout(); navigate('/login'); }}
-                  style={{ color: 'var(--red)', borderColor: 'rgba(255,107,107,0.3)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, width: isMobile ? '100%' : 'auto', justifyContent: 'center' }}
+                  style={{ color: 'var(--red)', border: '1px solid rgba(255,107,107,0.2)', height: 48, borderRadius: 14, fontSize: 13, width: isMobile ? '100%' : 'auto', padding: '0 24px', fontWeight: 700 }}
                 >
-                  <LogOut size={15} /> Sign Out of All Devices
+                  <LogOut size={16} /> Disconnect from All Channels
                 </button>
               </div>
             </div>
@@ -616,107 +647,128 @@ export default function ProfilePage() {
 
           {/* ── SECURITY ─────────────────────────────── */}
           {activeTab === 'security' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 800, margin: '0 auto' }}>
-              <div className="card">
-                <div className="card-title" style={{ marginBottom: 24 }}><Lock size={15} style={{ color: 'var(--accent2)' }} /> Change Password</div>
-                <form onSubmit={handlePasswordChange}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              
+              <div className="premium-card aura-iridescent" style={{ padding: isMobile ? 24 : 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+                  <Lock size={20} className="text-accent2" />
+                  <div style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: -0.5 }}>Access Protocol</div>
+                </div>
+                
+                <form onSubmit={handlePasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   <div className="form-group">
-                    <label className="form-label">Current Password</label>
-                    <input type="password" className="input" value={pwForm.currentPassword} onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))} required autoComplete="current-password" />
+                    <label style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10, display: 'block' }}>Current Cipher</label>
+                    <input type="password" className="auth-input" value={pwForm.currentPassword} onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))} required autoComplete="current-password" style={{ height: 56, borderRadius: 16 }} />
                   </div>
+                  
                   <div className="form-group">
-                    <label className="form-label">New Password</label>
-                    <input type="password" className="input" value={pwForm.newPassword} onChange={e => { setPwForm(f => ({ ...f, newPassword: e.target.value })); checkStrength(e.target.value); }} minLength={8} required autoComplete="new-password" />
+                    <label style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10, display: 'block' }}>New Cipher Initiation</label>
+                    <input type="password" className="auth-input" value={pwForm.newPassword} onChange={e => { setPwForm(f => ({ ...f, newPassword: e.target.value })); checkStrength(e.target.value); }} minLength={8} required autoComplete="new-password" style={{ height: 56, borderRadius: 16 }} />
                     {pwForm.newPassword && (
-                      <div style={{ marginTop: 10 }}>
-                        <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-                          {[0, 1, 2, 3].map(i => <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i < pwStrength ? strengthColors[pwStrength - 1] : 'var(--border)', transition: 'all 0.3s' }} />)}
+                      <div style={{ marginTop: 12 }}>
+                        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                          {[0, 1, 2, 3].map(i => <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i < pwStrength ? strengthColors[pwStrength - 1] : 'rgba(255,255,255,0.05)', transition: 'all 0.3s' }} />)}
                         </div>
-                        <span style={{ fontSize: 11, color: pwStrength > 0 ? strengthColors[pwStrength - 1] : 'var(--muted)', fontWeight: 700 }}>{pwStrength > 0 ? strengthLabels[pwStrength - 1] : 'Enter password'}</span>
+                        <span style={{ fontSize: 11, color: pwStrength > 0 ? strengthColors[pwStrength - 1] : 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>Entropy: {pwStrength > 0 ? strengthLabels[pwStrength - 1] : 'Analyzing...'}</span>
                       </div>
                     )}
                   </div>
+
                   <div className="form-group">
-                    <label className="form-label">Confirm New Password</label>
-                    <input type="password" className="input" value={pwForm.confirmPassword} onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))} required autoComplete="new-password"
-                      style={{ borderColor: pwForm.confirmPassword && pwForm.confirmPassword !== pwForm.newPassword ? 'rgba(255,107,107,0.5)' : undefined }} />
+                    <label style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10, display: 'block' }}>Confirm New Cipher</label>
+                    <input type="password" className="auth-input" value={pwForm.confirmPassword} onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))} required autoComplete="new-password"
+                      style={{ height: 56, borderRadius: 16, borderColor: pwForm.confirmPassword && pwForm.confirmPassword !== pwForm.newPassword ? 'rgba(255,107,107,0.5)' : undefined }} />
                     {pwForm.confirmPassword && pwForm.confirmPassword !== pwForm.newPassword && (
-                      <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 6 }}>Passwords don't match</div>
+                      <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 8, fontWeight: 700 }}>Mismatch detected in sequence</div>
                     )}
                   </div>
-                  <button type="submit" className="btn btn-primary" disabled={passwordMutation.isPending} style={{ width: isMobile ? '100%' : 180 }}>
-                    {passwordMutation.isPending ? 'Updating...' : <><Shield size={15} /> Update Password</>}
-                  </button>
+
+                  <div style={{ marginTop: 12 }}>
+                    <button type="submit" className="auth-button haptic-tap" disabled={passwordMutation.isPending} style={{ width: isMobile ? '100%' : 220, height: 56, fontSize: 15 }}>
+                      <div className="btn-glint" />
+                      {passwordMutation.isPending ? 'Recalibrating...' : <><Shield size={18} style={{ marginRight: 10 }} /> Finalize Protocol</>}
+                    </button>
+                  </div>
                 </form>
               </div>
-              <div className="card" style={{ background: 'linear-gradient(135deg, rgba(130,114,255,0.05), rgba(109,250,204,0.03))' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <div className="card-title" style={{ margin: 0 }}><ShieldCheck size={16} className="text-accent" /> Security Health</div>
-                  <div style={{ fontSize: 24, fontWeight: 900, color: securityHealth.score >= 70 ? 'var(--green)' : 'var(--orange)' }}>{securityHealth.score}%</div>
+
+              <div className="premium-card" style={{ padding: isMobile ? 24 : 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(130,114,255,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <ShieldCheck size={20} className="text-accent" />
+                    <div style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: -0.5 }}>Fortress Integrity</div>
+                  </div>
+                  <div style={{ fontSize: 32, fontWeight: 900, fontFamily: 'Syne', color: securityHealth.score >= 70 ? 'var(--green)' : 'var(--orange)' }}>{securityHealth.score}%</div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16, marginBottom: 40 }}>
                   {securityHealth.checks.map(c => (
-                    <div key={c.id} style={{ background: 'var(--surface2)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                      {c.status ? <CheckCircle2 size={16} color="var(--green)" /> : <AlertCircle size={16} color="var(--orange)" />}
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>{c.label}</span>
+                    <div key={c.id} className="glass" style={{ padding: '16px 20px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.02)' }}>
+                      {c.status ? <CheckCircle2 size={18} color="var(--green)" /> : <AlertCircle size={18} color="var(--orange)" />}
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{c.label}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="card-title" style={{ fontSize: 12, opacity: 0.6, marginBottom: 12 }}>Recent Activity Logging</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20, display: 'block' }}>Neutralization Logs</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {securityHistory.logs.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 20, color: 'var(--muted)', fontSize: 13 }}>No recent security events</div>
+                    <div style={{ textAlign: 'center', padding: 32, color: 'var(--muted)', fontSize: 14, fontStyle: 'italic' }}>No intercepted threats recorded</div>
                   ) : (
                     securityHistory.logs.slice(0, 5).map((log, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, fontSize: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <Shield size={12} style={{ color: log.status === 'success' ? 'var(--green)' : 'var(--red)' }} />
-                          <span style={{ fontWeight: 700 }}>{log.action.replace('_', ' ')}</span>
-                          <span style={{ color: 'var(--muted)', fontSize: 10 }}>• {log.ip || '0.0.0.0'}</span>
+                      <div key={i} className="glass" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', background: 'rgba(255,255,255,0.01)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.03)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <Shield size={14} style={{ color: log.status === 'success' ? 'var(--green)' : 'var(--red)' }} />
+                          <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 }}>{log.action.replace('_', ' ')}</span>
+                          <span style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 600 }}>IP: {log.ip || '0.0.0.0'}</span>
                         </div>
-                        <div style={{ color: 'var(--muted)', fontSize: 11 }}>{format(new Date(log.createdAt), 'MMM d, HH:mm')}</div>
+                        <div style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 800 }}>{format(new Date(log.createdAt), 'MMM d, HH:mm')}</div>
                       </div>
                     ))
                   )}
                 </div>
               </div>
 
-              <div className="card">
+              <div className="premium-card" style={{ padding: 24, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
                 <SessionManager />
               </div>
 
-              <div className="card" style={{ background: 'rgba(95,250,209,0.04)', border: '1px solid rgba(95,250,209,0.15)' }}>
-                <div className="card-title" style={{ marginBottom: 16, color: 'var(--green)' }}><Shield size={14} /> Global Protection Status</div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
+              <div className="premium-card" style={{ padding: 24, borderRadius: 32, border: '1px solid rgba(34,197,94,0.1)', background: 'rgba(34,197,94,0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                  <Shield size={18} className="text-green" />
+                  <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Active Protocols</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
                   {[
-                    { label: 'Account Status', value: 'Active & Secure', icon: '✅' },
-                    { label: 'Login Protection', value: 'Limited (20/15min)', icon: '🔒' },
-                    { label: 'Token Expiry', value: '7 days', icon: '⏱' },
-                    { label: 'NoSQL Injection', value: 'Sanitised', icon: '🛡️' },
-                    { label: 'Password Hash', value: 'bcrypt 12', icon: '🔑' },
-                    { label: 'Encryption', value: 'AES-256', icon: '🔐' },
+                    { label: 'Cloud Synchrony', value: 'Active', icon: '☁️' },
+                    { label: 'Brute-Force Shield', value: 'Engaged', icon: '🔒' },
+                    { label: 'Session Integrity', value: 'Validated', icon: '⏱' },
+                    { label: 'Injection Sanitizer', value: 'Total', icon: '🛡️' },
+                    { label: 'Entropy Vault', value: 'Bcrypt 12', icon: '🔑' },
+                    { label: 'Encryption Engine', value: 'AES-256', icon: '🔐' },
                   ].map(s => (
-                    <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, padding: '10px 14px', background: 'var(--surface2)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                      <span style={{ color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>{s.icon} {s.label}</span>
-                      <span style={{ fontWeight: 700, color: 'var(--green)', fontSize: 10 }}>{s.value}</span>
+                    <div key={s.label} className="glass" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <span style={{ color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, fontWeight: 600 }}>{s.icon} {s.label}</span>
+                      <span style={{ fontWeight: 900, color: 'var(--green)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>{s.value}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="card" style={{ background: 'rgba(130,114,255,0.04)', border: '1px solid rgba(130,114,255,0.1)' }}>
-                <div className="card-title mb-4"><Fingerprint size={14} className="text-accent" /> Privacy & Data Portability</div>
-                <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20, lineHeight: 1.5 }}>
-                  In accordance with GDPR, you have the right to access your data and be forgotten.
+              <div className="premium-card" style={{ padding: 32, borderRadius: 32, border: '1px solid rgba(124,109,250,0.1)', background: 'rgba(124,109,250,0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <Fingerprint size={18} className="text-accent" />
+                  <div style={{ fontSize: 15, fontWeight: 800, color: 'white', textTransform: 'uppercase', letterSpacing: 1.5 }}>Cognitive Privacy</div>
+                </div>
+                <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24, lineHeight: 1.6 }}>
+                  You retain total dominance over your data. Export your consciousness or initiate a total purge at any time.
                 </p>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <button onClick={handleExportData} className="btn btn-ghost" style={{ flex: 1, minWidth: 160, fontSize: 12 }}>
-                    <Download size={14} /> Export My Data (JSON)
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <button onClick={handleExportData} className="btn glass haptic-tap" style={{ flex: 1, minWidth: 200, height: 50, fontSize: 13, borderRadius: 14, fontWeight: 800 }}>
+                    <Download size={16} /> Export Consciousness (.json)
                   </button>
-                  <button onClick={handleDeleteAccount} className="btn btn-danger" style={{ flex: 1, minWidth: 160, fontSize: 12, background: 'rgba(255,107,107,0.1)', color: 'var(--red)', border: '1px solid rgba(255,107,107,0.2)' }}>
-                    <AlertCircle size={14} /> Delete My Account
+                  <button onClick={handleDeleteAccount} className="btn haptic-tap" style={{ flex: 1, minWidth: 200, height: 50, fontSize: 13, borderRadius: 14, fontWeight: 800, background: 'rgba(255,107,107,0.1)', color: 'var(--red)', border: '1px solid rgba(255,107,107,0.2)' }}>
+                    <AlertCircle size={16} /> Permanent Deletion
                   </button>
                 </div>
               </div>
@@ -725,15 +777,19 @@ export default function ProfilePage() {
 
           {/* ── APPEARANCE ────────────────────────────── */}
           {activeTab === 'appearance' && (
-            <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
-              <div className="card-title" style={{ marginBottom: 20 }}><Palette size={15} className="text-accent" /> Zenith Theme Customization</div>
-              <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 32, lineHeight: 1.6 }}>
-                Personalize your workspace with a theme that matches your energy. Changes are applied instantly.
+            <div className="premium-card aura-iridescent" style={{ padding: isMobile ? 24 : 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+                <Palette size={20} className="text-accent" />
+                <div style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: -0.5 }}>Atmospheric Protocol</div>
+              </div>
+              
+              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', marginBottom: 40, lineHeight: 1.6, maxWidth: 600 }}>
+                Calibrate your neural interface with a custom spectrum. Changes are synchronized across your consciousness.
               </p>
 
-              <div className="form-group mb-8">
-                <label className="form-label" style={{ marginBottom: 16 }}>Zenith Palette</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))', gap: 16 }}>
+              <div style={{ marginBottom: 40 }}>
+                <label style={{ fontSize: 12, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20, display: 'block' }}>Neutralized Spectrum</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 20 }}>
                   {[
                     { name: 'DayFlow', color: '#8272ff' },
                     { name: 'Sunset', color: '#ff6b8b' },
@@ -744,69 +800,51 @@ export default function ProfilePage() {
                     { name: 'Iris', color: '#a78bfa' },
                     { name: 'Crimson', color: '#fb7185' },
                   ].map(p => (
-                    <motion.button
-                      key={p.color}
-                      whileHover={{ scale: 1.1, y: -2 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setAccent(p.color)}
-                      style={{
-                        width: '100%',
-                        aspectRatio: '1',
-                        background: p.color,
-                        border: accent === p.color ? '3px solid white' : 'none',
-                        borderRadius: 14,
-                        cursor: 'pointer',
-                        boxShadow: accent === p.color ? `0 0 20px ${p.color}88` : 'none',
-                        transition: 'box-shadow 0.3s ease'
-                      }}
-                      title={p.name}
-                    />
+                    <div key={p.color} style={{ textAlign: 'center' }}>
+                      <motion.button
+                        whileHover={{ scale: 1.1, y: -4 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setAccent(p.color)}
+                        style={{
+                          width: '100%',
+                          aspectRatio: '1',
+                          background: p.color,
+                          border: '4px solid rgba(255,255,255,0.1)',
+                          borderRadius: 20,
+                          cursor: 'pointer',
+                          boxShadow: accent === p.color ? `0 15px 35px ${p.color}44` : 'none',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {accent === p.color && (
+                          <motion.div 
+                            layoutId="accent-check"
+                            style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)' }}
+                          >
+                            <CheckCircle2 size={24} color="white" />
+                          </motion.div>
+                        )}
+                        <div className="btn-glint" />
+                      </motion.button>
+                      <div style={{ marginTop: 10, fontSize: 11, fontWeight: 800, color: accent === p.color ? 'white' : 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{p.name}</div>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              <div className="grid-2 mb-8">
-                <div className="form-group">
-                  <label className="form-label">Custom Accent</label>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <div style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
-                      background: accent,
-                      border: '1px solid var(--border)',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}>
-                      <input
-                        type="color"
-                        value={accent}
-                        onChange={(e) => setAccent(e.target.value)}
-                        style={{ position: 'absolute', inset: -10, width: 80, height: 80, cursor: 'pointer', border: 'none' }}
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      className="input"
-                      value={accent.toUpperCase()}
-                      onChange={(e) => setAccent(e.target.value)}
-                      placeholder="#000000"
-                      style={{ fontFamily: 'DM Mono, monospace', fontSize: 13, textTransform: 'uppercase' }}
-                    />
+              <div className="glass" style={{ padding: 24, borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Moon size={20} className="text-accent" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>Luminosity Mode</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>Zenith is optimized for deep work in low-light environments.</div>
                   </div>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Interface Mode</label>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button className="btn btn-ghost" style={{ flex: 1, cursor: 'default', opacity: 0.5 }}>
-                      <Moon size={14} /> Always Dark
-                    </button>
-                    <button className="btn btn-ghost" style={{ flex: 1, cursor: 'not-allowed' }} disabled>
-                      <Sun size={14} /> Light Mode (Soon)
-                    </button>
-                  </div>
-                </div>
+                <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', background: 'rgba(130,114,255,0.1)', padding: '6px 12px', borderRadius: 10, border: '1px solid rgba(130,114,255,0.2)' }}>PERMANENT DARK</div>
               </div>
 
               <div className="card" style={{ background: 'var(--surface2)', border: '1px dashed var(--border)', padding: '24px', textAlign: 'center' }}>
@@ -826,43 +864,64 @@ export default function ProfilePage() {
 
           {/* ── FOCUS ─────────────────────────────────── */}
           {activeTab === 'pomodoro' && (
-            <div className="card" style={{ maxWidth: 800, margin: '0 auto' }}>
-              <div className="card-title" style={{ marginBottom: 28 }}><Timer size={15} style={{ color: 'var(--green)' }} /> Focus Timer Settings</div>
-              <form onSubmit={handleProfileSave}>
+            <div className="premium-card aura-iridescent" style={{ padding: isMobile ? 24 : 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
+                <Timer size={20} className="text-green" />
+                <div style={{ fontSize: 18, fontWeight: 800, color: 'white', letterSpacing: -0.5 }}>Temporal Calibration</div>
+              </div>
+              
+              <form onSubmit={handleProfileSave} style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
                 {[
-                  { key: 'pomodoroWork', label: 'Focus Duration', hint: 'Recommended: 25 min', icon: Brain, color: 'var(--accent)', max: 90 },
-                  { key: 'pomodoroBreak', label: 'Short Break', hint: 'Recommended: 5 min', icon: Coffee, color: 'var(--green)', max: 30 },
-                  { key: 'pomodoroLong', label: 'Long Break', hint: 'Recommended: 15 min', icon: Trees, color: 'var(--accent2)', max: 60 },
+                  { key: 'pomodoroWork', label: 'Neural Focus Depth', hint: 'Deep integration period', icon: Brain, color: '#7c6dfa', max: 90 },
+                  { key: 'pomodoroBreak', label: 'Cognitive Recovery', hint: 'Short system cooldown', icon: Coffee, color: '#22c55e', max: 30 },
+                  { key: 'pomodoroLong', label: 'Buffer Expansion', hint: 'Extended recalibration', icon: Trees, color: '#4facfe', max: 60 },
                 ].map(f => (
-                  <div key={f.key} className="form-group" style={{ marginBottom: 28 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <label className="form-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <f.icon size={15} style={{ color: f.color }} /> {f.label}
-                        <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: 11 }}>{f.hint}</span>
-                      </label>
-                      <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 24, color: f.color }}>
-                        {profileForm[f.key]}<span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)', marginLeft: 3 }}>min</span>
+                  <div key={f.key} className="form-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                          <f.icon size={18} style={{ color: f.color }} />
+                          <label style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>{f.label}</label>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>{f.hint}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontFamily: 'Syne', fontSize: 32, fontWeight: 900, color: f.color, lineHeight: 1 }}>{profileForm[f.key]}</span>
+                        <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--muted)', marginLeft: 4, textTransform: 'uppercase' }}>MIN</span>
                       </div>
                     </div>
-                    <div style={{ position: 'relative', height: 8, marginBottom: 6 }}>
-                      <div style={{ position: 'absolute', inset: 0, background: 'var(--surface2)', borderRadius: 4, border: '1px solid var(--border)' }} />
-                      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${(profileForm[f.key] / f.max) * 100}%`, background: `linear-gradient(90deg,${f.color}88,${f.color})`, borderRadius: 4, transition: 'width 0.15s ease' }} />
+                    
+                    <div style={{ position: 'relative', height: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(profileForm[f.key] / f.max) * 100}%` }}
+                        style={{ height: '100%', background: f.color, borderRadius: 20, boxShadow: `0 0 15px ${f.color}44` }} 
+                      />
+                      <input 
+                        type="range" min={1} max={f.max} 
+                        value={profileForm[f.key]} 
+                        onChange={e => setProfileForm(p => ({ ...p, [f.key]: parseInt(e.target.value) }))} 
+                        style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 10, width: '100%' }} 
+                      />
                     </div>
-                    <input type="range" min={1} max={f.max} value={profileForm[f.key]} onChange={e => setProfileForm(p => ({ ...p, [f.key]: parseInt(e.target.value) }))} style={{ width: '100%', marginTop: -4, opacity: 0, cursor: 'pointer', height: 24, position: 'relative', zIndex: 1 }} />
                   </div>
                 ))}
-                <div style={{ background: 'var(--surface2)', borderRadius: 14, padding: '16px 20px', marginBottom: 24, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Sparkles size={16} style={{ color: 'var(--accent)' }} />
+
+                <div className="glass" style={{ padding: 24, borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 20, background: 'rgba(130,114,255,0.03)' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 16, background: 'rgba(130,114,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Sparkles size={24} className="text-accent" />
+                  </div>
                   <div>
-                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>Full cycle: </span>
-                    <strong style={{ fontSize: 13 }}>
-                      {4 * profileForm.pomodoroWork + 3 * profileForm.pomodoroBreak + profileForm.pomodoroLong} min
-                    </strong>
-                    <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 6 }}>(4×focus + 3×short + 1×long)</span>
+                    <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Neural Sequence Total</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: 'white' }}>
+                      {4 * profileForm.pomodoroWork + 3 * profileForm.pomodoroBreak + profileForm.pomodoroLong} Minutes of Optimized Focus
+                    </div>
                   </div>
                 </div>
-                <button type="submit" className="btn btn-primary" disabled={profileMutation.isPending} style={{ width: isMobile ? '100%' : 180 }}>
-                  {profileMutation.isPending ? 'Syncing...' : <><Save size={15} /> Save Intervals</>}
+
+                <button type="submit" className="auth-button haptic-tap" disabled={profileMutation.isPending} style={{ width: isMobile ? '100%' : 240 }}>
+                  <div className="btn-glint" />
+                  {profileMutation.isPending ? 'Syncing...' : <><Save size={18} style={{ marginRight: 10 }} /> Store Protocol</>}
                 </button>
               </form>
             </div>
@@ -870,125 +929,103 @@ export default function ProfilePage() {
 
           {/* ── STATS ─────────────────────────────────── */}
           {activeTab === 'stats' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1000, margin: '0 auto' }}>
-              {/* Score + heatmap hero */}
-              <div className="card" style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center', justifyContent: isMobile ? 'center' : 'flex-start', padding: isMobile ? '20px' : '28px 32px', background: 'linear-gradient(135deg,rgba(130,114,255,0.06),rgba(109,250,204,0.04))' }}>
-                <ScoreRing score={productivityScore} size={isMobile ? 100 : 130} />
-                <div style={{ flex: 1, minWidth: 260, textAlign: isMobile ? 'center' : 'left' }}>
-                  <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 18, fontWeight: 800, marginBottom: 6 }}>Productivity Score</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.5 }}>
-                    Composite score based on tasks, focus, streak and badge progress.
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '8px 24px' }}>
-                    {[
-                      { label: 'Tasks (35%)', val: Math.min(tasksCompleted, 100) / 100 * 35, max: 35, color: 'var(--accent)' },
-                      { label: 'Focus (30%)', val: Math.min(focusMinutes / 60, 50) / 50 * 30, max: 30, color: 'var(--green)' },
-                      { label: 'Streak (20%)', val: Math.min(longestStreak, 30) / 30 * 20, max: 20, color: 'var(--orange)' },
-                      { label: 'Badges (15%)', val: (earnedCount / totalBadges) * 15, max: 15, color: '#ffd700' },
-                    ].map(b => (
-                      <div key={b.label}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted)', marginBottom: 3 }}>
-                          <span>{b.label}</span><span style={{ fontWeight: 700, color: b.color }}>{Math.round(b.val)}/{b.max}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              
+              <div className="premium-card aura-iridescent" style={{ padding: isMobile ? 24 : 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <ScoreRing score={productivityScore} size={isMobile ? 120 : 160} />
+                  <div style={{ flex: 1, minWidth: 280 }}>
+                    <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Composite Efficiency</div>
+                    <div style={{ fontFamily: 'Syne', fontSize: 32, fontWeight: 800, color: 'white', marginBottom: 16 }}>Productivity Score</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '20px 32px' }}>
+                      {[
+                        { label: 'Tasks (35%)', val: Math.min(tasksCompleted, 100) / 100 * 35, max: 35, color: '#7c6dfa' },
+                        { label: 'Focus (30%)', val: Math.min(focusMinutes / 60, 50) / 50 * 30, max: 30, color: '#22c55e' },
+                        { label: 'Streak (20%)', val: Math.min(longestStreak, 30) / 30 * 20, max: 20, color: '#f59e0b' },
+                        { label: 'Badges (15%)', val: (earnedCount / totalBadges) * 15, max: 15, color: '#ffd700' },
+                      ].map(b => (
+                        <div key={b.label}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', fontWeight: 800, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            <span>{b.label}</span><span style={{ color: b.color }}>{Math.round(b.val)}/{b.max}</span>
+                          </div>
+                          <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden' }}>
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(b.val / b.max) * 100}%` }} style={{ height: '100%', background: b.color, borderRadius: 10, boxShadow: `0 0 10px ${b.color}44` }} />
+                          </div>
                         </div>
-                        <div style={{ height: 4, background: 'var(--surface2)', borderRadius: 2, overflow: 'hidden' }}>
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${(b.val / b.max) * 100}%` }} transition={{ duration: 1 }} style={{ height: '100%', background: b.color, borderRadius: 2, boxShadow: `0 0 6px ${b.color}88` }} />
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Stat cards grid */}
-              <div className="stats-grid mb-6" style={{ gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 16 }}>
                 {[
-                  { label: 'Pomodoros', value: totalPomodoros, icon: '🍅', color: 'var(--accent)' },
-                  { label: 'Focus Time', value: `${Math.floor(focusMinutes / 60)}h ${focusMinutes % 60}m`, icon: '⏱', color: 'var(--green)' },
-                  { label: 'Tasks Done', value: tasksCompleted, icon: '✅', color: 'var(--accent2)' },
-                  { label: 'Best Streak', value: `${longestStreak}d`, icon: '🔥', color: 'var(--orange)' },
+                  { label: 'Pomodoros', value: totalPomodoros, icon: '🍅', color: '#7c6dfa' },
+                  { label: 'Focus Time', value: `${Math.floor(focusMinutes / 60)}h`, icon: '⏱', color: '#22c55e' },
+                  { label: 'Tasks Done', value: tasksCompleted, icon: '✅', color: '#4facfe' },
+                  { label: 'Best Streak', value: `${longestStreak}d`, icon: '🔥', color: '#f59e0b' },
                 ].map((s, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }} className="stat-card text-center p-4">
-                    <div style={{ fontSize: 'var(--fs-lg)', marginBottom: 4 }}>{s.icon}</div>
-                    <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 'var(--fs-xl)', fontWeight: 800, color: s.color }}>{s.value}</div>
-                    <div className="text-xs text-muted font-bold uppercase mt-1" style={{ fontSize: 9 }}>{s.label}</div>
+                  <motion.div key={i} whileHover={{ y: -5 }} className="premium-card" style={{ padding: 24, borderRadius: 24, textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ fontSize: 24, marginBottom: 12 }}>{s.icon}</div>
+                    <div style={{ fontFamily: 'Syne', fontSize: 28, fontWeight: 900, color: s.color }}>{s.value}</div>
+                    <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 4 }}>{s.label}</div>
                   </motion.div>
                 ))}
               </div>
 
-              {/* Growth & Predictions Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
-                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="card" style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '20px 24px' }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(46, 204, 113, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <TrendingUp size={24} color="var(--green)" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Performance Growth</div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
-                      <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)' }}>
-                        {analytics.growth > 0 ? `+${analytics.growth}%` : `${analytics.growth}%`}
-                      </span>
-                      <span style={{ fontSize: 12, color: analytics.growth >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>
-                        vs last week
-                      </span>
+              <div style={{ gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', display: 'grid', gap: 24 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  <div className="premium-card" style={{ padding: isMobile ? 20 : 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, position: 'relative', zIndex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <Brain size={20} className="text-accent" />
+                        <div style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>Neural Activity Map</div>
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2 }}>Synchrony Analysis</div>
                     </div>
-                  </div>
-                </motion.div>
-
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="card" style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '20px 24px', border: '1px solid var(--accent)' }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(130, 114, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Award size={24} color="var(--accent)" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Prediction Insight</div>
-                    <div style={{ marginTop: 4 }}>
-                      {analytics.predictions?.daysToNextMilestone === 0 ? (
-                        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--accent)' }}>
-                          Milestone Reached! ✨
+                    
+                    {activityData.length > 0 ? (
+                      <ActivityHeatmapYear data={activityData} isMobile={isMobile} onSelectDay={(date, log) => setSelectedDayData({ date, log })} />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed rgba(255,255,255,0.1)' }}>
+                        <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--grad-mesh-vibrant)', opacity: 0.1, margin: '0 auto 24px', position: 'relative' }}>
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Zap size={40} className="text-accent" style={{ opacity: 0.5 }} />
+                          </div>
                         </div>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>
-                            <span style={{ color: 'var(--accent)' }}>{analytics.predictions?.daysToNextMilestone} days</span> to reach {analytics.predictions?.nextStreakMilestone}d streak
-                          </div>
-                          <div style={{ height: 4, background: 'var(--surface2)', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
-                            <div style={{
-                              height: '100%',
-                              width: `${Math.max(10, 100 - (analytics.predictions?.daysToNextMilestone / 5) * 100)}%`,
-                              background: 'var(--accent)'
-                            }} />
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginBottom: 12, fontFamily: 'Syne' }}>Sequence Uninitiated</div>
+                        <p style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 400, margin: '0 auto 24px', lineHeight: 1.6 }}>
+                          Your neuro-activity logs are currently empty. Complete your first Tactical Objective or Habit to begin the synchronization.
+                        </p>
+                        <button className="auth-button haptic-tap" onClick={() => navigate('/tasks')} style={{ width: 'auto', padding: '0 32px', height: 48, fontSize: 13 }}>
+                          Initialize First Mission
+                        </button>
+                      </div>
+                    )}
 
-              {/* Activity heatmap + Side Analytics */}
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: 16 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div className="card">
-                    <ActivityHeatmapYear
-                      data={activityData}
-                      isMobile={isMobile}
-                      onSelectDay={(date, log) => setSelectedDayData({ date, log })}
-                    />
-                    <div style={{ marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
-                      <ActivityTimeline selectedDay={selectedDayData.date} data={selectedDayData.log} />
-                    </div>
+                    {activityData.length > 0 && (
+                      <div style={{ marginTop: 40, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 32 }}>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 20 }}>Event Timeline</div>
+                        <ActivityTimeline selectedDay={selectedDayData.date} data={selectedDayData.log} />
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <ProductivityCircle
-                    stats={{
-                      tasks: user?.stats?.tasksCompleted || 0,
-                      habits: user?.stats?.habitsCompleted || 0,
-                      focus: user?.stats?.totalPomodoros || 0,
-                      schedule: user?.stats?.totalScheduleEvents || 0
-                    }}
-                  />
-                  <ActivityTags />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  <div className="premium-card" style={{ padding: 24, borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(130,114,255,0.03)' }}>
+                    <ProductivityCircle
+                      stats={{
+                        tasks: user?.stats?.tasksCompleted || 0,
+                        habits: user?.stats?.habitsCompleted || 0,
+                        focus: user?.stats?.totalPomodoros || 0,
+                        schedule: user?.stats?.totalScheduleEvents || 0
+                      }}
+                    />
+                  </div>
+                  <div className="premium-card" style={{ padding: 24, borderRadius: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <ActivityTags />
+                  </div>
                 </div>
               </div>
             </div>
@@ -996,65 +1033,68 @@ export default function ProfilePage() {
 
           {/* ── BADGES ─────────────────────────────────── */}
           {activeTab === 'badges' && (
-            <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-              {/* Summary bar */}
-              <div className="card" style={{ padding: '20px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, background: 'linear-gradient(135deg,rgba(130,114,255,0.06),rgba(255,215,0,0.04))' }}>
-                <div>
-                  <div style={{ fontFamily: 'Syne,sans-serif', fontSize: isMobile ? 20 : 24, fontWeight: 800 }}>
-                    🏅 {earnedCount} <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: 16 }}>/ {totalBadges} earned</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              
+              <div className="premium-card aura-iridescent" style={{ padding: isMobile ? 24 : 32, borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(255,215,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,215,0,0.2)' }}>
+                    <Award size={32} color="#ffd700" />
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>Complete tasks, focus and habits to unlock more</div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Neural Achievements</div>
+                    <div style={{ fontFamily: 'Syne', fontSize: 32, fontWeight: 800, color: 'white' }}>
+                      {earnedCount} <span style={{ fontSize: 16, color: 'var(--muted)', fontWeight: 400 }}>/ {totalBadges} UNLOCKED</span>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 120, maxWidth: 220 }}>
-                  <div style={{ height: 10, background: 'var(--surface2)', borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${(earnedCount / totalBadges) * 100}%` }} transition={{ duration: 1, ease: 'easeOut' }} style={{ height: '100%', background: 'linear-gradient(90deg,#cd7f32,#ffd700,#e5e4e2)', borderRadius: 6, boxShadow: '0 0 10px rgba(255,215,0,0.4)' }} />
+                
+                <div style={{ flex: 1, minWidth: 200, maxWidth: 300 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 11, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                    <span>Progression</span>
+                    <span>{Math.round((earnedCount / totalBadges) * 100)}%</span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, textAlign: 'right' }}>{Math.round((earnedCount / totalBadges) * 100)}% complete</div>
+                  <div style={{ height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden' }}>
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${(earnedCount / totalBadges) * 100}%` }} style={{ height: '100%', background: 'linear-gradient(90deg, #cd7f32, #ffd700, #e5e4e2)', borderRadius: 10, boxShadow: '0 0 15px rgba(255,215,0,0.3)' }} />
+                  </div>
                 </div>
               </div>
 
               {byTier.map(({ tier, badges: tierBadges }) => {
                 const tc = TIER_CONFIG[tier];
                 return (
-                  <div key={tier} style={{ marginBottom: 28 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: tc.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${tc.glow}` }}>
-                        <Star size={14} color="white" fill="white" />
+                  <div key={tier}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: tc.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 16px ${tc.glow}` }}>
+                        <Star size={16} color="white" fill="white" />
                       </div>
-                      <span style={{ fontWeight: 800, fontSize: 14, color: tc.color, textTransform: 'uppercase', letterSpacing: 1.5 }}>{tc.label}</span>
-                      <span style={{ fontSize: 11, color: 'var(--muted)' }}>{tierBadges.filter(b => b.earned).length}/{tierBadges.length}</span>
+                      <span style={{ fontWeight: 900, fontSize: 14, color: tc.color, textTransform: 'uppercase', letterSpacing: 2 }}>{tc.label} CLASSIFICATION</span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill,minmax(190px,1fr))', gap: 12 }}>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
                       {tierBadges.map((badge, i) => (
                         <motion.div
                           key={badge.id}
-                          initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
-                          whileHover={{ scale: 1.03, y: -3 }}
+                          whileHover={{ y: -8, scale: 1.02 }}
                           style={{
-                            padding: 'var(--space-4) var(--space-4)', borderRadius: 16, textAlign: 'center', position: 'relative',
-                            background: badge.earned ? `linear-gradient(135deg,${tc.color}12,${tc.color}06)` : 'var(--surface)',
-                            border: `1.5px solid ${badge.earned ? tc.color + '44' : 'var(--border)'}`,
-                            boxShadow: badge.earned ? `0 4px 24px ${tc.glow}` : 'none',
-                            transition: 'all 0.3s ease',
+                            padding: 24, borderRadius: 24, textAlign: 'center', position: 'relative',
+                            background: badge.earned ? `linear-gradient(135deg, ${tc.color}15, transparent)` : 'rgba(255,255,255,0.02)',
+                            border: `1px solid ${badge.earned ? tc.color + '33' : 'rgba(255,255,255,0.05)'}`,
+                            boxShadow: badge.earned ? `0 10px 30px ${tc.glow}` : 'none',
+                            cursor: 'pointer'
                           }}
                         >
-                          {badge.earned && (
-                            <div style={{ position: 'absolute', top: 10, right: 10, width: 18, height: 18, borderRadius: '50%', background: tc.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 8px ${tc.glow}` }}>
-                              <CheckCircle2 size={11} color="white" />
-                            </div>
-                          )}
-                          <div style={{ fontSize: isMobile ? 32 : 40, marginBottom: 10, filter: badge.earned ? `drop-shadow(0 0 10px ${tc.color})` : 'grayscale(1) opacity(0.3)', transition: 'filter 0.3s ease' }}>
+                          <div style={{ fontSize: 48, marginBottom: 16, filter: badge.earned ? `drop-shadow(0 0 10px ${tc.color})` : 'grayscale(1) opacity(0.2)' }}>
                             {badge.earned ? badge.icon : '🔒'}
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: badge.earned ? 'var(--text)' : 'var(--muted)', marginBottom: 4 }}>
-                            {badge.earned ? badge.name : '???'}
+                          <div style={{ fontSize: 15, fontWeight: 800, color: badge.earned ? 'white' : 'var(--muted)', marginBottom: 6 }}>
+                            {badge.earned ? badge.name : 'HIDDEN LOG'}
                           </div>
-                          <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.4 }}>
-                            {badge.earned ? badge.description : 'Keep going to unlock'}
+                          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 12 }}>
+                            {badge.earned ? badge.description : 'Maintain sequence to unlock'}
                           </div>
                           {badge.earned && badge.earnedAt && (
-                            <div style={{ fontSize: 10, color: tc.color, marginTop: 8, fontWeight: 700 }}>
-                              ✓ {format(new Date(badge.earnedAt), 'MMM d, yyyy')}
+                            <div style={{ fontSize: 10, color: tc.color, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
+                              ACQUIRED • {format(new Date(badge.earnedAt), 'MMM d')}
                             </div>
                           )}
                         </motion.div>

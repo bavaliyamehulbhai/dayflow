@@ -12,42 +12,16 @@ import {
   Sun, Moon, Sunrise, Sunset, Flame, Check, CheckCircle2,
   ArrowRight, Clock as ClockIcon, Zap, Target, Trophy,
   Activity, History, Timer, Calendar, RefreshCw, FileText,
-  Sparkles, MousePointer2
+  Sparkles, MousePointer2, Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AICoach from '../components/AICoach';
 import ProductivityCircle from '../components/ProductivityCircle';
+import SensitivityShield from '../components/layout/SensitivityShield';
+import Skeleton, { CardSkeleton, ListSkeleton } from '../components/Skeleton';
+import MagneticButton from '../components/common/MagneticButton';
 
-// ─── Magnetic Effect Component ──────────────────────────────────────────────
-const MagneticButton = ({ children, className, onClick, style }) => {
-  const ref = useRef(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  const handleMouseMove = (e) => {
-    const { clientX, clientY } = e;
-    const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const x = clientX - (left + width / 2);
-    const y = clientY - (top + height / 2);
-    setPosition({ x, y });
-  };
-
-  const handleMouseLeave = () => setPosition({ x: 0, y: 0 });
-
-  return (
-    <motion.button
-      ref={ref}
-      className={className}
-      onClick={onClick}
-      style={{ ...style, position: 'relative' }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      animate={{ x: position.x * 0.2, y: position.y * 0.2 }}
-      transition={{ type: 'spring', stiffness: 150, damping: 15, mass: 0.1 }}
-    >
-      {children}
-    </motion.button>
-  );
-};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -106,46 +80,53 @@ function useCountUp(target, duration = 800) {
   return value;
 }
 
-function AnimatedStat({ value, label, color, icon: Icon }) {
+const AnimatedStat = React.memo(({ value, label, color, icon: Icon, onClick }) => {
   const animated = useCountUp(typeof value === 'number' ? value : 0);
   const display = typeof value === 'string' ? value : animated;
   return (
-    <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <div style={{ color, opacity: 0.8 }}><Icon size={20} /></div>
-      <div className="stat-value" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: 'var(--fs-2xl)' }}>
-        {display}
+    <div 
+      className="stat-card-premium gpu-accel haptic-tap" 
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    >
+      <div className="stat-card-glow" style={{ background: color }} />
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ color, opacity: 0.9, marginBottom: 4 }}><Icon size={24} /></div>
+        <SensitivityShield>
+          <div className="stat-value" style={{ color }}>{display}</div>
+        </SensitivityShield>
+        <div className="stat-label">{label}</div>
       </div>
-      <div className="stat-label" style={{ fontWeight: 600 }}>{label}</div>
     </div>
   );
-}
+});
 
 // ─── Skeleton loader ──────────────────────────────────────────────────────────
 function DashboardSkeleton() {
   const isMobile = window.innerWidth <= 768;
   return (
     <div className="responsive-container">
-      <div className="skeleton skeleton-text" style={{ width: 260, height: 36, marginBottom: 8 }} />
-      <div className="skeleton skeleton-text" style={{ width: 180, height: 18, marginBottom: 32 }} />
-      {/* Clock skeleton */}
-      <div className="skeleton" style={{ height: 160, borderRadius: 16, marginBottom: 24 }} />
-      {/* Stats skeleton */}
-      <div className="stats-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="skeleton" style={{ height: 110, borderRadius: 16 }} />
+      <Skeleton width="300px" height="48px" style={{ marginBottom: 8 }} />
+      <Skeleton width="200px" height="20px" style={{ marginBottom: 40 }} />
+      
+      {/* Clock Area */}
+      <Skeleton height="200px" borderRadius={24} style={{ marginBottom: 32 }} />
+
+      <div className="stats-grid" style={{ marginBottom: 32 }}>
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} height="120px" borderRadius={20} />
         ))}
       </div>
-      {/* Main grid skeleton */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 340px', gap: 24 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div className="skeleton" style={{ height: 280, borderRadius: 16 }} />
-          <div className="skeleton" style={{ height: 260, borderRadius: 16 }} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: 32 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+          <CardSkeleton />
+          <CardSkeleton />
         </div>
         {!isMobile && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div className="skeleton" style={{ height: 240, borderRadius: 16 }} />
-            <div className="skeleton" style={{ height: 220, borderRadius: 16 }} />
-            <div className="skeleton" style={{ height: 180, borderRadius: 16 }} />
+             <div className="card glass-card" style={{ height: 300 }}><Skeleton height="100%" /></div>
+             <div className="card glass-card" style={{ height: 200 }}><Skeleton height="100%" /></div>
           </div>
         )}
       </div>
@@ -153,11 +134,38 @@ function DashboardSkeleton() {
   );
 }
 
+const AuraOrb = ({ color, size, top, left, delay, duration = 15 }) => (
+  <motion.div
+    animate={{
+      x: [0, 50, -30, 0],
+      y: [0, -40, 60, 0],
+      scale: [1, 1.2, 0.9, 1],
+      opacity: [0.1, 0.2, 0.1]
+    }}
+    transition={{
+      duration,
+      repeat: Infinity,
+      ease: "easeInOut",
+      delay
+    }}
+    style={{
+      position: 'absolute',
+      width: size,
+      height: size,
+      background: color,
+      borderRadius: '50%',
+      filter: 'blur(80px)',
+      zIndex: -1,
+      top,
+      left,
+      pointerEvents: 'none',
+      willChange: 'transform, opacity'
+    }}
+  />
+);
+
 function Clock() {
   const [time, setTime] = useState(new Date());
-  const width = useWindowWidth();
-  const isMobile = width <= 768;
-
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
@@ -167,32 +175,58 @@ function Clock() {
   const pct = Math.min(100, Math.max(0, ((hours - 6) * 60 + time.getMinutes()) / (17 * 60) * 100));
 
   let GreetingIcon = Sunrise;
-  if (hours >= 12 && hours < 17) GreetingIcon = Sun;
-  if (hours >= 17 && hours < 22) GreetingIcon = Sunset;
-  if (hours >= 22 || hours < 6) GreetingIcon = Moon;
+  if (hours >= 12) GreetingIcon = Sunrise; // Good Morning
+  if (hours >= 17) GreetingIcon = Sun;     // Good Afternoon
+  if (hours >= 19) GreetingIcon = Sunset;  // Good Evening
+  if (hours >= 23) GreetingIcon = Moon;    // Good Night
 
   return (
-    <div className="card clock-card" style={{ textAlign: 'center', padding: isMobile ? '20px 14px' : '32px 24px', position: 'relative', overflow: 'hidden' }}>
-      <div className="greeting-icon-bg" style={{ position: 'absolute', top: -10, right: -10, opacity: 0.1 }}>
-        <GreetingIcon size={isMobile ? 80 : 120} />
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      className="clock-card-premium"
+    >
+      <div className="greeting-icon-bg" style={{ color: 'var(--accent)' }}>
+        <GreetingIcon size={window.innerWidth <= 768 ? 64 : 120} />
       </div>
-      <div className="clock-time" style={{ fontSize: isMobile ? 'clamp(1.8rem, 8vw, 3rem)' : 'var(--fs-3xl)', letterSpacing: isMobile ? '-1px' : '-3px' }}>
-        {format(time, 'hh:mm:ss a')}
-      </div>
-      <div className="clock-date" style={{ fontSize: isMobile ? '10px' : 'var(--fs-xs)', letterSpacing: isMobile ? '1px' : '3px', marginTop: 6 }}>
-        {format(time, 'EEEE, MMMM d, yyyy')}
-      </div>
-      <div style={{ marginTop: 'var(--space-4)' }}>
-        <div style={{ height: 6, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden' }}>
-          <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--accent2))', borderRadius: 3, boxShadow: '0 0 15px rgba(130,114,255,0.5)', transition: 'width 1s linear' }} />
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1, ease: "easeOut" }}
+      >
+        <div className="clock-time-display">
+          {format(time, 'HH:mm:ss')}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted)', marginTop: 8, fontWeight: 500 }}>
-          <span>6 AM</span>
-          <span style={{ color: 'var(--text2)' }}>{Math.round(pct)}% complete</span>
-          <span>11 PM</span>
+        <div className="clock-date-display">
+          {format(time, 'EEEE, MMMM do')}
+        </div>
+      </motion.div>
+
+      <div style={{ marginTop: '48px', maxWidth: '800px', margin: '48px auto 0' }}>
+        <div style={{ height: 6, background: 'rgba(255,255,255,0.03)', borderRadius: 3, overflow: 'hidden' }}>
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 2, ease: "circOut" }}
+            style={{ 
+              height: '100%', 
+              background: 'var(--grad-premium)', 
+              borderRadius: 3, 
+              boxShadow: '0 0 25px var(--accent-glow)'
+            }} 
+          />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', marginTop: 16, fontWeight: 800, letterSpacing: '0.1em' }}>
+          <span>SUNRISE</span>
+          <span style={{ color: 'var(--text)', background: 'rgba(124, 109, 250, 0.1)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(124, 109, 250, 0.2)' }}>
+            {Math.round(pct)}% JOURNEY COMPLETE
+          </span>
+          <span>SUNSET</span>
         </div>
       </div>
-    </div >
+    </motion.div>
   );
 }
 
@@ -246,11 +280,13 @@ export default function DashboardPage() {
   const completionPct = taskTotal ? Math.round((taskCompleted / taskTotal) * 100) : 0;
 
   const hours = new Date().getHours();
-  let greeting = 'Good Morning';
-  let GreetingIcon = Sunrise;
-  if (hours >= 12 && hours < 17) { greeting = 'Good Afternoon'; GreetingIcon = Sun; }
-  else if (hours >= 17 && hours < 22) { greeting = 'Good Evening'; GreetingIcon = Sunset; }
-  else if (hours >= 22 || hours < 6) { greeting = 'Good Night'; GreetingIcon = Moon; }
+  let greeting = 'Good Day';
+  let GreetingIcon = Zap;
+  
+  if (hours >= 12) { greeting = 'Good Morning'; GreetingIcon = Sunrise; }
+  if (hours >= 17) { greeting = 'Good After Noon'; GreetingIcon = Sun; }
+  if (hours >= 19) { greeting = 'Good Evening'; GreetingIcon = Sunset; }
+  if (hours >= 23) { greeting = 'Good Night'; GreetingIcon = Moon; }
 
   const MobileFeed = () => {
     const nextEvent = d?.schedule?.today?.find(ev => {
@@ -261,54 +297,54 @@ export default function DashboardPage() {
     });
 
     const topTask = d?.tasks?.today?.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2))[0];
-    const pendingHabits = d?.habits?.list?.filter(h => !h.completedToday);
-
+    
     return (
-      <div className="mobile-feed">
-        {/* Next Up Moment */}
+      <div className="feed-grid" style={{ gap: 12 }}>
         {nextEvent && (
-          <div className="feed-item next-up" onClick={() => navigate('/schedule')}>
-            <div className="feed-label">Next Up</div>
-            <div className="feed-content">
-              <div className="feed-time">{nextEvent.startTime}</div>
-              <div className="feed-title">{nextEvent.title}</div>
+          <div className="feed-item-premium glass-holographic hover-lift haptic-tap" onClick={() => navigate('/schedule')} style={{ border: '1px solid rgba(124, 109, 250, 0.2)' }}>
+            <div className="flex-between">
+              <div className="feed-label" style={{ color: 'var(--accent)' }}>UPCOMING</div>
+              <ClockIcon size={12} className="color-muted" />
             </div>
-            <ArrowRight size={18} className="feed-arrow" />
+            <div className="text-xl fw-extrabold ls-tighter mt-2 color-accent">{nextEvent.startTime}</div>
+            <div className="text-sm fw-bold opacity-90 truncate">{nextEvent.title}</div>
           </div>
         )}
-
-        {/* Top Objective */}
         {topTask && (
-          <div className="feed-item priority-task" onClick={() => navigate('/tasks')}>
-            <div className="feed-label">Primary Objective</div>
-            <div className="feed-content">
-              <div className={`feed-priority-tag priority-${topTask.priority}`}>{topTask.priority.toUpperCase()}</div>
-              <div className="feed-title">{topTask.title}</div>
+          <div className="feed-item-premium glass-holographic hover-lift haptic-tap" onClick={() => navigate('/tasks')} style={{ border: '1px solid rgba(251, 146, 60, 0.2)' }}>
+            <div className="flex-between">
+              <div className="feed-label" style={{ color: 'var(--orange)' }}>PRIORITY</div>
+              <Zap size={12} className="color-muted" />
             </div>
+            <div className={`badge badge-${topTask.priority} mt-2 mb-1`}>{topTask.priority.toUpperCase()}</div>
+            <div className="text-sm fw-bold truncate">{topTask.title}</div>
           </div>
         )}
-
-        {/* Rituals Progress */}
-        <div className="feed-item habits-glance" onClick={() => navigate('/habits')}>
-          <div className="feed-label">Rituals for Today</div>
-          <div className="feed-habits-grid">
+        <div className="feed-item-premium glass-holographic hover-lift haptic-tap" onClick={() => navigate('/habits')} style={{ border: '1px solid rgba(0, 242, 254, 0.2)' }}>
+          <div className="flex-between">
+            <div className="feed-label" style={{ color: 'var(--accent3)' }}>FLOW</div>
+            <RefreshCw size={12} className="color-muted" />
+          </div>
+          <div className="flex-items-center gap-2 mt-3">
             {d?.habits?.list?.slice(0, 4).map(h => (
-              <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done' : ''}`} style={{ borderColor: h.color, '--habit-color': h.color }}>
-                {h.icon}
+              <div key={h._id} className={`feed-habit-dot ${h.completedToday ? 'done success-pop' : ''}`} style={{ 
+                width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13,
+                background: h.completedToday ? h.color : 'rgba(255,255,255,0.03)',
+                border: h.completedToday ? 'none' : '1px solid var(--border)'
+              }}>
+                {h.completedToday ? <Check size={14} color="white" strokeWidth={3} /> : h.icon}
               </div>
             ))}
-            {d?.habits?.total > 4 && <div className="feed-habit-more">+{d.habits.total - 4}</div>}
           </div>
         </div>
-
-        {/* Quick Knowledge */}
         {d?.notes?.recent?.length > 0 && (
-          <div className="feed-item recent-note" onClick={() => navigate('/notes')}>
-            <div className="feed-label">Refine Knowledge</div>
-            <div className="feed-content">
-              <FileText size={16} className="text-muted" />
-              <div className="feed-note-title">{d.notes.recent[0].title}</div>
+          <div className="feed-item-premium glass-holographic hover-lift haptic-tap" onClick={() => navigate('/notes')} style={{ border: '1px solid rgba(255, 77, 125, 0.2)' }}>
+            <div className="flex-between">
+              <div className="feed-label" style={{ color: 'var(--accent2)' }}>BRAIN DUMP</div>
+              <Sparkles size={12} className="color-muted" />
             </div>
+            <div className="text-sm fw-bold truncate mt-2">{d.notes.recent[0].title}</div>
+            <div className="text-xs color-muted mt-1 opacity-70">Recently archived</div>
           </div>
         )}
       </div>
@@ -317,26 +353,36 @@ export default function DashboardPage() {
 
   return (
     <div className="responsive-container">
-      <div className="page-header mb-6">
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="page-title flex items-center gap-3" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: isMobile ? 'clamp(1.1rem, 5vw, 1.6rem)' : undefined }}>
-            <GreetingIcon className="text-accent" size={isMobile ? 20 : 32} style={{ flexShrink: 0 }} />
-            {greeting}, {user?.name?.split(' ')[0]}
+      <div className="dashboard-header" style={{ position: 'relative', overflow: 'visible' }}>
+        <AuraOrb color="var(--accent)" size={300} top="-100px" left="-50px" delay={0} />
+        <AuraOrb color="var(--accent2)" size={250} top="20px" left="200px" delay={2} duration={12} />
+        <AuraOrb color="var(--accent3)" size={200} top="-40px" left="400px" delay={4} duration={18} />
+        <div className="flex-items-center gap-4">
+          <GreetingIcon className="text-accent aura-float" size={isMobile ? 28 : 44} style={{ filter: 'drop-shadow(0 0 15px var(--accent-glow))' }} />
+          <div className="dashboard-title text-display truncate" style={{ fontSize: 'var(--fs-2xl)' }}>
+            {greeting}, <span className="holographic-text" style={{ 
+              background: 'linear-gradient(135deg, var(--text) 0%, var(--accent) 50%, var(--text) 100%)',
+              backgroundSize: '200% auto',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              animation: 'organicShimmer 8s linear infinite'
+            }}>{user?.name?.split(' ')[0]}</span>
           </div>
-          <p className="page-subtitle">Your productivity pulse for today</p>
         </div>
+        <p className="page-subtitle fw-semibold color-muted mt-2 ls-wide">
+          Synchronizing your productivity pulse for today
+        </p>
       </div>
 
       {/* Clock */}
       <Clock />
 
-      {/* Stats Row */}
-      <div className="stats-grid mt-6">
+      <div className="stats-grid-auto">
         {[
-          { label: 'Tasks', value: d?.tasks?.summary?.completed || 0, color: 'var(--green)', icon: CheckCircle2 },
-          { label: 'Pending', value: d?.tasks?.summary?.pending || 0, color: 'var(--yellow)', icon: Zap },
-          { label: 'Focus', value: d?.pomodoro?.todayMinutes || 0, color: 'var(--accent)', icon: Timer },
-          { label: 'Rituals', value: `${d?.habits?.completedToday || 0}/${d?.habits?.total || 0}`, color: 'var(--accent3)', icon: Trophy },
+          { label: 'Tasks', value: d?.tasks?.summary?.completed || 0, color: 'var(--green)', icon: CheckCircle2, onClick: () => navigate('/tasks?status=completed') },
+          { label: 'Pending', value: d?.tasks?.summary?.pending || 0, color: 'var(--yellow)', icon: Zap, onClick: () => navigate('/tasks?status=pending') },
+          { label: 'Focus', value: d?.pomodoro?.todayMinutes || 0, color: 'var(--accent)', icon: Timer, onClick: () => navigate('/pomodoro') },
+          { label: 'Rituals', value: `${d?.habits?.completedToday || 0}/${d?.habits?.total || 0}`, color: 'var(--accent3)', icon: Trophy, onClick: () => navigate('/habits') },
         ].map((s, i) => (
           <AnimatedStat key={i} {...s} />
         ))}
@@ -347,64 +393,133 @@ export default function DashboardPage() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="dashboard-main-grid"
+        className="dashboard-main-grid mt-6"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(24px, 4vw, 40px)', minWidth: 0 }}>
 
           {/* Activity Consistency Grid (LeetCode Style) */}
-          <motion.div variants={itemVariants} className="card" style={{ padding: '24px' }}>
+          <motion.div variants={itemVariants} className="card glass-holographic aura-iridescent" style={{ padding: '24px', border: 'none' }}>
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Activity size={16} className="text-accent" />
                 Consistency Tracker
               </div>
-              <button className="btn btn-sm btn-ghost" onClick={() => navigate('/profile')}>
+              <MagneticButton 
+                className="btn btn-sm btn-ghost haptic-feedback" 
+                onClick={() => navigate('/profile')}
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}
+              >
                 View Profile <ArrowRight size={14} style={{ marginLeft: 4 }} />
-              </button>
+              </MagneticButton>
             </div>
 
             <div style={{ marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
               <ActivityHeatmapYear data={Array.isArray(activityData) ? activityData : []} isMobile={isMobile} onSelectDay={(d, log) => setSelectedLog(log)} />
             </div>
 
+            {/* Selected Day Details */}
+            <AnimatePresence mode="wait">
+              {selectedLog && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className="selected-day-card mb-6" style={{ 
+                    padding: '20px', 
+                    background: 'linear-gradient(135deg, var(--surface2), var(--surface3))',
+                    borderRadius: 16,
+                    border: '1px solid var(--accent)',
+                    boxShadow: '0 0 20px rgba(95, 250, 209, 0.1)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+                          Inspecting Progress
+                        </div>
+                        <h3 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
+                          {format(new Date(selectedLog.date), 'EEEE, MMMM do')}
+                        </h3>
+                      </div>
+                      <button 
+                        className="btn btn-sm btn-ghost" 
+                        onClick={() => setSelectedLog(null)}
+                        style={{ padding: '4px 8px', fontSize: 11 }}
+                      >
+                        Clear Selection
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 12 }}>
+                      {[
+                        { label: 'Tasks', value: selectedLog.tasksCompleted, icon: CheckCircle2, sub: 'completed' },
+                        { label: 'Focus', value: `${selectedLog.focusMinutes}m`, icon: Timer, sub: 'session' },
+                        { label: 'Rituals', value: selectedLog.habitsCompleted, icon: Trophy, sub: 'done' },
+                        { label: 'Events', value: selectedLog.scheduleEventsCompleted, icon: Calendar, sub: 'attended' }
+                      ].map((s, idx) => (
+                        <div key={idx} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                            <s.icon size={14} style={{ color: 'var(--accent)' }} />
+                            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase' }}>{s.label}</span>
+                          </div>
+                          <div style={{ fontSize: 18, fontWeight: 800 }}>{s.value}</div>
+                          <div style={{ fontSize: 10, color: 'var(--muted)' }}>{s.sub}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Daily Activity Table */}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
-                Recent activity history
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 32 }}>
+              <h1 style={{ fontSize: isMobile ? '2rem' : '3.5rem', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em', margin: 0, lineHeight: 1 }}>
+                Mission <br />Control
+              </h1>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2 }}>
+                Sub-orbital activity logs
               </div>
-              <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px 80px 80px', padding: '10px 16px', borderRadius: 8, background: 'var(--surface2)', fontSize: 10, fontWeight: 700, color: 'var(--muted)', marginBottom: 8 }}>
-                <span>DATE</span>
-                <span className="text-center">TASKS</span>
-                <span className="text-center">FOCUS</span>
-                <span className="text-center">HABITS</span>
-                <span className="text-center">LEVEL</span>
+              <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 100px 80px', padding: '12px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', fontSize: 10, fontWeight: 800, color: 'var(--muted)', marginBottom: 12, letterSpacing: 1 }}>
+                <span>SOLAR DATE</span>
+                <span className="text-center">EXECUTIONS</span>
+                <span className="text-center">RECOVERY</span>
+                <span className="text-center">RITUALS</span>
+                <span className="text-center">SIGNATURE</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {(Array.isArray(activityData) ? activityData : []).slice(-5).reverse().map((log, i) => (
                   <div key={log.date} style={{
                     display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr auto' : '1fr 80px 80px 80px 80px',
-                    padding: '12px 16px',
+                    gridTemplateColumns: isMobile ? '1fr auto' : '1fr 100px 100px 100px 80px',
+                    padding: isMobile ? '16px 20px' : '16px 20px',
                     background: 'var(--surface2)',
-                    borderRadius: 10,
+                    borderRadius: 18,
                     alignItems: 'center',
-                    border: '1px solid var(--border)'
-                  }}>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{format(new Date(log.date), 'MMM d, yyyy')}</span>
+                    border: '1px solid var(--border)',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'var(--transition)'
+                  }} className="hover-lift">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{format(new Date(log.date), isMobile ? 'EEEE, MMM d' : 'MMMM do, yyyy')}</span>
+                        {isMobile && <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>{log.tasksCompleted} executions • {log.focusMinutes}m recovery</span>}
+                    </div>
                     {!isMobile && (
                       <>
-                        <span className="text-center" style={{ fontSize: 12, fontWeight: 700 }}>{log.tasksCompleted}</span>
-                        <span className="text-center" style={{ fontSize: 12, fontWeight: 700 }}>{log.focusMinutes}m</span>
-                        <span className="text-center" style={{ fontSize: 12, fontWeight: 700 }}>{log.habitsCompleted}</span>
+                        <span className="text-center" style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>{log.tasksCompleted}</span>
+                        <span className="text-center" style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent3)' }}>{log.focusMinutes}m</span>
+                        <span className="text-center" style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent2)' }}>{log.habitsCompleted}</span>
                       </>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
                       <div style={{
                         width: 14,
                         height: 14,
-                        borderRadius: 3,
-                        background: ['var(--surface3)', '#2ecc7133', '#2ecc7166', '#27ae6099', '#27ae60'][log.intensity || 0],
-                        border: '1px solid var(--border)'
+                        borderRadius: 4,
+                        background: ['var(--surface3)', 'var(--accent)', 'var(--accent4)', 'var(--accent3)', 'linear-gradient(135deg, var(--accent), var(--accent2))'][log.intensity || 0],
+                        border: '1px solid var(--border)',
+                        boxShadow: (log.intensity || 0) > 2 ? '0 0 10px var(--accent-glow)' : 'none'
                       }} />
                     </div>
                   </div>
@@ -414,7 +529,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Today's Tasks */}
-          <motion.div variants={itemVariants} className="card">
+          <motion.div variants={itemVariants} className="card glass-card">
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Target size={16} />
@@ -431,8 +546,9 @@ export default function DashboardPage() {
                 <span>Daily Progress</span>
                 <span style={{ color: 'var(--accent)' }}>{completionPct}%</span>
               </div>
-              <div style={{ height: 8, background: 'var(--bg)', borderRadius: 4, overflow: 'hidden' }}>
-                <div style={{ width: `${completionPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--green))', borderRadius: 4, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: 'var(--shadow-accent)' }} />
+              <div style={{ height: 10, background: 'var(--bg)', borderRadius: 5, overflow: 'hidden', position: 'relative' }}>
+                <div className="shimmer-sweep" style={{ position: 'absolute', inset: 0, zIndex: 1 }} />
+                <div style={{ width: `${completionPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--green))', borderRadius: 5, transition: 'width 1.2s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 0 15px var(--accent-glow)', position: 'relative', zIndex: 2 }} />
               </div>
             </div>
 
@@ -469,7 +585,7 @@ export default function DashboardPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
           {/* AI Coach */}
-          <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants} className="aura-float">
             <AICoach />
           </motion.div>
 
@@ -486,7 +602,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Today's Schedule */}
-          <motion.div variants={itemVariants} className="card">
+          <motion.div variants={itemVariants} className="card glass-card">
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Calendar size={16} />
@@ -531,7 +647,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Habits */}
-          <motion.div variants={itemVariants} className="card">
+          <motion.div variants={itemVariants} className="card glass-card">
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <RefreshCw size={16} />
@@ -572,7 +688,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Recent Notes */}
-          <motion.div variants={itemVariants} className="card">
+          <motion.div variants={itemVariants} className="card glass-card aura-iridescent">
             <div className="card-title" style={{ justifyContent: 'space-between', color: 'var(--text)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <FileText size={16} />
@@ -607,105 +723,6 @@ export default function DashboardPage() {
 
         </div>
       </motion.div>
-
-      <style>{`
-        /* Utility */
-        .text-accent { color: var(--accent); }
-        .clock-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at top right, rgba(130, 114, 255, 0.05), transparent 70%); pointer-events: none; }
-        
-        .clock-time {
-          font-family: 'Syne', sans-serif;
-          font-weight: 800;
-          font-size: clamp(2rem, 8vw, 4rem);
-          line-height: 1.1;
-          letter-spacing: -0.05em;
-        }
-
-        .clock-date {
-          color: var(--muted);
-          font-weight: 700;
-          font-size: clamp(0.75rem, 3vw, 1rem);
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-        }
-
-        /* Stats Grid Optimization */        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
-        }
-
-        @media (max-width: 768px) {
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-          }
-        }
-
-        /* Mobile Feed Styles */
-        .mobile-feed {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-          margin-top: 20px;
-        }
-
-        .feed-item {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 18px;
-          padding: 16px 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          position: relative;
-          box-shadow: var(--shadow-sm);
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .feed-item:active {
-          transform: scale(0.97);
-          background: var(--surface2);
-        }
-
-        .feed-label {
-          font-size: clamp(9px, 2.5vw, 11px);
-          font-weight: 800;
-          color: var(--muted);
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-        }
-
-        .feed-title {
-          font-size: clamp(15px, 4vw, 18px);
-          font-weight: 700;
-          color: var(--text);
-          line-height: 1.3;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .feed-note-title {
-          font-size: clamp(13px, 3.5vw, 16px);
-          font-weight: 600;
-          color: var(--text2);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .feed-content {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 0;
-        }
-
-        @media (min-width: 769px) {
-          .hover-lift:hover { transform: translateY(-2px); border-color: var(--border2); background: var(--surface3) !important; }
-        }
-      `}</style>
-    </div >
+    </div>
   );
 }

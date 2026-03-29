@@ -44,6 +44,7 @@ export const authAPI = {
   getSecurityHistory: () => api.get('/auth/security-history'),
   getSessions: () => api.get('/auth/sessions'),
   revokeSession: (id) => api.delete(`/auth/sessions/${id}`),
+  revokeAllSessions: () => api.delete('/auth/sessions/revoke/all'),
   exportData: () => api.get('/auth/export', { responseType: 'blob' }),
   deleteAccount: () => api.delete('/auth/account')
 };

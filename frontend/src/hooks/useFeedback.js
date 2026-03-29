@@ -7,53 +7,40 @@ const useFeedback = () => {
 
         try {
             const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
             const now = ctx.currentTime;
 
+            const createLayer = (freq, type, gainValue, delay, duration, rampFreq) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, now + delay);
+                if (rampFreq) osc.frequency.exponentialRampToValueAtTime(rampFreq, now + delay + duration);
+                
+                gain.gain.setValueAtTime(0, now + delay);
+                gain.gain.linearRampToValueAtTime(gainValue, now + delay + 0.02);
+                gain.gain.linearRampToValueAtTime(0, now + delay + duration);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + delay);
+                osc.stop(now + delay + duration);
+            };
+
             if (type === 'success') {
-                // Happy "bling" sound
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-
-                gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
-                gain.gain.linearRampToValueAtTime(0, now + 0.3);
-
-                osc.start(now);
-                osc.stop(now + 0.3);
+                // Harmonic "Bling" - Layered harmonic resonances
+                createLayer(880, 'sine', 0.08, 0, 0.4, 1320);
+                createLayer(1760, 'sine', 0.04, 0.05, 0.3);
             } else if (type === 'complete') {
-                // Deeper satisfaction sound
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.exponentialRampToValueAtTime(600, now + 0.05);
-                osc.frequency.exponentialRampToValueAtTime(400, now + 0.2);
-
-                gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.15, now + 0.05);
-                gain.gain.linearRampToValueAtTime(0, now + 0.4);
-
-                osc.start(now);
-                osc.stop(now + 0.4);
+                // Deep Satisfaction - Fundamental + sub-bass texture
+                createLayer(220, 'triangle', 0.12, 0, 0.6, 110);
+                createLayer(440, 'sine', 0.06, 0.02, 0.4);
             } else if (type === 'click') {
-                // Subtle tap
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(1200, now);
-
-                gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.05, now + 0.01);
-                gain.gain.linearRampToValueAtTime(0, now + 0.05);
-
-                osc.start(now);
-                osc.stop(now + 0.05);
+                // Tactile Tap - High freq transient + mid-body
+                createLayer(2000, 'sine', 0.04, 0, 0.03);
+                createLayer(400, 'sine', 0.02, 0, 0.05);
             }
         } catch (e) {
-            console.warn('Audio feedback failed', e);
+            console.warn('Sonic feedback failed', e);
         }
     }, []);
 

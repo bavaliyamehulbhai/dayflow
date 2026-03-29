@@ -11,11 +11,15 @@ import {
   FileText,
   Settings,
   LogOut,
-  User
+  User,
+  Shield,
+  ShieldOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CommandPalette from './CommandPalette';
 import ShortcutsHelp from './ShortcutsHelp';
+import ShortcutOverlay from './ShortcutOverlay';
+import { useSecurity } from '../../context/SecurityGuard';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
@@ -38,6 +42,7 @@ const mobileTabItems = [
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { isSecureMode, toggleSecureMode } = useSecurity();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -65,6 +70,10 @@ export default function Layout({ children }) {
 
   return (
     <div className="app-layout">
+      {/* ─── Global Aura Orbs ────────────────────────────────────────────── */}
+      <div className="aura-orb" style={{ top: '10%', left: '15%', width: 400, height: 400, background: 'var(--aura-color)' }} />
+      <div className="aura-orb" style={{ bottom: '15%', right: '10%', width: 500, height: 500, background: 'var(--aura-color-2)', animationDelay: '-5s' }} />
+      <div className="aura-orb" style={{ top: '50%', left: '50%', width: 300, height: 300, background: 'var(--aura-color-3)', animationDelay: '-10s', filter: 'blur(120px)' }} />
 
       {/* ─── Desktop + Tablet Sidebar ──────────────────────────────────────── */}
       {!isMobile && (
@@ -90,7 +99,7 @@ export default function Layout({ children }) {
               ))}
             </div>
 
-            <div className="nav-section" style={{ marginTop: 12 }}>
+            <div className="nav-section mt-4">
               {!isTablet && <span className="nav-section-label">Preferences</span>}
               <NavLink
                 to="/profile"
@@ -101,8 +110,15 @@ export default function Layout({ children }) {
                 {!isTablet && <span className="nav-label">Settings</span>}
               </NavLink>
               <button
+                className={`nav-link ${isSecureMode ? 'secure-active' : ''}`}
+                onClick={toggleSecureMode}
+                title={isSecureMode ? 'Disable Secure Mode' : 'Enable Secure Mode'}
+              >
+                {isSecureMode ? <ShieldOff size={18} className="nav-icon" style={{ color: 'var(--accent)' }} /> : <Shield size={18} className="nav-icon" />}
+                {!isTablet && <span className="nav-label" style={{ color: isSecureMode ? 'var(--accent)' : 'inherit' }}>{isSecureMode ? 'Public Mode' : 'Private Mode'}</span>}
+              </button>
+              <button
                 className="nav-link logout-btn"
-                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                 onClick={handleLogout}
                 title="Log Out"
               >
@@ -117,7 +133,6 @@ export default function Layout({ children }) {
               className="user-card"
               onClick={() => navigate('/profile')}
               title={user?.name}
-              style={{ justifyContent: isTablet ? 'center' : 'flex-start' }}
             >
               <div className="user-avatar">{initials}</div>
               {!isTablet && (
@@ -132,7 +147,7 @@ export default function Layout({ children }) {
       )}
 
       {/* ─── Main Content Area ─────────────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', minWidth: 0, marginLeft: isMobile ? 0 : (isTablet ? 68 : 'var(--sidebar-w)'), transition: 'margin-left 0.3s ease' }}>
+      <div className="main-wrapper">
         {/* ─── Mobile Top Header ─────────────────────────────────────────────── */}
         {isMobile && (
           <header className="mobile-header glass" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
@@ -147,17 +162,16 @@ export default function Layout({ children }) {
         )}
 
         {/* ─── Main Content ──────────────────────────────────────────────────── */}
-        <main className="main-content" style={{ marginLeft: 0 }}>
+        <main className="main-content">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 12, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -12, filter: 'blur(10px)' }}
+              initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
               transition={{
                 duration: 0.4,
-                ease: [0.16, 1, 0.3, 1],
-                filter: { duration: 0.3 }
+                ease: [0.16, 1, 0.3, 1]
               }}
               className="page-content"
             >
@@ -170,31 +184,52 @@ export default function Layout({ children }) {
       {/* ─── Mobile Bottom Tab Bar ─────────────────────────────────────────── */}
       {
         isMobile && (
-          <nav className="bottom-tab-bar">
-            {mobileTabItems.map(Item => {
-              const isActive = Item.exact
-                ? location.pathname === Item.to
-                : location.pathname.startsWith(Item.to);
+          <nav className="bottom-tab-bar premium-glass-bottom">
+            {mobileTabItems.map(item => {
+              const isAction = !!item.action;
+              const isActive = !isAction && (item.exact
+                ? location.pathname === item.to
+                : location.pathname.startsWith(item.to));
+              
+              if (isAction) {
+                return (
+                  <button 
+                    key={item.id} 
+                    className="bottom-tab central-action"
+                    onClick={() => {
+                      if (item.action === 'command') {
+                        window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'k' }));
+                      }
+                    }}
+                  >
+                    <div className="bottom-tab-icon-wrap action-bubble">
+                      <item.icon size={26} strokeWidth={3} />
+                    </div>
+                    <span className="bottom-tab-label">{item.label}</span>
+                  </button>
+                );
+              }
+
               return (
                 <NavLink
-                  key={Item.to}
-                  to={Item.to}
-                  end={Item.exact}
-                  className={`bottom-tab ${isActive ? 'active' : ''}`}
+                  key={item.to}
+                  to={item.to}
+                  end={item.exact}
+                  className={({ isActive }) => `bottom-tab ${isActive ? 'active' : ''} haptic-tap`}
                 >
                   <motion.div
                     className="bottom-tab-icon"
                     whileTap={{ scale: 0.9 }}
                     animate={{
-                      scale: isActive ? 1.1 : 1,
-                      y: isActive ? -2 : 0
+                      scale: isActive ? 1.15 : 1,
+                      y: isActive ? -4 : 0
                     }}
                     transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   >
                     {isActive && <div className="bottom-tab-glow" />}
-                    <Item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                    <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                   </motion.div>
-                  <span className="bottom-tab-label">{Item.label}</span>
+                  <span className="bottom-tab-label">{item.label}</span>
                 </NavLink>
               );
             })}
@@ -203,6 +238,20 @@ export default function Layout({ children }) {
       }
       <CommandPalette />
       <ShortcutsHelp />
+      <ShortcutOverlay />
+
+      {/* Mobile Privacy Curtain */}
+      <div 
+        className={`privacy-curtain ${isSecureMode ? 'active' : ''}`}
+        onClick={toggleSecureMode}
+      >
+        <div style={{ textAlign: 'center', pointerEvents: 'none' }}>
+            <ShieldOff size={64} color="var(--accent)" style={{ marginBottom: 20, opacity: 0.5 }} />
+            <h2 style={{ color: 'white', fontFamily: 'Syne', fontWeight: 800 }}>Shield Active</h2>
+            <p style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Tap anywhere to reveal</p>
+        </div>
+        <div className="curtain-handle" />
+      </div>
     </div >
   );
 }

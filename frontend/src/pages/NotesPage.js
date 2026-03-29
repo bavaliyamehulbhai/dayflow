@@ -4,51 +4,63 @@ import { notesAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import {
-  FileText,
-  Search,
-  Plus,
-  Grid,
-  List,
-  Pin,
-  Trash2,
-  X,
-  Save,
-  Tag,
-  Sparkles,
-  Maximize2,
-  ChevronRight,
-  MoreVertical,
-  Check
+  FileText, Search, Plus, Pin, Trash2, X, Sparkles, Tag,
+  History, Clock, Zap, ArrowRight, Activity, MousePointer2, Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDialog from '../components/ConfirmDialog';
-
+import SensitivityShield from '../components/layout/SensitivityShield';
+import MagneticButton from '../components/common/MagneticButton';
+ 
 const NOTE_COLORS = [
-  { value: '#1a1a26', label: 'Basalt' },
-  { value: '#241a33', label: 'Nebula' },
-  { value: '#1a2b26', label: 'Forest' },
-  { value: '#331a1a', label: 'Ember' },
-  { value: '#2b261a', label: 'Sand' },
-  { value: '#1a2433', label: 'Ocean' }
+  { label: 'Indigo', value: '#7c6dfa' },
+  { label: 'Rose', value: '#ff4d7d' },
+  { label: 'Cyan', value: '#00f2fe' },
+  { label: 'Amber', value: '#fbbf24' },
+  { label: 'Emerald', value: '#4ade80' },
+  { label: 'Crimson', value: '#f87171' }
 ];
+
+const BackgroundParticles = () => (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.03 }}>
+            <pattern id="neural-mesh" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1" fill="var(--accent)" />
+                <path d="M 2 2 L 100 100" stroke="var(--accent)" strokeWidth="0.5" fill="none" />
+            </pattern>
+            <rect width="100%" height="100%" fill="url(#neural-mesh)" />
+        </svg>
+        {/* Reduced particle count for performance */}
+        {[...Array(12)].map((_, i) => (
+            <motion.div
+                key={i}
+                initial={{ x: Math.random() * 100 + '%', y: Math.random() * 100 + '%', opacity: 0 }}
+                animate={{ y: [null, '-15%'], opacity: [0, 0.3, 0] }}
+                transition={{ duration: Math.random() * 10 + 20, repeat: Infinity, ease: "linear" }}
+                style={{ position: 'absolute', width: 2, height: 2, background: 'white', opacity: 0.1, borderRadius: '50%', willChange: 'transform' }}
+            />
+        ))}
+    </div>
+);
 
 function NoteEditor({ note, onClose, onSave, isMobile }) {
   const [title, setTitle] = useState(note?.title || '');
   const [content, setContent] = useState(note?.content || '');
-  const [color, setColor] = useState(note?.color || '#1a1a26');
+  const [color, setColor] = useState(note?.color || '#7c6dfa');
   const [tags, setTags] = useState(note?.tags?.join(', ') || '');
+  const [showPicker, setShowPicker] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const saveTimer = useRef(null);
 
-  const autoSave = () => {
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, true);
-    }, 2000);
-  };
-
   useEffect(() => {
-    if (title !== note?.title || content !== note?.content) {
-      autoSave();
+    if (title !== note?.title || content !== note?.content || color !== note?.color) {
+      clearTimeout(saveTimer.current);
+      setIsSyncing(true);
+      saveTimer.current = setTimeout(() => {
+        onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, true);
+        setTimeout(() => setIsSyncing(false), 800);
+      }, 2000);
     }
     return () => clearTimeout(saveTimer.current);
   }, [title, content, color, tags]);
@@ -56,87 +68,83 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()} style={{ zIndex: 1000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}>
+      <motion.div 
+        animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.2, 0.1] }}
+        transition={{ duration: 8, repeat: Infinity }}
+        style={{ position: 'fixed', inset: 0, background: `radial-gradient(circle at center, ${color} 0%, transparent 75%)`, filter: 'blur(120px)', zIndex: 0, pointerEvents: 'none' }} 
+      />
       <motion.div
         initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
-        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`modal glass-modal ${isMobile ? 'bottom-sheet' : ''}`}
+        className={`auth-card elite-editor-plate ${isMobile ? 'bottom-sheet' : ''}`}
         style={{
-          maxWidth: 720,
-          background: `linear-gradient(180deg, ${color}, #0f1115)`,
+          maxWidth: 950, width: '95%', padding: 0, display: 'flex', flexDirection: 'column',
+          height: isMobile ? '95%' : '85vh', borderRadius: isMobile ? '24px 24px 0 0' : 44,
+          background: 'rgba(12, 12, 22, 0.95)', backdropFilter: 'blur(40px)', 
           border: `1px solid ${color}44`,
-          width: '100%',
-          margin: isMobile ? 0 : 'var(--space-4) auto',
-          display: 'flex',
-          flexDirection: 'column',
-          height: isMobile ? 'calc(100% - 60px)' : 'auto'
+          boxShadow: `0 30px 100px rgba(0,0,0,0.8), 0 0 40px ${color}11`,
+          position: 'relative', zIndex: 1
         }}
       >
-        <div className="modal-header" style={{ border: 'none', padding: window.innerWidth <= 768 ? '16px' : '20px 24px 12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-            <div style={{ color: 'var(--accent)' }}><FileText size={window.innerWidth <= 768 ? 18 : 20} /></div>
-            <input
-              style={{ flex: 1, background: 'none', border: 'none', fontFamily: 'Plus Jakarta Sans', fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', outline: 'none' }}
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Echo your thoughts..."
-            />
-          </div>
-          <button className="modal-close" onClick={onClose}><X size={20} /></button>
-        </div>
-        <div className="modal-body" style={{ paddingTop: 0, flex: 1, overflowY: 'auto' }}>
-          <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Tag size={14} className="text-muted" />
-            <input
-              style={{ fontSize: 13, background: 'rgba(255,255,255,0.03)', border: 'none', color: 'var(--text)', padding: '8px 12px', borderRadius: 8, flex: 1 }}
-              value={tags}
-              onChange={e => setTags(e.target.value)}
-              placeholder="Tag (e.g. strategy, personal)"
-            />
-          </div>
-
-          <textarea
-            style={{
-              width: '100%', background: 'none', border: 'none', outline: 'none',
-              color: 'var(--text)', fontFamily: 'Inter', fontSize: 'var(--fs-base)',
-              resize: 'none', lineHeight: 1.8, minHeight: 380
-            }}
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            placeholder="Let the thoughts flow..."
-            autoFocus
+        <div style={{ padding: isMobile ? '12px 16px' : 40, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <input
+            className="no-border"
+            style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', fontFamily: 'Syne', fontSize: isMobile ? 18 : 36, fontWeight: 900, color: 'white', outline: 'none' }}
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Essence Name..."
           />
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {NOTE_COLORS.map(c => (
-                <motion.button
-                  key={c.value}
-                  whileHover={{ scale: 1.2 }}
-                  onClick={() => setColor(c.value)}
-                  style={{
-                    width: 20, height: 20, borderRadius: '50%', background: c.value,
-                    border: `2px solid ${color === c.value ? 'var(--accent)' : 'transparent'}`,
-                    cursor: 'pointer', transition: 'border 0.2s'
-                  }}
-                />
-              ))}
-            </div>
-            <div style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>
-              {wordCount} words
-            </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+             <button 
+               onClick={() => {
+                 if (isDeleting) {
+                   onSave(null, false, true);
+                 } else {
+                   setIsDeleting(true);
+                   setTimeout(() => setIsDeleting(false), 3000);
+                 }
+               }} 
+               style={{ 
+                 background: isDeleting ? 'var(--red)' : 'rgba(255,255,255,0.05)', 
+                 borderRadius: 12, padding: isMobile ? 8 : 12, border: 'none', 
+                 color: isDeleting ? 'white' : 'var(--red)',
+                 transition: 'all 0.3s ease',
+                 display: 'flex', alignItems: 'center', gap: 4
+               }}
+             >
+               <Trash2 size={isMobile ? 16 : 20} />
+               {isDeleting && <span style={{ fontSize: 9, fontWeight: 900 }}>CONFIRM?</span>}
+             </button>
+             <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: isMobile ? 8 : 12, border: 'none', color: 'white' }}><X size={isMobile ? 16 : 20} /></button>
           </div>
         </div>
-        <div className="modal-footer" style={{ border: 'none', gap: 12, paddingBottom: isMobile ? 32 : 24 }}>
-          <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--green)', fontWeight: 700 }}>
-            <div className="pulse-dot" style={{ background: 'var(--green)' }} /> Synchronized
-          </div>
-          <button className="btn btn-ghost" onClick={onClose} style={{ flex: isMobile ? 1 : 'none' }}>Dismiss</button>
-          <button className="btn btn-primary" style={{ flex: isMobile ? 1 : 'none' }} onClick={() => onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, false)}>
-            <Save size={16} /> Preserve Note
-          </button>
+        
+        <div className="aura-scrollbar" style={{ flex: 1, padding: isMobile ? '12px 16px' : 40, overflowY: 'auto', paddingBottom: 100 }}>
+           <textarea
+             className="no-border"
+             style={{ width: '100%', background: 'none', border: 'none', outline: 'none', color: 'var(--text)', fontSize: isMobile ? 15 : 18, lineHeight: 1.6, minHeight: '40vh', resize: 'none' }}
+             value={content}
+             onChange={e => setContent(e.target.value)}
+             placeholder="Channel your thoughts..."
+           />
+        </div>
+
+        <div style={{ padding: isMobile ? '16px 20px' : 32, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+             <button onClick={() => setShowPicker(!showPicker)} style={{ width: isMobile ? 24 : 28, height: isMobile ? 24 : 28, borderRadius: '50%', background: color, border: '2px solid white' }} />
+             <AnimatePresence>
+               {showPicker && (
+                 <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} style={{ display: 'flex', gap: 6 }}>
+                    {NOTE_COLORS.map(c => (
+                      <button key={c.value} onClick={() => { setColor(c.value); setShowPicker(false); }} style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, borderRadius: '50%', background: c.value, border: 'none' }} />
+                    ))}
+                 </motion.div>
+               )}
+             </AnimatePresence>
+           </div>
+           <div style={{ fontSize: isMobile ? 8 : 10, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1.5 }}>{wordCount} NODES // {isSyncing ? 'SYNCING...' : 'ARCHIVED'}</div>
         </div>
       </motion.div>
     </div>
@@ -147,16 +155,13 @@ export default function NotesPage() {
   const qc = useQueryClient();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState('');
-  const [view, setView] = useState('grid');
-  const [selectedNoteId, setSelectedNoteId] = useState(null);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false });
-  const width = window.innerWidth;
-  const isDesktopSplit = width > 1024;
-  const isMobile = width <= 768;
+  const [selected, setSelected] = useState([]);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', id: null });
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['notes', search],
-    queryFn: () => notesAPI.getAll({ search, limit: 100 }).then(r => r.data.notes)
+    queryKey: ['notes'],
+    queryFn: () => notesAPI.getAll({ limit: 1000 }).then(r => r.data.notes)
   });
 
   const invalidate = () => qc.invalidateQueries(['notes']);
@@ -168,499 +173,216 @@ export default function NotesPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => notesAPI.update(id, data),
-    onSuccess: (r, { silent }) => {
-      if (!silent) { toast.success('Wisdom preserved'); setModal(null); }
-      invalidate();
-    }
+    onSuccess: (r, { silent }) => { if (!silent) toast.success('Preserved'); invalidate(); }
   });
 
   const deleteMutation = useMutation({
     mutationFn: notesAPI.delete,
-    onSuccess: () => { toast.success('Note vanished'); setModal(null); invalidate(); }
+    onSuccess: () => { 
+      toast.success('Vanished'); 
+      setModal(null); 
+      setConfirmDialog({ open: false, title: '', message: '', id: null });
+      invalidate(); 
+    }
   });
 
-  const pinMutation = useMutation({
-    mutationFn: notesAPI.pin,
-    onSuccess: () => invalidate()
-  });
-
-  const notes = data || [];
-  const pinned = notes.filter(n => n.isPinned);
-  const unpinned = notes.filter(n => !n.isPinned);
-  const selectedNote = notes.find(n => n._id === selectedNoteId);
-
-  useEffect(() => {
-    // Auto-select first note on desktop if none selected
-    if (isDesktopSplit && !selectedNoteId && notes.length > 0) {
-      setSelectedNoteId(notes[0]._id);
+  const handleSave = (formData, silent = false, isDeletion = false) => {
+    const id = modal?._id;
+    if (isDeletion) {
+      if (id) {
+        setConfirmDialog({
+          open: true, 
+          title: 'Banish Manifestation?', 
+          message: 'Are you sure you want to erase this memory from the neural archive? This cannot be undone.', 
+          confirmText: 'Banish',
+          id: id
+        });
+      } else {
+        setModal(null);
+      }
+      return;
     }
-  }, [isDesktopSplit, notes, selectedNoteId]);
-
-  const handleNewNote = () => {
-    createMutation.mutate({ title: '', content: '' });
+    if (id && formData) updateMutation.mutate({ id, data: formData, silent });
   };
 
-  const handleSave = (formData, silent = false) => {
-    if (modal?._id) {
-      updateMutation.mutate({ id: modal._id, data: formData, silent });
-    }
-  };
+  const notes = (data || []).filter(n => 
+    n.title?.toLowerCase().includes(search.toLowerCase()) || 
+    n.content?.toLowerCase().includes(search.toLowerCase())
+  ).sort((a,b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0) || new Date(b.updatedAt) - new Date(a.updatedAt));
 
-  const NoteCard = ({ note, index }) => (
+  const NoteCard = ({ note }) => (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03 }}
-      className="card hover-lift glass-card note-card"
-      style={{
-        background: note.color ? `linear-gradient(135deg, ${note.color}, rgba(15,17,21,0.9))` : 'var(--glass-bg)',
-        border: `1.5px solid ${note.color ? note.color + '66' : 'var(--border)'}`,
-        padding: '24px',
-        cursor: 'pointer',
+      whileHover={{ scale: isMobile ? 1 : 1.02, y: isMobile ? 0 : -5 }}
+      className="note-card-elite holographic-shimmer aura-iridescent haptic-tap"
+      style={{ 
+        background: 'rgba(20, 20, 35, 0.4)', 
+        border: `1px solid ${note.color}33`,
+        borderLeft: `4px solid ${note.color}`,
+        padding: isMobile ? '16px 20px' : '24px 32px', borderRadius: 28, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24, 
+        boxShadow: `0 20px 50px rgba(0,0,0,0.4), 0 0 30px ${note.color}11`,
         position: 'relative',
-        minHeight: view === 'grid' ? 180 : 'auto',
-        display: 'flex',
-        flexDirection: 'column',
+        breakInside: 'avoid',
+        marginBottom: isMobile ? 16 : 20,
+        '--card-glow': `${note.color}33`,
+        willChange: 'transform, opacity'
       }}
-      onClick={() => setModal(note)}
     >
-      <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 6 }} className="note-actions">
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="btn btn-icon btn-ghost btn-sm card-action-btn"
-          onClick={e => { e.stopPropagation(); pinMutation.mutate(note._id); }}
-        >
-          <Pin size={14} style={{ fill: note.isPinned ? 'var(--accent)' : 'none', color: note.isPinned ? 'var(--accent)' : 'inherit' }} />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1, color: 'var(--red)' }}
-          whileTap={{ scale: 0.9 }}
-          className="btn btn-icon btn-ghost btn-sm card-action-btn"
-          onClick={e => {
-            e.stopPropagation();
-            setConfirmDialog({
-              open: true,
-              title: 'Vanish Note',
-              message: 'Are you sure you want to permanently delete this manifestation?',
-              onConfirm: () => { deleteMutation.mutate(note._id); setConfirmDialog({ open: false }); }
-            });
-          }}
-        >
-          <Trash2 size={14} />
-        </motion.button>
-      </div>
-
-      <div style={{ fontFamily: 'Plus Jakarta Sans', fontWeight: 800, fontSize: 'var(--fs-base)', marginBottom: 12, paddingRight: 60, color: 'var(--text)' }}>
-        {note.title || <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>Untitled Essence</span>}
-      </div>
-
-      <div style={{
-        fontSize: 'var(--fs-sm)', color: 'var(--text2)', overflow: 'hidden', flex: 1,
-        display: '-webkit-box', WebkitLineClamp: view === 'grid' ? 4 : 2,
-        WebkitBoxOrient: 'vertical', lineHeight: 1.6, fontWeight: 500
-      }}>
-        {note.content}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {note.tags?.slice(0, 2).map(t => (
-            <span key={t} style={{ fontSize: 11, background: 'rgba(255,255,255,0.06)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>#{t}</span>
-          ))}
-          {note.tags?.length > 2 && <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 700 }}>+{note.tags.length - 2}</span>}
+      <div className="btn-glint" style={{ opacity: 0.03 }} />
+      <div 
+        onClick={() => setModal(note)} 
+        style={{ flex: 1, display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24, minWidth: 0 }}
+      >
+        <div style={{ width: 54, height: 54, borderRadius: 18, background: `${note.color}15`, border: `1px solid ${note.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+          <FileText size={22} style={{ color: note.color, filter: `drop-shadow(0 0 8px ${note.color})` }} />
+          <div className="aura-pulse" style={{ position: 'absolute', inset: 0, borderRadius: 18, background: note.color, opacity: 0.1 }} />
         </div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>{format(new Date(note.updatedAt), 'MMM d')}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <SensitivityShield>
+            <h3 style={{ fontFamily: 'Syne', fontSize: 19, fontWeight: 900, color: 'white', margin: 0, textTransform: 'uppercase', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title || 'Untitled Essence'}</h3>
+          </SensitivityShield>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6 }}>
+              <span style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5 }}>{format(new Date(note.updatedAt), 'MMM d, yyyy')}</span>
+              <div style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+              <div style={{ fontSize: 9, color: note.color, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>{note.content?.length || 0} NODES</div>
+          </div>
+        </div>
+        {note.isPinned && (
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--accent)22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Pin size={14} style={{ color: 'var(--accent)', fill: 'var(--accent)' }} />
+          </div>
+        )}
       </div>
+      <button 
+        onClick={(e) => { 
+            e.preventDefault();
+            e.stopPropagation(); 
+            setConfirmDialog({ open: true, title: 'Banish Manifestation?', message: 'Erase this memory from the neural archive?', confirmText: 'Banish', id: note._id }); 
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,107,107,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 8, flexShrink: 0, zIndex: 10, border: 'none' }}
+      >
+        <Trash2 size={14} style={{ color: 'var(--red)' }} />
+      </button>
     </motion.div>
   );
 
-  const DesktopSplitView = () => (
-    <div className="notes-split-container">
-      {/* Scrollable Sidebar List */}
-      <div className="notes-split-sidebar">
-        <div className="notes-sidebar-header">
-          <div className="search-wrap-minimal">
-            <Search size={16} />
-            <input
-              placeholder="Search..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-          <button className="btn btn-icon btn-primary btn-sm" onClick={handleNewNote}>
-            <Plus size={18} />
-          </button>
-        </div>
-        <div className="notes-sidebar-list">
-          {[...pinned, ...unpinned].map((n, i) => (
-            <div
-              key={n._id}
-              className={`notes-sidebar-item ${selectedNoteId === n._id ? 'active' : ''}`}
-              onClick={() => setSelectedNoteId(n._id)}
-            >
-              <div className="item-title">{n.title || 'Untitled'}</div>
-              <div className="item-preview">{n.content.slice(0, 60)}</div>
-              <div className="item-meta">
-                {n.isPinned && <Pin size={10} style={{ fill: 'var(--accent)', color: 'var(--accent)' }} />}
-                <span>{format(new Date(n.updatedAt), 'MMM d')}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Editor Surface */}
-      <div className="notes-split-main">
-        {selectedNote ? (
-          <div className="split-editor-wrap">
-            <div className="split-editor-header">
-              <input
-                className="split-title-input"
-                value={selectedNote.title}
-                onChange={e => handleSave({ ...selectedNote, title: e.target.value }, true)}
-                placeholder="Title"
-              />
-              <div className="split-header-actions">
-                <button
-                  className="btn btn-icon btn-ghost"
-                  onClick={() => pinMutation.mutate(selectedNote._id)}
-                >
-                  <Pin size={18} style={{ fill: selectedNote.isPinned ? 'var(--accent)' : 'none', color: selectedNote.isPinned ? 'var(--accent)' : 'inherit' }} />
-                </button>
-                <button
-                  className="btn btn-icon btn-ghost text-red"
-                  onClick={() => {
-                    setConfirmDialog({
-                      open: true,
-                      title: 'Vanish Note',
-                      message: 'Are you sure you want to permanently delete this manifestation?',
-                      onConfirm: () => { deleteMutation.mutate(selectedNote._id); setConfirmDialog({ open: false }); }
-                    });
-                  }}
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            </div>
-            <textarea
-              className="split-content-textarea"
-              value={selectedNote.content}
-              onChange={e => handleSave({ ...selectedNote, content: e.target.value }, true)}
-              placeholder="Start writing..."
-            />
-          </div>
-        ) : (
-          <div className="notes-empty-state">
-            <Sparkles size={48} className="text-muted" style={{ opacity: 0.2 }} />
-            <p>Select a manifestation to refine</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
   return (
-    <div className={isDesktopSplit ? "notes-page-root-split" : "responsive-container"}>
-      {!isDesktopSplit && (
-        <>
-          <div className="page-header mb-8">
-            <div>
-              <div className="page-title flex items-center gap-3">
-                <Sparkles size={isMobile ? 24 : 32} className="text-accent" />
-                Thought Sanctum
-              </div>
-              <p className="page-subtitle">Preserve your intellectual manifestations</p>
+    <div className="responsive-container" style={{ padding: isMobile ? '0 16px' : undefined }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: -1, background: '#020204' }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(white 1px, transparent 1px)', backgroundSize: '100px 100px', opacity: 0.02 }} />
+        <BackgroundParticles />
+      </div>
+
+      <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative', border: 'none', padding: isMobile ? '12px 0' : '40px 0' }}>
+        <div className="aura-pulse" style={{ 
+          position: 'absolute', top: -50, left: -50, 
+          width: 200, height: 200, 
+          background: 'var(--grad-mesh-vibrant)', 
+          opacity: 0.1, zIndex: -1 
+        }} />
+        <div>
+          <div className="page-title flex items-center gap-4">
+            <div className="auth-logo-icon aura-float" style={{ width: 48, height: 48, marginBottom: 0 }}>
+              <FileText size={24} color="white" strokeWidth={2.5} fill="white" />
             </div>
-            <div style={{ display: 'flex', gap: 8, width: isMobile ? '100%' : 'auto' }}>
-              <button className="btn btn-ghost haptic-tap" onClick={() => setView(v => v === 'grid' ? 'list' : 'grid')} style={{ fontWeight: 700, flex: isMobile ? 1 : 'none' }}>
-                {view === 'grid' ? <List size={18} /> : <Grid size={18} />}
-                <span style={{ marginLeft: 8 }} className="hide-mobile">{view === 'grid' ? 'Chronicle' : 'Matrix'}</span>
-              </button>
-              <button className="btn btn-primary hide-mobile magnetic-btn" onClick={handleNewNote} disabled={createMutation.isPending}>
-                <Plus size={18} /> Manifest Note
-              </button>
-            </div>
+            <h1 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em', lineHeight: 1.2 }}>Cognitive Archive</h1>
           </div>
+          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600 }}>Decentralized knowledge base & neural snapshots</p>
+        </div>
+        <MagneticButton className="auth-button hide-mobile glow-on-hover" onClick={() => createMutation.mutate({ title: '', content: '' })} style={{ width: 'auto', padding: '0 24px', height: 54, borderRadius: 16 }}>
+          <div className="btn-glint" />
+          <Plus size={20} style={{ marginRight: 8 }} /> Manifest Essence
+        </MagneticButton>
+      </div>
 
-          {/* Floating Action Button for Mobile */}
-          <div className="fab-container">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              className="btn-fab"
-              onClick={handleNewNote}
-              disabled={createMutation.isPending}
-            >
-              <Plus size={28} />
-            </motion.button>
-          </div>
+      <div className="glass-holographic mb-8" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', borderRadius: 24, border: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+          <Search size={20} className="text-muted" style={{ opacity: 0.5 }} />
+          <input
+            className="auth-input no-border"
+            style={{ height: 44, background: 'none', fontSize: 15, fontWeight: 700, padding: 0, fontFamily: 'Syne' }}
+            placeholder="Quantum search fragments..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="hide-mobile" style={{ height: 24, width: 1, background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
+        <div className="hide-mobile" style={{ fontSize: 10, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1.5 }}>
+          {notes.length} FRAGMENTS CATALOGED
+        </div>
+        <button 
+          onClick={() => createMutation.mutate({ title: '', content: '' })} 
+          className="auth-button show-mobile-only haptic-tap" 
+          style={{ height: 44, width: 44, padding: 0, borderRadius: 12, display: isMobile ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Plus size={18} />
+        </button>
+      </div>
 
-          <div className="card glass-card" style={{ marginBottom: 32, padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--border)' }}>
-            <Search size={20} className="text-muted" />
-            <input
-              className="input"
-              placeholder="Summon your thoughts..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ background: 'none', border: 'none', fontSize: 'var(--fs-base)', height: 48 }}
-            />
-          </div>
-
-          {isLoading ? (
-            <div className="loading-page"><div className="loading-spinner" /></div>
-          ) : notes.length === 0 ? (
-            <div className="card glass-card" style={{ padding: '80px 40px', textAlign: 'center' }}>
-              <div style={{ fontSize: 48, marginBottom: 20 }}>🌌</div>
-              <div className="empty-title">The Void is Perfect</div>
-              <div className="empty-desc" style={{ maxWidth: 400, margin: '12px auto' }}>Capture your first manifestation before it escapes into the eternal recurrence.</div>
-              {!search && <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={handleNewNote}>Manifest Now</button>}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-              <AnimatePresence>
-                {pinned.length > 0 && (
-                  <motion.div layout>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                      <Pin size={16} className="text-accent" />
-                      <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2 }}>Essential Wisdom</div>
-                    </div>
-                    <div style={{
-                      display: view === 'grid' ? 'grid' : 'flex',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                      flexDirection: 'column',
-                      gap: 20
-                    }}>
-                      {pinned.map((n, i) => <NoteCard key={n._id} note={n} index={i} />)}
-                    </div>
-                  </motion.div>
-                )}
-
-                {unpinned.length > 0 && (
-                  <motion.div layout>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                      <FileText size={16} className="text-muted" />
-                      <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2 }}>All Manifestations</div>
-                    </div>
-                    <div style={{
-                      display: view === 'grid' ? 'grid' : 'flex',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                      flexDirection: 'column',
-                      gap: 20
-                    }}>
-                      {unpinned.map((n, i) => <NoteCard key={n._id} note={n} index={i + pinned.length} />)}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-        </>
+      {isLoading ? <div className="loading-page"><div className="loading-spinner" /></div> : notes.length === 0 ? (
+        <div className="card glass-card aura-iridescent" style={{ padding: '64px 24px', textAlign: 'center', borderRadius: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+          <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ repeat: Infinity, duration: 4, repeatType: 'reverse' }} style={{ fontSize: 64, marginBottom: 24 }}>🧠</motion.div>
+          <div style={{ fontSize: 22, fontWeight: 900, fontFamily: 'Syne', marginBottom: 12 }}>Archive Is Clear</div>
+          <div style={{ color: 'var(--muted)', fontSize: 14, maxWidth: 300, margin: '0 auto', lineHeight: 1.6 }}>Your neural network has no active fragments. Manifest a new essence to begin cataloging.</div>
+          <MagneticButton className="auth-button glow-on-hover" style={{ marginTop: 32, width: 'auto', marginInline: 'auto', padding: '0 32px' }} onClick={() => createMutation.mutate({ title: '', content: '' })}>Forge New Fragment</MagneticButton>
+        </div>
+      ) : (
+        <div style={{ columnCount: isMobile ? 1 : 2, columnGap: 24, paddingBottom: 100 }}>
+          <AnimatePresence>
+            {notes.map(n => <NoteCard key={n._id} note={n} />)}
+          </AnimatePresence>
+        </div>
       )}
 
-      {isDesktopSplit && <DesktopSplitView />}
-
       <AnimatePresence>
-        {modal && (
-          <NoteEditor
-            note={modal}
-            onClose={() => { setModal(null); invalidate(); }}
-            onSave={handleSave}
-            isMobile={isMobile}
-          />
-        )}
+        {modal && <NoteEditor note={modal} onClose={() => { setModal(null); invalidate(); }} onSave={handleSave} isMobile={isMobile} />}
       </AnimatePresence>
-
-      <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
-
+      <ConfirmDialog 
+        {...confirmDialog} 
+        onConfirm={() => confirmDialog.id && deleteMutation.mutate(confirmDialog.id)}
+        onCancel={() => setConfirmDialog({ open: false, id: null })} 
+      />
+      
       <style>{`
-        .glass-card { background: var(--glass-bg); backdrop-filter: blur(12px); }
-        .note-card .card-action-btn { background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); }
-        .note-actions { opacity: 0; transform: translateY(-5px); transition: all 0.2s; }
-        .note-card:hover { border-color: var(--accent) !important; }
-        .note-card:hover .note-actions { opacity: 1; transform: translateY(0); }
+        .no-border { border: none !important; }
+        .aura-scrollbar::-webkit-scrollbar { width: 4px; }
+        .aura-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; width: 100% !important; border-radius: 32px 32px 0 0 !important; }
         
-        .notes-page-root-split {
-          height: calc(100vh - 40px);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
+        .note-card-elite {
+          transition: border-color 0.4s ease, background 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .holographic-shimmer::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            120deg,
+            transparent 0%,
+            transparent 40%,
+            rgba(255, 255, 255, 0.05) 50%,
+            transparent 60%,
+            transparent 100%
+          );
+          background-size: 200% 100%;
+          transition: background-position 0.6s ease;
+          pointer-events: none;
+          z-index: 1;
+        }
+        
+        .holographic-shimmer:hover::before {
+          background-position: -200% 0;
         }
 
-        .notes-split-container {
-          display: grid;
-          grid-template-columns: 320px 1fr;
-          height: 100%;
-          border: 1px solid var(--border);
-          border-radius: 20px;
-          background: var(--surface);
-          overflow: hidden;
-        }
-
-        .notes-split-sidebar {
-          border-right: 1px solid var(--border);
-          display: flex;
-          flex-direction: column;
-          background: rgba(255,255,255,0.01);
-        }
-
-        .notes-sidebar-header {
-          padding: 16px;
-          display: flex;
-          gap: 12px;
-          border-bottom: 1px solid var(--border);
-        }
-
-        .search-wrap-minimal {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          background: var(--surface2);
-          padding: 0 12px;
-          border-radius: 10px;
-          border: 1px solid var(--border);
-        }
-
-        .search-wrap-minimal input {
-          background: none;
-          border: none;
-          color: var(--text);
-          font-size: 13px;
-          width: 100%;
-          outline: none;
-        }
-
-        .notes-sidebar-list {
-          flex: 1;
-          overflow-y: auto;
-          padding: 8px;
-        }
-
-        .notes-sidebar-item {
-          padding: 14px 16px;
-          border-radius: 12px;
-          cursor: pointer;
-          transition: all 0.2s;
-          margin-bottom: 4px;
-          border: 1px solid transparent;
-        }
-
-        .notes-sidebar-item:hover {
-          background: var(--surface2);
-        }
-
-        .notes-sidebar-item.active {
-          background: rgba(130, 114, 255, 0.1);
-          border-color: rgba(130, 114, 255, 0.2);
-        }
-
-        .item-title {
-          font-weight: 700;
-          font-size: 14px;
-          color: var(--text);
-          margin-bottom: 4px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .item-preview {
-          font-size: 12px;
-          color: var(--muted);
-          line-height: 1.5;
-          height: 36px;
-          overflow: hidden;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-        }
-
-        .item-meta {
-          margin-top: 8px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 10px;
-          color: var(--muted);
-          font-weight: 600;
-          text-transform: uppercase;
-        }
-
-        .notes-split-main {
-          background: rgba(0,0,0,0.1);
-          display: flex;
-          flex-direction: column;
-        }
-
-        .split-editor-wrap {
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          padding: 32px 40px;
-        }
-
-        .split-editor-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-
-        .split-title-input {
-          background: none;
-          border: none;
-          font-size: 32px;
-          font-weight: 800;
-          font-family: 'Syne', sans-serif;
-          color: var(--text);
-          outline: none;
-          flex: 1;
-        }
-
-        .split-header-actions {
-          display: flex;
-          gap: 8px;
-        }
-
-        .split-content-textarea {
-          flex: 1;
-          background: none;
-          border: none;
-          font-size: 16px;
-          color: var(--text2);
-          font-family: 'Inter', sans-serif;
-          line-height: 1.8;
-          resize: none;
-          outline: none;
-        }
-
-        .notes-empty-state {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 16px;
-          color: var(--muted);
-          font-weight: 600;
-        }
-
-        @media (max-width: 768px) {
-          .note-actions { opacity: 1 !important; transform: translateY(0) !important; }
-          .modal.bottom-sheet {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            max-width: none;
-            border-radius: 24px 24px 0 0;
-            max-height: 92vh;
-            margin: 0 !important;
-          }
+        .text-grad-vibrant {
+            background: linear-gradient(135deg, var(--accent) 0%, #ff4d7d 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
       `}</style>
-    </div >
+    </div>
   );
 }

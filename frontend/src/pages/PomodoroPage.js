@@ -40,10 +40,20 @@ const createRainSound = (ctx) => {
   return { source: whiteNoise, gain, filter };
 };
 
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100, damping: 12 } }
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
+};
+
 const MODES = {
-  work: { label: 'Focus', color: 'var(--accent)', icon: Brain, gradient: 'linear-gradient(135deg, #8272ff, #fa6d8a)' },
-  'short-break': { label: 'Short Break', color: 'var(--green)', icon: Coffee, gradient: 'linear-gradient(135deg, #5ffad1, #3ecf8e)' },
-  'long-break': { label: 'Long Break', color: 'var(--accent2)', icon: Trees, gradient: 'linear-gradient(135deg, #fa6d8a, #8272ff)' }
+  work: { label: 'Focus', color: '#7c6dfa', icon: Brain, gradient: 'linear-gradient(135deg, #7c6dfa, #fa6d8a)' },
+  'short-break': { label: 'Recharge', color: '#22c55e', icon: Coffee, gradient: 'linear-gradient(135deg, #22c55e, #10b981)' },
+  'long-break': { label: 'Stasis', color: '#ff4d7d', icon: Trees, gradient: 'linear-gradient(135deg, #ff4d7d, #f43f5e)' }
 };
 
 // Responsive hook
@@ -239,131 +249,159 @@ export default function PomodoroPage() {
   const sidebarContent = (
     <>
       {/* Stats */}
-      <div className="card glass-card">
-        <div className="card-title" style={{ marginBottom: 18 }}>
-          <History size={15} className="text-accent" /> Mastery Statistics
+      <motion.div variants={itemVariants} className="premium-card aura-iridescent" style={{ borderRadius: 24, padding: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <History size={16} className="text-accent" />
+          <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>Mastery Protocol</div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[
-            { label: 'This Week', value: statsData?.periodPomos ?? 0, sub: `${statsData?.periodFocusMinutes || 0} min`, icon: Zap, color: 'var(--accent)' },
-            { label: 'All Time', value: statsData?.totalPomos ?? 0, sub: 'sessions', icon: Layers, color: 'var(--accent2)' },
-            { label: 'Lifetime Flow', value: statsData?.totalFocusMinutes ? `${Math.floor(statsData.totalFocusMinutes / 60)}h ${statsData.totalFocusMinutes % 60}m` : '0m', sub: 'pure focus', icon: Trophy, color: 'var(--yellow)' },
+            { label: 'Cycle Stats', value: statsData?.periodPomos ?? 0, sub: `${statsData?.periodFocusMinutes || 0}m`, icon: Zap, color: '#7c6dfa' },
+            { label: 'Temporal Mass', value: statsData?.totalPomos ?? 0, sub: 'loops', icon: Layers, color: '#ff4d7d' },
+            { label: 'Deep Focus', value: statsData?.totalFocusMinutes ? `${Math.floor(statsData.totalFocusMinutes / 60)}h` : '0h', sub: 'accrued', icon: Trophy, color: '#00f2fe' },
           ].map((s, i) => (
-            <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '14px', background: 'var(--surface2)', borderRadius: 14, border: '1px solid var(--border)' }}>
-              <div style={{ width: 38, height: 38, borderRadius: 11, background: `${s.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <s.icon size={18} style={{ color: s.color }} />
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                  <span style={{ fontSize: 'var(--fs-xl)', fontWeight: 800 }}>{s.value}</span>
-                  <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>{s.sub}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{s.value}</span>
+                  <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>{s.sub}</span>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Link Task */}
-      <div className="card glass-card">
-        <div className="card-title" style={{ marginBottom: 14 }}>
-          <Target size={15} className="text-accent" /> Active Objective
+      <motion.div variants={itemVariants} className="premium-card aura-iridescent" style={{ borderRadius: 24, padding: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <Target size={16} className="text-accent" />
+          <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>Active Objective</div>
         </div>
         <div style={{ position: 'relative' }}>
-          <select className="select" value={linkedTask} onChange={e => setLinkedTask(e.target.value)}>
+          <select className="auth-input" style={{ height: 50, fontSize: 14, borderRadius: 14 }} value={linkedTask} onChange={e => setLinkedTask(e.target.value)}>
             <option value="">— Unlinked Session —</option>
             {tasksData?.map(t => <option key={t._id} value={t._id}>{t.title}</option>)}
           </select>
         </div>
-        <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10, lineHeight: 1.5 }}>
-          Link a task to attribute focus time and boost productivity insights.
-        </p>
-      </div>
+      </motion.div>
 
       {/* Session Note */}
-      <div className="card glass-card">
-        <div className="card-title" style={{ marginBottom: 14 }}>
-          <StickyNote size={15} className="text-accent" /> Session Intent
+      <motion.div variants={itemVariants} className="premium-card aura-iridescent" style={{ borderRadius: 24, padding: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <StickyNote size={16} className="text-accent" />
+          <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>Session Intent</div>
         </div>
         <textarea
-          className="textarea"
+          className="auth-input"
           rows={3}
-          style={{ minHeight: 90 }}
-          placeholder="What are you focusing on this interval?"
+          style={{ minHeight: 100, borderRadius: 16, padding: 16, fontSize: 14 }}
+          placeholder="Declare your focus for this interval..."
           value={note}
           onChange={e => setNote(e.target.value)}
         />
-      </div>
+      </motion.div>
 
       {/* Soundscapes */}
-      <div className="card glass-card">
-        <div className="card-title" style={{ marginBottom: 14 }}>
-          <Volume2 size={15} className="text-accent" /> Ambient Sounds
+      <motion.div variants={itemVariants} className="premium-card aura-iridescent" style={{ borderRadius: 24, padding: 24, border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <Volume2 size={16} className="text-accent" />
+          <div style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>Atmospheres</div>
         </div>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <button
-            className={`btn btn-sm ${soundType === 'rain' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ flex: 1, borderRadius: 12, border: '1px solid var(--border)' }}
+            className={`btn haptic-tap ${soundType === 'rain' ? 'btn-primary' : 'glass'}`}
+            style={{ flex: 1, borderRadius: 12, height: 44, fontSize: 12, fontWeight: 700 }}
             onClick={() => toggleSound('rain')}
           >
-            <CloudRain size={14} style={{ marginRight: 6 }} /> Rain
+            <CloudRain size={16} /> <span style={{ marginLeft: 8 }}>Rain</span>
           </button>
           <button
-            className={`btn btn-sm ${soundType === 'none' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ flex: 1, borderRadius: 12, border: '1px solid var(--border)' }}
+            className={`btn haptic-tap glass`}
+            style={{ flex: 1, borderRadius: 12, height: 44, fontSize: 12, fontWeight: 700 }}
             onClick={() => toggleSound(soundType)}
           >
-            <VolumeX size={14} style={{ marginRight: 6 }} /> Mute
+            <VolumeX size={16} /> <span style={{ marginLeft: 8 }}>Mute</span>
           </button>
         </div>
         {soundType !== 'none' && (
-          <input
-            type="range" min="0" max="1" step="0.01"
-            value={soundVolume}
-            onChange={e => setSoundVolume(parseFloat(e.target.value))}
-            style={{ width: '100%', accentColor: 'var(--accent)' }}
-          />
+          <div style={{ padding: '0 4px' }}>
+            <input
+              type="range" min="0" max="1" step="0.01"
+              value={soundVolume}
+              onChange={e => setSoundVolume(parseFloat(e.target.value))}
+              style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+            />
+          </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Config */}
-      <div className="card glass-card" style={{ padding: '18px 20px' }}>
-        <div className="card-title" style={{ marginBottom: 14, opacity: 0.6 }}>Config</div>
+      <motion.div variants={itemVariants} className="premium-card aura-iridescent" style={{ borderRadius: 24, padding: 20, border: '1px solid rgba(255,255,255,0.03)', opacity: 0.8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <Layers size={14} className="text-muted" />
+          <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5 }}>Parameters</div>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            { label: 'Work', value: prefs.pomodoroWork, icon: Brain, color: 'var(--accent)' },
-            { label: 'Short Break', value: prefs.pomodoroBreak, icon: Coffee, color: 'var(--green)' },
-            { label: 'Long Break', value: prefs.pomodoroLong, icon: Trees, color: 'var(--accent2)' },
+            { label: 'Work', value: prefs.pomodoroWork, icon: Brain, color: '#7c6dfa' },
+            { label: 'Break', value: prefs.pomodoroBreak, icon: Coffee, color: '#22c55e' },
+            { label: 'Long', value: prefs.pomodoroLong, icon: Trees, color: '#ff4d7d' },
           ].map(s => (
-            <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text2)' }}>
-                <s.icon size={14} style={{ color: s.color }} /> {s.label}
+            <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, padding: '4px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--muted)', fontWeight: 600 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color }} /> {s.label}
               </div>
-              <span style={{ fontWeight: 700, color: s.color }}>{s.value}m</span>
+              <span style={{ fontWeight: 800, color: 'var(--text)' }}>{s.value}m</span>
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </>
   );
 
   return (
-    <div className={`responsive-container ${running && isMobile ? 'focus-immersion' : ''}`}>
-      <div className="page-header mb-6">
+    <>
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className={`responsive-container ${running && isMobile ? 'focus-immersion' : ''}`}
+    >
+      <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative' }}>
+        <div className="aura-pulse" style={{ 
+          position: 'absolute', top: -50, left: -50, 
+          width: 200, height: 200, 
+          background: 'var(--grad-mesh-vibrant)', 
+          opacity: 0.1, zIndex: -1 
+        }} />
         <div>
-          <div className="page-title flex items-center gap-3">
-            <div className="text-accent"><Timer size={isMobile ? 24 : 32} /></div>
-            Flow State
+          <div className="page-title flex items-center gap-4" style={{ 
+            fontFamily: 'Syne, sans-serif', 
+            fontSize: 'var(--fs-2xl)', 
+            fontWeight: 800,
+            letterSpacing: '-0.05em',
+            lineHeight: 1.2
+          }}>
+            <div className="auth-logo-icon aura-float" style={{ width: 48, height: 48, marginBottom: 0 }}>
+              <Timer size={24} color="white" strokeWidth={2.5} fill="white" />
+            </div>
+            Temporal Engine
           </div>
-          <p className="page-subtitle">Master your attention through intentional intervals</p>
+          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--muted)', marginTop: 8, letterSpacing: '0.02em', opacity: 0.7 }}>
+            Optimize your cognitive output through high-precision intervals
+          </p>
         </div>
         <button
-          className="btn btn-ghost"
+          className="btn glass haptic-tap glow-on-hover"
           onClick={() => setIsFocusMode(true)}
-          style={{ borderRadius: 12, border: '1px solid var(--border)', gap: 8 }}
+          style={{ borderRadius: 16, height: 54, padding: '0 24px', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)' }}
         >
-          <Maximize2 size={16} /> Focus Mode
+          <Maximize2 size={18} style={{ marginRight: 10 }} /> Immersive Mode
         </button>
       </div>
 
@@ -378,34 +416,33 @@ export default function PomodoroPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 20, minWidth: 0 }}>
 
           {/* Timer Card */}
-          <div className="card glass-card" style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)', position: 'relative', overflow: 'hidden' }}>
-            {/* Background glow blobs */}
-            <div style={{ position: 'absolute', top: -80, left: -80, width: 240, height: 240, background: modeInfo.color, opacity: 0.06, filter: 'blur(70px)', borderRadius: '50%', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: -80, right: -80, width: 240, height: 240, background: 'var(--accent2)', opacity: 0.05, filter: 'blur(70px)', borderRadius: '50%', pointerEvents: 'none' }} />
+          <motion.div variants={itemVariants} className="glass-holographic aura-iridescent" style={{ textAlign: 'center', padding: 'var(--space-10) var(--space-6)', position: 'relative', overflow: 'hidden', borderRadius: 40, border: 'none' }}>
+            <div className="btn-glint" style={{ opacity: 0.05 }} />
 
-            {/* Mode switcher */}
-            <div style={{ display: 'flex', gap: isMobile ? 6 : 10, justifyContent: 'center', marginBottom: isMobile ? 28 : 44, flexWrap: 'wrap' }}>
+            {/* Mode Switcher */}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: isMobile ? 32 : 56, background: 'rgba(255,255,255,0.03)', padding: 6, borderRadius: 50, border: '1px solid rgba(255,255,255,0.05)', width: 'fit-content', margin: '0 auto 56px' }}>
               {Object.entries(MODES).map(([key, info]) => (
                 <button
                   key={key}
                   onClick={() => handleModeChange(key)}
+                  className="haptic-tap"
                   style={{
-                    padding: isMobile ? '8px 14px' : '10px 20px',
-                    fontSize: isMobile ? 12 : 13,
-                    fontWeight: 700,
+                    padding: isMobile ? '10px 18px' : '12px 24px',
+                    fontSize: 13,
+                    fontWeight: 800,
                     borderRadius: 50,
-                    border: mode === key ? 'none' : '1px solid var(--border)',
+                    border: 'none',
                     background: mode === key ? info.gradient : 'transparent',
                     color: mode === key ? 'white' : 'var(--muted)',
                     cursor: 'pointer',
-                    boxShadow: mode === key ? `0 4px 16px ${info.color}44` : 'none',
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    transition: 'all 0.25s ease',
+                    boxShadow: mode === key ? `0 10px 20px ${info.color}33` : 'none',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  <info.icon size={isMobile ? 13 : 15} />
-                  {info.label}
+                  <info.icon size={16} />
+                  <span className={isMobile && mode !== key ? 'hide' : ''}>{info.label}</span>
                 </button>
               ))}
             </div>
@@ -429,111 +466,121 @@ export default function PomodoroPage() {
                   </filter>
                 </defs>
                 {/* Track */}
-                <circle cx={timerSize / 2} cy={timerSize / 2} r={radius} fill="none" stroke="var(--border)" strokeWidth={isMobile ? 6 : 10} opacity={0.3} />
+                <circle cx={timerSize / 2} cy={timerSize / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth={isMobile ? 8 : 12} />
                 {/* Progress */}
                 <motion.circle
                   cx={timerSize / 2} cy={timerSize / 2} r={radius}
                   fill="none"
-                  stroke="url(#pomoGradient)"
-                  strokeWidth={isMobile ? 6 : 10}
+                  stroke={`url(#pomoGradient-${mode})`}
+                  strokeWidth={isMobile ? 8 : 12}
                   strokeDasharray={circumference}
                   animate={{ strokeDashoffset }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
                   strokeLinecap="round"
-                  filter="url(#glow)"
+                  filter="url(#pomoGlow)"
                 />
               </svg>
-              {/* Center text */}
+              {/* Defs outside SVG for better reactivity if needed, or inside */}
+              <svg width="0" height="0" style={{ position: 'absolute' }}>
+                <defs>
+                  <linearGradient id={`pomoGradient-${mode}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor={modeInfo.color} />
+                    <stop offset="100%" stopColor="#fa6d8a" />
+                  </linearGradient>
+                  <filter id="pomoGlow">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                </defs>
+              </svg>
+              {/* Timer UI components */}
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <AnimatePresence mode="wait">
                   <motion.div
-                    key={Math.floor(timeLeft / 60)}
-                    initial={{ scale: 0.9, opacity: 0 }}
+                    key={timeLeft}
+                    initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 1.05, opacity: 0 }}
-                    transition={{ duration: 0.15 }}
+                    transition={{ duration: 0.2 }}
                     style={{
                       fontFamily: 'Syne, sans-serif',
-                      fontSize: 'clamp(2.5rem, 12vw, 4.5rem)',
+                      fontSize: isMobile ? '72px' : '88px',
                       fontWeight: 800,
-                      letterSpacing: isMobile ? -1 : -3,
+                      letterSpacing: '-0.05em',
                       lineHeight: 1,
-                      background: modeInfo.gradient,
-                      WebkitBackgroundClip: 'text',
-                      backgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent'
+                      color: 'var(--text)',
+                      filter: running ? `drop-shadow(0 0 30px ${modeInfo.color}44)` : 'none'
                     }}
                   >
                     {formatTime(timeLeft)}
                   </motion.div>
                 </AnimatePresence>
-                <div style={{ fontSize: isMobile ? 10 : 12, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 3, fontWeight: 700, marginTop: 6 }}>
+                <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 4, fontWeight: 900, marginTop: 8, opacity: 0.6 }}>
                   {modeInfo.label}
                 </div>
-                {running && (
-                  <motion.div
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    style={{ width: 6, height: 6, borderRadius: '50%', background: modeInfo.color, marginTop: 8 }}
-                  />
-                )}
               </div>
             </div>
 
             {/* Session dots */}
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: isMobile ? 24 : 36 }}>
-              {[0, 1, 2, 3].map(i => (
-                <motion.div
-                  key={i}
-                  animate={{
-                    scale: i === (sessions % 4) && running ? [1, 1.3, 1] : 1,
-                    background: i < (sessions % 4) ? modeInfo.color : 'var(--border)'
-                  }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  style={{
-                    width: 10, height: 10, borderRadius: 4,
-                    boxShadow: i < (sessions % 4) ? `0 0 8px ${modeInfo.color}88` : 'none',
-                  }}
-                />
-              ))}
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: isMobile ? 32 : 48 }}>
+              {[0, 1, 2, 3].map(i => {
+                const isActive = i === (sessions % 4);
+                const isCompleted = i < (sessions % 4);
+                return (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      scale: isActive && running ? [1, 1.2, 1] : 1,
+                      background: isCompleted || isActive ? modeInfo.color : 'var(--border)',
+                      opacity: isCompleted ? 1 : isActive ? 0.8 : 0.3
+                    }}
+                    transition={{ repeat: isActive && running ? Infinity : 0, duration: 2 }}
+                    style={{
+                      width: 14, height: 14, borderRadius: 5,
+                      boxShadow: isCompleted || (isActive && running) ? `0 0 20px ${modeInfo.color}66` : 'none',
+                      border: isActive ? `2px solid rgba(255,255,255,0.2)` : 'none'
+                    }}
+                  />
+                );
+              })}
               {sessions > 0 && sessions % 4 === 0 && (
                 <motion.span
                   initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                  style={{ marginLeft: 8, fontSize: 12, fontWeight: 800, color: 'var(--accent)' }}
+                  style={{ marginLeft: 12, fontSize: 13, fontWeight: 900, color: 'var(--accent)', letterSpacing: 1 }}
                 >
-                  ⚡ LEVEL UP!
+                  ⚡ FLOW MASTER
                 </motion.span>
               )}
             </div>
 
             {/* Controls */}
-            <div style={{ display: 'flex', gap: 14, justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center' }}>
               <motion.button
-                whileTap={{ scale: 0.96 }}
-                whileHover={{ scale: 1.02 }}
-                className="btn btn-primary"
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02, boxShadow: `0 20px 40px ${modeInfo.color}33` }}
+                className="auth-button magnetic-btn"
                 onClick={handleStart}
                 style={{
-                  padding: isMobile ? '14px 36px' : '16px 52px',
-                  fontSize: isMobile ? 16 : 18,
-                  fontWeight: 700,
+                  height: 64,
+                  fontSize: 18,
+                  fontWeight: 800,
                   background: modeInfo.gradient,
-                  border: 'none',
-                  boxShadow: `0 8px 28px ${modeInfo.color}55`,
-                  flex: isMobile ? 1 : 'none',
-                  minWidth: isMobile ? 'auto' : 180,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
+                  width: 'auto',
+                  padding: '0 56px',
+                  borderRadius: 20
                 }}
               >
-                {running ? <><Pause size={20} /> Pause</> : startedAt ? <><Play size={20} /> Resume</> : <><Play size={20} /> Start</>}
+                <div className="btn-glint" />
+                {running ? <><Pause size={22} style={{ marginRight: 12 }} /> STasis</> : startedAt ? <><Play size={22} style={{ marginRight: 12 }} /> Resume</> : <><Play size={22} style={{ marginRight: 12 }} /> Initiate</>}
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                className="btn btn-ghost haptic-tap"
+                whileHover={{ background: 'rgba(255,255,255,0.08)' }}
+                className="btn glass haptic-tap"
                 onClick={handleReset}
-                style={{ width: isMobile ? 52 : 56, height: isMobile ? 52 : 56, padding: 0, borderRadius: '50%', border: '1px solid var(--border)', flexShrink: 0 }}
+                style={{ width: 64, height: 64, padding: 0, borderRadius: 20, border: '1px solid rgba(255,255,255,0.08)' }}
               >
-                <RotateCcw size={18} />
+                <RotateCcw size={20} />
               </motion.button>
             </div>
 
@@ -542,7 +589,7 @@ export default function PomodoroPage() {
               <Zap size={13} style={{ color: 'var(--accent)' }} />
               Sessions this week: <strong style={{ color: 'var(--text)', marginLeft: 4 }}>{statsData?.periodPomos || 0}</strong>
             </div>
-          </div>
+          </motion.div>
 
           {/* Chart */}
           <div className="card glass-card">
@@ -622,93 +669,125 @@ export default function PomodoroPage() {
               position: 'fixed',
               inset: 0,
               zIndex: 9999,
-              background: 'var(--bg)',
+              background: 'rgba(5, 5, 10, 1)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: 20
+              padding: 40,
+              overflow: 'hidden'
             }}
           >
-            <div style={{ position: 'absolute', top: 30, right: 30 }}>
-              <button
-                className="btn btn-ghost"
+            {/* Immersive Breathing Background */}
+            <motion.div 
+              animate={{ 
+                scale: running ? [1, 1.1, 1] : 1,
+                opacity: running ? [0.05, 0.15, 0.05] : 0.05,
+              }}
+              transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
+              style={{ 
+                position: 'absolute', inset: -200, 
+                background: `radial-gradient(circle at center, ${modeInfo.color}, transparent 70%)`,
+                pointerEvents: 'none'
+              }} 
+            />
+
+            <div style={{ position: 'absolute', top: 40, right: 40, zIndex: 100 }}>
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                className="btn glass haptic-tap"
                 onClick={() => setIsFocusMode(false)}
-                style={{ borderRadius: '50%', width: 50, height: 50, padding: 0 }}
+                style={{ borderRadius: 20, width: 64, height: 64, padding: 0, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}
               >
                 <Minimize2 size={24} />
-              </button>
+              </motion.button>
             </div>
 
-            <div style={{ textAlign: 'center', maxWidth: 600, width: '100%' }}>
+            <div style={{ textAlign: 'center', maxWidth: 1200, width: '100%', position: 'relative', zIndex: 50 }}>
               <motion.div
-                animate={{ scale: running ? [1, 1.02, 1] : 1 }}
+                animate={{ 
+                  scale: running ? [1, 1.02, 1] : 1,
+                }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                 style={{
                   fontFamily: 'Syne, sans-serif',
-                  fontSize: 'clamp(5rem, 25vw, 12rem)',
+                  fontSize: 'clamp(10rem, 30vw, 24rem)',
                   fontWeight: 800,
-                  letterSpacing: -8,
-                  lineHeight: 1,
-                  background: modeInfo.gradient,
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  marginBottom: 20
+                  letterSpacing: '-0.06em',
+                  lineHeight: 0.8,
+                  color: 'white',
+                  marginBottom: 20,
+                  filter: `drop-shadow(0 0 80px ${modeInfo.color}33)`
                 }}
               >
                 {formatTime(timeLeft)}
               </motion.div>
 
-              <div style={{ fontSize: 18, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 8, fontWeight: 700, marginBottom: 60 }}>
-                {modeInfo.label}
+              <div style={{ fontSize: 24, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 12, fontWeight: 900, marginBottom: 80, opacity: 0.5, fontFamily: 'Syne' }}>
+                {modeInfo.label} Protocol
               </div>
 
-              <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
-                <button
-                  className="btn btn-primary"
+              <div style={{ display: 'flex', gap: 32, justifyContent: 'center', alignItems: 'center' }}>
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: `0 40px 100px ${modeInfo.color}44` }}
+                  whileTap={{ scale: 0.95 }}
+                  className="auth-button"
                   onClick={handleStart}
                   style={{
-                    padding: '20px 60px',
-                    fontSize: 20,
-                    fontWeight: 700,
+                    padding: '0 80px',
+                    height: 90,
+                    fontSize: 28,
+                    fontWeight: 900,
                     background: modeInfo.gradient,
-                    borderRadius: 20,
-                    border: 'none',
-                    boxShadow: `0 12px 40px ${modeInfo.color}44`
+                    borderRadius: 32,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 'auto'
                   }}
                 >
-                  {running ? <Pause size={24} /> : <Play size={24} />}
-                </button>
-                <button
-                  className="btn btn-ghost"
+                  <div className="btn-glint" />
+                  {running ? <Pause size={32} fill="white" /> : <Play size={32} fill="white" />}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: -30, background: 'rgba(255,255,255,0.08)' }}
+                  whileTap={{ scale: 0.9 }}
+                  className="btn glass haptic-tap"
                   onClick={handleReset}
-                  style={{ width: 72, height: 72, borderRadius: '50%', border: '1px solid var(--border)' }}
+                  style={{ width: 90, height: 90, borderRadius: 32, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}
                 >
-                  <RotateCcw size={24} />
-                </button>
+                  <RotateCcw size={28} />
+                </motion.button>
               </div>
 
               {linkedTask && (
-                <div style={{ marginTop: 60, padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Active Objective</div>
-                  <div style={{ fontSize: 20, fontWeight: 700 }}>{tasksData?.find(t => t._id === linkedTask)?.title}</div>
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="auth-card aura-iridescent"
+                  style={{ 
+                      marginTop: 100, padding: '40px', background: 'rgba(255,255,255,0.01)', 
+                      borderRadius: 40, border: '1px solid rgba(255,255,255,0.05)', 
+                      maxWidth: 600, margin: '100px auto 0'
+                  }}
+                >
+                  <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 6, marginBottom: 16, fontWeight: 900 }}>Dominant Objective</div>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1, fontFamily: 'Syne' }}>{tasksData?.find(t => t._id === linkedTask)?.title}</div>
+                </motion.div>
               )}
             </div>
 
-            <div style={{ position: 'absolute', bottom: 40, color: 'var(--muted)', fontSize: 14 }}>
-              Press Esc or click the close button to exit Focus Mode
+            <div style={{ position: 'absolute', bottom: 40, color: 'var(--muted)', fontSize: 13, fontWeight: 900, letterSpacing: 4, opacity: 0.3 }}>
+              COGNITIVE ARCHIVE SYNCHRONIZED · ESC TO RELEASE
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      </motion.div>
+
       <style>{`
-        .glass-card { background: rgba(255,255,255,0.02); backdrop-filter: blur(12px); }
         .text-accent { color: var(--accent); }
         .focus-immersion { filter: saturate(1.2); }
       `}</style>
-    </div>
+    </>
   );
 }
