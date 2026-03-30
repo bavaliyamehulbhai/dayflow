@@ -179,6 +179,7 @@ function Clock() {
   else if (hours < 21) GreetingIcon = Sunset;  // Good Evening
   else GreetingIcon = Moon;                    // Good Night
 
+  const isMobile = window.innerWidth <= 768;
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -187,7 +188,7 @@ function Clock() {
       className="clock-card-premium"
     >
       <div className="greeting-icon-bg" style={{ color: 'var(--accent)' }}>
-        <GreetingIcon size={window.innerWidth <= 768 ? 64 : 120} />
+        <GreetingIcon size={isMobile ? 48 : 120} />
       </div>
       
       <motion.div 
@@ -203,7 +204,7 @@ function Clock() {
         </div>
       </motion.div>
 
-      <div style={{ marginTop: '48px', maxWidth: '800px', margin: '48px auto 0' }}>
+      <div style={{ marginTop: isMobile ? '24px' : '48px', maxWidth: '800px', margin: `${isMobile ? '24px' : '48px'} auto 0` }}>
         <div style={{ height: 6, background: 'rgba(255,255,255,0.03)', borderRadius: 3, overflow: 'hidden' }}>
           <motion.div 
             initial={{ width: 0 }}
@@ -472,8 +473,8 @@ export default function DashboardPage() {
             </AnimatePresence>
 
             {/* Daily Activity Table */}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 32 }}>
-              <h1 style={{ fontSize: isMobile ? '2rem' : '3.5rem', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em', margin: 0, lineHeight: 1 }}>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: isMobile ? 20 : 32 }}>
+              <h1 style={{ fontSize: isMobile ? '1.5rem' : '3.5rem', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em', margin: 0, lineHeight: 1 }}>
                 Mission <br />Control
               </h1>
               <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2 }}>

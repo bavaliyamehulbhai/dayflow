@@ -150,7 +150,7 @@ export default function Layout({ children }) {
       <div className="main-wrapper">
         {/* ─── Mobile Top Header ─────────────────────────────────────────────── */}
         {isMobile && (
-          <header className="mobile-header glass" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
+          <header className="mobile-header">
             <div className="mobile-header-logo">DayFlow</div>
             <button
               className="mobile-header-avatar"
@@ -241,17 +241,33 @@ export default function Layout({ children }) {
       <ShortcutOverlay />
 
       {/* Mobile Privacy Curtain */}
-      <div 
-        className={`privacy-curtain ${isSecureMode ? 'active' : ''}`}
-        onClick={toggleSecureMode}
-      >
-        <div style={{ textAlign: 'center', pointerEvents: 'none' }}>
-            <ShieldOff size={64} color="var(--accent)" style={{ marginBottom: 20, opacity: 0.5 }} />
-            <h2 style={{ color: 'white', fontFamily: 'Syne', fontWeight: 800 }}>Shield Active</h2>
-            <p style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Tap anywhere to reveal</p>
-        </div>
-        <div className="curtain-handle" />
-      </div>
-    </div >
+      <style>{`
+        @media (max-width: 768px) {
+          .main-content {
+            padding-bottom: calc(var(--bottom-nav-h, 85px) + 20px) !important;
+          }
+          .mobile-header {
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(3, 3, 5, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          }
+          .bottom-tab-bar {
+            height: var(--bottom-nav-h, 85px);
+            backdrop-filter: blur(30px) saturate(200%);
+            -webkit-backdrop-filter: blur(30px) saturate(200%);
+            background: rgba(13, 13, 22, 0.85);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 1000;
+          }
+        }
+        .privacy-curtain {
+          z-index: 10002 !important;
+        }
+        .command-palette-overlay {
+          z-index: 10001 !important;
+        }
+      `}</style>
+    </div>
   );
 }

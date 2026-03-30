@@ -164,7 +164,8 @@ export default function SchedulePage() {
 
   const getEventTop = (time) => {
     const [h, m] = time.split(':').map(Number);
-    return ((h - 6) * 60 + m) * (64 / 60);
+    const rowHeight = isMobile ? 48 : 64;
+    return ((h - 6) * 60 + m) * (rowHeight / 60);
   };
 
   const getEventHeight = (start, end) => {
@@ -172,7 +173,8 @@ export default function SchedulePage() {
     const [sh, sm] = start.split(':').map(Number);
     const [eh, em] = end.split(':').map(Number);
     const mins = (eh * 60 + em) - (sh * 60 + sm);
-    return Math.max(36, mins * (64 / 60));
+    const rowHeight = isMobile ? 48 : 64;
+    return Math.max(36, mins * (rowHeight / 60));
   };
 
   return (
@@ -186,8 +188,8 @@ export default function SchedulePage() {
         }} />
         <div>
           <div className="page-title flex items-center gap-4">
-            <div className="auth-logo-icon aura-float" style={{ width: 48, height: 48, marginBottom: 0 }}>
-              <Sparkles size={24} color="white" strokeWidth={2.5} fill="white" />
+            <div className="auth-logo-icon aura-float" style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, marginBottom: 0 }}>
+              <Sparkles size={isMobile ? 20 : 24} color="white" strokeWidth={2.5} fill="white" />
             </div>
             <h1 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em', lineHeight: 1.2 }}>Temporal Nexus</h1>
           </div>
@@ -200,7 +202,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Date navigation */}
-      <div className="glass-holographic mb-8" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', borderRadius: 24, border: 'none' }}>
+      <div className="glass-holographic mb-8" style={{ padding: isMobile ? '12px 16px' : '16px 24px', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', borderRadius: 24, border: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: isMobile ? '1 1 100%' : '1', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
           <motion.button whileHover={{ x: -4, background: 'rgba(255,255,255,0.05)' }} className="btn btn-icon glass haptic-tap" onClick={prevDay} style={{ borderRadius: 12 }}><ChevronLeft size={22} /></motion.button>
           <div style={{ textAlign: 'center', minWidth: isMobile ? 'auto' : 200 }}>
@@ -228,7 +230,7 @@ export default function SchedulePage() {
         <div className="glass-holographic aura-iridescent" style={{ padding: 0, overflow: 'hidden', border: 'none', borderRadius: 24 }}>
           <div style={{ position: 'relative', paddingLeft: isMobile ? 56 : 96, paddingRight: isMobile ? 12 : 32, paddingTop: 40, paddingBottom: 40 }}>
             {hours.map(h => (
-              <div key={h} style={{ position: 'relative', height: 64, borderBottom: '1px solid rgba(255,255,255,0.03)', zIndex: 1 }}>
+              <div key={h} style={{ position: 'relative', height: isMobile ? 48 : 64, borderBottom: '1px solid rgba(255,255,255,0.03)', zIndex: 1 }}>
                 <div style={{ position: 'absolute', left: isMobile ? -50 : -80, top: -10, fontSize: 11, color: 'var(--muted)', fontWeight: 800, width: isMobile ? 40 : 60, textAlign: 'right', fontFamily: 'Syne', opacity: 0.6 }}>
                   {h === 12 ? '12 PM' : h < 12 ? `${h} AM` : `${h - 12} PM`}
                 </div>

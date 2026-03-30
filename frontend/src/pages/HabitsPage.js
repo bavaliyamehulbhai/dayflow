@@ -124,7 +124,7 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
           <div className="grid-2 mb-4" style={{ gap: isMobile ? 12 : 16 }}>
             <div className="form-group" style={{ gridColumn: isMobile ? 'span 2' : 'span 1' }}>
               <label className="form-label" style={{ fontSize: 9, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 4 }}>Frequency</label>
-              <select className="select premium-select" style={{ height: isMobile ? 44 : 48, borderRadius: 12, fontSize: isMobile ? 13 : 14 }} value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
+              <select className="select premium-select" style={{ height: isMobile ? 44 : 48, borderRadius: 12, fontSize: isMobile ? 13 : 14, width: '100%' }} value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
                 {FREQ.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
               </select>
             </div>
@@ -141,21 +141,21 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
           </div>
 
           <div className="glass-card aura-iridescent" style={{ padding: isMobile ? '12px 16px' : '20px', display: 'flex', alignItems: 'center', gap: 16, borderRadius: 16 }}>
-            <div style={{ fontSize: isMobile ? '24px' : '32px', filter: `drop-shadow(0 0 8px ${form.color}44)` }}>{form.icon}</div>
-            <div style={{ flex: 1 }}>
+            <div style={{ fontSize: isMobile ? '24px' : '32px', filter: `drop-shadow(0 0 8px ${form.color}44)`, width: isMobile ? 32 : 44, textAlign: 'center' }}>{form.icon}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <SensitivityShield>
-                <div style={{ fontWeight: 800, fontSize: isMobile ? 16 : 18, fontFamily: 'Syne, sans-serif', color: 'var(--text)', lineHeight: 1.2 }}>{form.name || 'Your new ritual'}</div>
+                <div style={{ fontWeight: 800, fontSize: isMobile ? 15 : 18, fontFamily: 'Syne, sans-serif', color: 'var(--text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{form.name || 'Your new ritual'}</div>
               </SensitivityShield>
               <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 700, marginTop: 4, letterSpacing: 0.5 }}>{form.targetCount} {form.unit} • {form.frequency}</div>
             </div>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: form.color, boxShadow: `0 0 12px ${form.color}` }} />
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: form.color, boxShadow: `0 0 12px ${form.color}`, flexShrink: 0 }} />
           </div>
         </div>
         <div className="modal-footer" style={{ padding: isMobile ? '16px 20px' : '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 10 }}>
           {habit && (
             <button 
-              className="btn btn-icon glass" 
-              style={{ width: isMobile ? 48 : 52, height: isMobile ? 48 : 52, borderRadius: 14, color: 'var(--red)' }}
+              className="btn btn-icon glass haptic-tap" 
+              style={{ width: isMobile ? 48 : 52, height: isMobile ? 48 : 52, borderRadius: 14, color: 'var(--red)', flexShrink: 0 }}
               onClick={() => {
                 onDelete(habit);
               }}
@@ -163,8 +163,8 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
               <Trash2 size={20} />
             </button>
           )}
-          <button className="btn btn-ghost" onClick={onClose} style={{ flex: 1, height: isMobile ? 48 : 52, borderRadius: 14 }}>Abort</button>
-          <button className="auth-button" style={{ flex: 2, height: isMobile ? 48 : 52, borderRadius: 14, fontSize: isMobile ? 15 : 16 }} onClick={() => { if (!form.name.trim()) return toast.error('Name required'); onSave(form); }}>
+          <button className="btn btn-ghost haptic-tap" onClick={onClose} style={{ flex: 1, height: isMobile ? 48 : 52, borderRadius: 14 }}>Abort</button>
+          <button className="auth-button haptic-tap" style={{ flex: 2, height: isMobile ? 48 : 52, borderRadius: 14, fontSize: isMobile ? 15 : 16 }} onClick={() => { if (!form.name.trim()) return toast.error('Name required'); onSave(form); }}>
             <div className="btn-glint" />
             {habit ? 'Refine' : 'Manifest'}
           </button>
@@ -172,20 +172,38 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
       </motion.div>
 
       <style>{`
+        @keyframes streakFire {
+          0%, 100% { transform: scale(1) translateY(0); filter: drop-shadow(0 0 2px #ff7c6d); }
+          50% { transform: scale(1.15) translateY(-2px); filter: drop-shadow(0 0 8px #ff7c6d); }
+        }
+        .streak-fire-anim {
+          animation: streakFire 2s ease-in-out infinite;
+        }
+        .streak-active-glow {
+          background: rgba(255, 124, 109, 0.15) !important;
+          border-color: rgba(255, 124, 109, 0.3) !important;
+          box-shadow: 0 0 20px rgba(255, 124, 109, 0.1);
+        }
         @media (max-width: 768px) {
-          .modal.bottom-sheet {
+          .modal-overlay {
+            align-items: flex-end;
+            padding: 0;
+          }
+          .auth-card.bottom-sheet {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             width: 100%;
             max-width: none;
-            border-radius: 24px 24px 0 0;
+            border-radius: 28px 28px 0 0;
             max-height: 92vh;
             margin: 0;
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           }
-          .modal-overlay {
-            align-items: flex-end;
+          @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
           }
         }
       `}</style>
@@ -196,8 +214,23 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
 // ─── Ritual Card Component (Premium Grid Item) ──────────────────────────────
 const RitualCard = ({ habit, today, isCompleted, onComplete, onEdit, onDelete }) => {
   const daysToShow = 7;
-  const last7 = eachDayOfInterval({ start: subDays(new Date(), daysToShow - 1), end: new Date() });
+  const last7 = React.useMemo(() => eachDayOfInterval({ 
+    start: subDays(new Date(), daysToShow - 1), 
+    end: new Date() 
+  }), []);
   
+  const completionStatus = React.useMemo(() => last7.map(d => {
+    const dateStr = format(d, 'yyyy-MM-dd');
+    return {
+      dateStr,
+      done: isCompleted(habit, dateStr),
+      isToday: dateStr === today,
+      label: format(d, 'MMM d')
+    };
+  }), [habit.completions, today, last7]);
+
+  const isTodayCompleted = React.useMemo(() => isCompleted(habit, today), [habit.completions, today]);
+
   return (
     <motion.div
       layout
@@ -215,8 +248,8 @@ const RitualCard = ({ habit, today, isCompleted, onComplete, onEdit, onDelete })
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {habit.streak?.current > 0 && (
-            <div className="ritual-streak-badge">
-              <Flame size={14} fill="#ff7c6d" /> {habit.streak.current}d
+            <div className={`ritual-streak-badge ${habit.streak?.current >= 7 ? 'streak-active-glow' : ''}`}>
+              <Flame size={14} fill={habit.streak?.current >= 7 ? '#ff7c6d' : 'none'} className="streak-fire-anim" /> {habit.streak.current}d
             </div>
           )}
           <motion.button
@@ -240,42 +273,55 @@ const RitualCard = ({ habit, today, isCompleted, onComplete, onEdit, onDelete })
       </div>
 
       <div className="ritual-consistency-dots">
-        {last7.map(d => {
-          const dateStr = format(d, 'yyyy-MM-dd');
-          const done = isCompleted(habit, dateStr);
-          const isToday = dateStr === today;
-          
+        {completionStatus.map(s => {
           return (
             <div 
-              key={dateStr}
-              className={`ritual-dot ${done ? 'completed' : ''} ${isToday ? 'today' : ''}`}
+              key={s.dateStr}
+              className={`ritual-dot ${s.done ? 'completed' : ''} ${s.isToday ? 'today' : ''}`}
               style={{ 
-                backgroundColor: done ? habit.color : '',
-                boxShadow: done ? `0 0 10px ${habit.color}aa` : '',
-                borderColor: isToday ? habit.color : ''
+                backgroundColor: s.done ? habit.color : '',
+                boxShadow: s.done ? `0 0 10px ${habit.color}aa` : '',
+                borderColor: s.isToday ? habit.color : ''
               }}
-              title={format(d, 'MMM d')}
+              title={s.label}
             />
           );
         })}
         
         <div style={{ marginLeft: 'auto' }}>
            <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.1, boxShadow: isTodayCompleted ? `0 8px 25px ${habit.color}66` : '0 8px 20px rgba(255,255,255,0.1)' }}
+            whileTap={{ scale: 0.85 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
             onClick={(e) => { 
               e.stopPropagation(); 
               onComplete({ id: habit._id, date: today }); 
             }}
-            className={`haptic-tap ${isCompleted(habit, today) ? 'done' : ''}`}
+            className={`haptic-tap ${isTodayCompleted ? 'done' : ''}`}
             style={{
-              width: 32, height: 32, borderRadius: 10,
-              background: isCompleted(habit, today) ? habit.color : 'rgba(255,255,255,0.05)',
-              border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: isCompleted(habit, today) ? `0 5px 15px ${habit.color}44` : 'none'
+              width: 36, height: 36, borderRadius: 12,
+              background: isTodayCompleted ? habit.color : 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.05)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: isTodayCompleted ? `0 8px 20px ${habit.color}44` : 'none',
+              transition: 'background 0.3s ease, border-color 0.3s ease'
             }}
           >
-            <Check size={18} strokeWidth={3} />
+            <AnimatePresence mode="wait">
+              {isTodayCompleted ? (
+                <motion.div
+                  key="check"
+                  initial={{ scale: 0, rotate: -45 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  exit={{ scale: 0, rotate: 45 }}
+                >
+                  <Check size={20} strokeWidth={3.5} />
+                </motion.div>
+              ) : (
+                <motion.div key="plus" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <Plus size={18} strokeWidth={2.5} opacity={0.4} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.button>
         </div>
       </div>
@@ -441,14 +487,19 @@ export default function HabitsPage() {
       {isLoading ? (
         <div className="loading-page"><div className="loading-spinner" style={{ width: 32, height: 32 }} /></div>
       ) : habits.length === 0 ? (
-        <div className="premium-card" style={{ padding: '80px 40px', textAlign: 'center', borderRadius: 24 }}>
-          <div className="empty-icon" style={{ fontSize: 64, marginBottom: 20 }}>🎭</div>
-          <h2 className="empty-title" style={{ fontSize: 28, fontWeight: 800, fontFamily: 'Syne' }}>The stage is set</h2>
-          <p className="empty-desc" style={{ marginTop: 12, fontSize: 16, opacity: 0.6 }}>Begin your journey by defining your first high-performance ritual.</p>
-          <button className="auth-button" style={{ marginTop: 32, width: 'auto', padding: '0 32px' }} onClick={() => setModal('create')}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-card aura-iridescent" 
+          style={{ padding: '100px 40px', textAlign: 'center', borderRadius: 40, border: 'none' }}
+        >
+          <div className="empty-icon aura-float" style={{ fontSize: 80, marginBottom: 24, filter: 'drop-shadow(0 0 30px var(--accent-glow))' }}>🎭</div>
+          <h2 className="empty-title" style={{ fontSize: 32, fontWeight: 800, fontFamily: 'Syne', letterSpacing: '-0.04em' }}>The Stage is Set</h2>
+          <p className="empty-desc" style={{ marginTop: 16, fontSize: 18, opacity: 0.6, maxWidth: 450, marginInline: 'auto' }}>Begin your biological evolution by defining your first high-performance ritual.</p>
+          <button className="auth-button magnetic-btn haptic-tap" style={{ marginTop: 40, width: 'auto', padding: '0 40px', height: 56, borderRadius: 18 }} onClick={() => setModal('create')}>
             Forge Your First Ritual
           </button>
-        </div>
+        </motion.div>
       ) : isMobile ? (
         /* Mobile List View - Premium Glassmorphism */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

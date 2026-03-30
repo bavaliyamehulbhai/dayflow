@@ -322,8 +322,8 @@ export default function ProfilePage() {
         className="glass-holographic aura-iridescent aura-float"
         style={{
           marginBottom: 32, 
-          padding: isMobile ? '24px 16px' : '48px 64px',
-          borderRadius: 40,
+          padding: isMobile ? '20px 12px' : '48px 64px',
+          borderRadius: isMobile ? 32 : 40,
           position: 'relative',
           overflow: 'visible',
           border: 'none'
@@ -352,8 +352,8 @@ export default function ProfilePage() {
             <motion.div
               whileHover={{ scale: 1.05 }}
               style={{
-                width: isMobile ? 100 : 160, 
-                height: isMobile ? 100 : 160, 
+                width: isMobile ? 84 : 160, 
+                height: isMobile ? 84 : 160, 
                 borderRadius: '50%',
                 background: avatarGrad, 
                 display: 'flex', 
@@ -361,11 +361,11 @@ export default function ProfilePage() {
                 justifyContent: 'center',
                 fontFamily: 'Syne, sans-serif', 
                 fontWeight: 800, 
-                fontSize: isMobile ? '40px' : '64px',
+                fontSize: isMobile ? '32px' : '64px',
                 color: 'white', 
                 boxShadow: `0 20px 60px ${profileForm.avatarGradient === 'purple' ? 'rgba(124,109,250,0.5)' : 'rgba(0,0,0,0.3)'}`,
                 cursor: 'pointer',
-                border: '4px solid rgba(255,255,255,0.1)',
+                border: isMobile ? '2px solid rgba(255,255,255,0.1)' : '4px solid rgba(255,255,255,0.1)',
                 backdropFilter: 'blur(10px)'
               }}
               onClick={() => setShowGradientPicker(v => !v)}
@@ -415,14 +415,14 @@ export default function ProfilePage() {
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start', marginBottom: 8 }}>
-              <div style={{ fontFamily: 'Syne, sans-serif', fontSize: isMobile ? '32px' : '48px', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, color: 'white' }}>
+              <div style={{ fontFamily: 'Syne, sans-serif', fontSize: isMobile ? '24px' : '48px', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, color: 'white' }}>
                 {user?.name}
               </div>
               {earnedCount >= 5 && (
                 <div style={{ 
                   background: 'linear-gradient(135deg, #ffd700, #ffaa00)', 
-                  color: 'black', padding: '4px 12px', borderRadius: 50, 
-                  fontSize: 10, fontWeight: 900, letterSpacing: 1.5,
+                  color: 'black', padding: '4px 10px', borderRadius: 50, 
+                  fontSize: 9, fontWeight: 900, letterSpacing: 1,
                   boxShadow: '0 4px 15px rgba(255,215,0,0.3)'
                 }}>ZENITH ADHERENT</div>
               )}
@@ -474,19 +474,20 @@ export default function ProfilePage() {
       {/* ─── TAB NAVIGATION ────────────────────────────────────────────────── */}
       <div style={{ 
         display: 'flex', 
-        gap: isMobile ? 6 : 8, 
+        gap: isMobile ? 8 : 8, 
         marginBottom: 40, 
         padding: 6, 
         borderRadius: 24, 
         background: 'rgba(255,255,255,0.03)', 
         border: '1px solid rgba(255,255,255,0.05)',
-        width: isMobile ? 'auto' : 'fit-content',
+        width: isMobile ? '100%' : 'fit-content',
         maxWidth: '100%',
-        margin: isMobile ? '0 0 40px' : '0 auto 40px',
+        margin: isMobile ? '0 0 32px' : '0 auto 40px',
         overflowX: 'auto',
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
-        scrollSnapType: 'x mandatory'
+        scrollSnapType: 'x mandatory',
+        position: 'relative'
       }} className="no-scrollbar">
         {TABS.map(tab => {
           const active = activeTab === tab.id;
@@ -496,25 +497,26 @@ export default function ProfilePage() {
               onClick={() => setActiveTab(tab.id)}
               className="haptic-tap"
               style={{
-                padding: isMobile ? '12px 16px' : '14px 28px',
+                padding: isMobile ? '12px 18px' : '14px 28px',
                 borderRadius: 20,
                 border: 'none',
                 background: active ? 'white' : 'transparent',
                 color: active ? 'black' : 'var(--muted)',
                 fontWeight: 800,
-                fontSize: 14,
+                fontSize: 13,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 8,
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 whiteSpace: 'nowrap',
                 scrollSnapAlign: 'start',
-                boxShadow: active ? '0 10px 20px rgba(255,255,255,0.1)' : 'none'
+                boxShadow: active ? '0 10px 20px rgba(255,255,255,0.1)' : 'none',
+                flexShrink: 0
               }}
             >
-              <tab.icon size={18} strokeWidth={active ? 2.5 : 2} />
-              <span className={isMobile && !active ? 'hide' : ''}>{tab.label}</span>
+              <tab.icon size={isMobile ? 18 : 18} strokeWidth={active ? 2.5 : 2} />
+              <span className={isMobile && !active ? 'hide-mobile' : ''}>{tab.label}</span>
             </button>
           );
         })}
@@ -566,20 +568,20 @@ export default function ProfilePage() {
                 
                 <form onSubmit={handleProfileSave} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   <div className="form-group">
-                    <label style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10, display: 'block' }}>Legal Designation</label>
-                    <input className="auth-input" value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" style={{ height: 56, borderRadius: 16 }} />
+                    <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8, display: 'block' }}>Legal Designation</label>
+                    <input className="auth-input" value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" style={{ height: isMobile ? 48 : 56, borderRadius: 16 }} />
                   </div>
                   
                   <div className="form-group">
-                    <label style={{ fontSize: 12, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10, display: 'block' }}>Communication Channel</label>
+                    <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8, display: 'block' }}>Communication Channel</label>
                     <div style={{ position: 'relative' }}>
-                      <input className="auth-input" value={user?.email || ''} disabled style={{ height: 56, borderRadius: 16, borderStyle: 'dashed', opacity: 0.6 }} />
+                      <input className="auth-input" value={user?.email || ''} disabled style={{ height: isMobile ? 48 : 56, borderRadius: 16, borderStyle: 'dashed', opacity: 0.6 }} />
                       <div style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: 8, fontSize: 10, fontWeight: 900, color: 'var(--muted)', border: '1px solid rgba(255,255,255,0.1)' }}>VERIFIED</div>
                     </div>
                   </div>
 
                   <div style={{ marginTop: 12 }}>
-                    <button type="submit" className="auth-button haptic-tap" disabled={profileMutation.isPending} style={{ width: isMobile ? '100%' : 220, height: 56, fontSize: 15 }}>
+                    <button type="submit" className="auth-button haptic-tap" disabled={profileMutation.isPending} style={{ width: isMobile ? '100%' : 220, height: isMobile ? 48 : 56, fontSize: 15 }}>
                       <div className="btn-glint" />
                       {profileMutation.isPending ? 'Syncing...' : <><Save size={18} style={{ marginRight: 10 }} /> Update Identity</>}
                     </button>

@@ -30,8 +30,8 @@ const BackgroundParticles = () => (
             </pattern>
             <rect width="100%" height="100%" fill="url(#neural-mesh)" />
         </svg>
-        {/* Reduced particle count for performance */}
-        {[...Array(12)].map((_, i) => (
+        {/* Reduced particle count for performance - only 6 on mobile, 12 on desktop */}
+        {[...Array(typeof window !== 'undefined' && window.innerWidth < 768 ? 6 : 12)].map((_, i) => (
             <motion.div
                 key={i}
                 initial={{ x: Math.random() * 100 + '%', y: Math.random() * 100 + '%', opacity: 0 }}
@@ -75,23 +75,43 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
         style={{ position: 'fixed', inset: 0, background: `radial-gradient(circle at center, ${color} 0%, transparent 75%)`, filter: 'blur(120px)', zIndex: 0, pointerEvents: 'none' }} 
       />
       <motion.div
-        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
-        className={`auth-card elite-editor-plate ${isMobile ? 'bottom-sheet' : ''}`}
+        initial={isMobile ? { x: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
+        animate={{ x: 0, opacity: 1, scale: 1 }}
+        exit={isMobile ? { x: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
+        className={`auth-card elite-editor-plate ${isMobile ? 'full-screen-immersion' : ''}`}
         style={{
-          maxWidth: 950, width: '95%', padding: 0, display: 'flex', flexDirection: 'column',
-          height: isMobile ? '95%' : '85vh', borderRadius: isMobile ? '24px 24px 0 0' : 44,
-          background: 'rgba(12, 12, 22, 0.95)', backdropFilter: 'blur(40px)', 
-          border: `1px solid ${color}44`,
-          boxShadow: `0 30px 100px rgba(0,0,0,0.8), 0 0 40px ${color}11`,
-          position: 'relative', zIndex: 1
+          maxWidth: isMobile ? '100%' : 950, 
+          width: isMobile ? '100%' : '95%', 
+          padding: 0, 
+          display: 'flex', 
+          flexDirection: 'column',
+          height: isMobile ? '100%' : '85vh', 
+          borderRadius: isMobile ? 0 : 44,
+          background: 'rgba(12, 12, 22, 1)', backdropFilter: 'blur(40px)', 
+          border: isMobile ? 'none' : `1px solid ${color}44`,
+          boxShadow: isMobile ? 'none' : `0 30px 100px rgba(0,0,0,0.8), 0 0 40px ${color}11`,
+          position: 'fixed', 
+          bottom: 0, 
+          top: 0,
+          left: isMobile ? 0 : '50%', 
+          transform: isMobile ? 'none' : 'translate(-50%, -50%)',
+          zIndex: 1001, 
+          overflow: 'hidden'
         }}
       >
-        <div style={{ padding: isMobile ? '12px 16px' : 40, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div style={{ padding: isMobile ? '16px 20px' : 40, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          {isMobile && (
+            <button 
+              onClick={onClose} 
+              style={{ background: 'none', border: 'none', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4, padding: '4px 0', flexShrink: 0 }}
+            >
+              <ArrowRight size={18} style={{ transform: 'rotate(180deg)' }} />
+              <span style={{ fontSize: 13, fontWeight: 800, fontFamily: 'Syne' }}>BACK</span>
+            </button>
+          )}
           <input
             className="no-border"
-            style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', fontFamily: 'Syne', fontSize: isMobile ? 18 : 36, fontWeight: 900, color: 'white', outline: 'none' }}
+            style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', fontFamily: 'Syne', fontSize: isMobile ? 22 : 36, fontWeight: 900, color: 'white', outline: 'none' }}
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Essence Name..."
@@ -114,10 +134,10 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
                  display: 'flex', alignItems: 'center', gap: 4
                }}
              >
-               <Trash2 size={isMobile ? 16 : 20} />
+               <Trash2 size={isMobile ? 18 : 20} />
                {isDeleting && <span style={{ fontSize: 9, fontWeight: 900 }}>CONFIRM?</span>}
              </button>
-             <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: isMobile ? 8 : 12, border: 'none', color: 'white' }}><X size={isMobile ? 16 : 20} /></button>
+             {!isMobile && <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: isMobile ? 8 : 12, border: 'none', color: 'white' }}><X size={isMobile ? 16 : 20} /></button>}
           </div>
         </div>
         
@@ -210,21 +230,22 @@ export default function NotesPage() {
     n.content?.toLowerCase().includes(search.toLowerCase())
   ).sort((a,b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0) || new Date(b.updatedAt) - new Date(a.updatedAt));
 
-  const NoteCard = ({ note }) => (
+  const NoteCard = React.memo(({ note }) => (
     <motion.div
       layout
       whileHover={{ scale: isMobile ? 1 : 1.02, y: isMobile ? 0 : -5 }}
+      whileTap={{ scale: 0.98 }}
       className="note-card-elite holographic-shimmer aura-iridescent haptic-tap"
       style={{ 
         background: 'rgba(20, 20, 35, 0.4)', 
         border: `1px solid ${note.color}33`,
         borderLeft: `4px solid ${note.color}`,
-        padding: isMobile ? '16px 20px' : '24px 32px', borderRadius: 28, cursor: 'pointer',
-        display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24, 
+        padding: isMobile ? '20px' : '24px 32px', borderRadius: 28, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: isMobile ? 16 : 24, 
         boxShadow: `0 20px 50px rgba(0,0,0,0.4), 0 0 30px ${note.color}11`,
         position: 'relative',
         breakInside: 'avoid',
-        marginBottom: isMobile ? 16 : 20,
+        marginBottom: isMobile ? 12 : 20,
         '--card-glow': `${note.color}33`,
         willChange: 'transform, opacity'
       }}
@@ -232,25 +253,25 @@ export default function NotesPage() {
       <div className="btn-glint" style={{ opacity: 0.03 }} />
       <div 
         onClick={() => setModal(note)} 
-        style={{ flex: 1, display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 24, minWidth: 0 }}
+        style={{ flex: 1, display: 'flex', alignItems: 'center', gap: isMobile ? 16 : 24, minWidth: 0 }}
       >
-        <div style={{ width: 54, height: 54, borderRadius: 18, background: `${note.color}15`, border: `1px solid ${note.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
-          <FileText size={22} style={{ color: note.color, filter: `drop-shadow(0 0 8px ${note.color})` }} />
+        <div style={{ width: isMobile ? 48 : 54, height: isMobile ? 48 : 54, borderRadius: 18, background: `${note.color}15`, border: `1px solid ${note.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+          <FileText size={isMobile ? 18 : 22} style={{ color: note.color, filter: `drop-shadow(0 0 8px ${note.color})` }} />
           <div className="aura-pulse" style={{ position: 'absolute', inset: 0, borderRadius: 18, background: note.color, opacity: 0.1 }} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <SensitivityShield>
-            <h3 style={{ fontFamily: 'Syne', fontSize: 19, fontWeight: 900, color: 'white', margin: 0, textTransform: 'uppercase', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title || 'Untitled Essence'}</h3>
+            <h3 style={{ fontFamily: 'Syne', fontSize: isMobile ? 16 : 19, fontWeight: 900, color: 'white', margin: 0, textTransform: 'uppercase', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title || 'Untitled Essence'}</h3>
           </SensitivityShield>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
               <span style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5 }}>{format(new Date(note.updatedAt), 'MMM d, yyyy')}</span>
               <div style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
               <div style={{ fontSize: 9, color: note.color, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>{note.content?.length || 0} NODES</div>
           </div>
         </div>
         {note.isPinned && (
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--accent)22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Pin size={14} style={{ color: 'var(--accent)', fill: 'var(--accent)' }} />
+          <div style={{ width: 28, height: 28, borderRadius: 10, background: 'var(--accent)22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Pin size={12} style={{ color: 'var(--accent)', fill: 'var(--accent)' }} />
           </div>
         )}
       </div>
@@ -266,7 +287,7 @@ export default function NotesPage() {
         <Trash2 size={14} style={{ color: 'var(--red)' }} />
       </button>
     </motion.div>
-  );
+  ));
 
   return (
     <div className="responsive-container" style={{ padding: isMobile ? '0 16px' : undefined }}>
@@ -284,8 +305,8 @@ export default function NotesPage() {
         }} />
         <div>
           <div className="page-title flex items-center gap-4">
-            <div className="auth-logo-icon aura-float" style={{ width: 48, height: 48, marginBottom: 0 }}>
-              <FileText size={24} color="white" strokeWidth={2.5} fill="white" />
+            <div className="auth-logo-icon aura-float" style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, marginBottom: 0 }}>
+              <FileText size={isMobile ? 20 : 24} color="white" strokeWidth={2.5} fill="white" />
             </div>
             <h1 style={{ fontSize: 'var(--fs-2xl)', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.04em', lineHeight: 1.2 }}>Cognitive Archive</h1>
           </div>
@@ -302,7 +323,7 @@ export default function NotesPage() {
           <Search size={20} className="text-muted" style={{ opacity: 0.5 }} />
           <input
             className="auth-input no-border"
-            style={{ height: 44, background: 'none', fontSize: 15, fontWeight: 700, padding: 0, fontFamily: 'Syne' }}
+            style={{ height: isMobile ? 40 : 44, background: 'none', fontSize: 14, fontWeight: 700, padding: 0, fontFamily: 'Syne' }}
             placeholder="Quantum search fragments..."
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -315,7 +336,7 @@ export default function NotesPage() {
         <button 
           onClick={() => createMutation.mutate({ title: '', content: '' })} 
           className="auth-button show-mobile-only haptic-tap" 
-          style={{ height: 44, width: 44, padding: 0, borderRadius: 12, display: isMobile ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center' }}
+          style={{ height: isMobile ? 40 : 44, width: isMobile ? 40 : 44, padding: 0, borderRadius: 12, display: isMobile ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center' }}
         >
           <Plus size={18} />
         </button>
@@ -329,12 +350,43 @@ export default function NotesPage() {
           <MagneticButton className="auth-button glow-on-hover" style={{ marginTop: 32, width: 'auto', marginInline: 'auto', padding: '0 32px' }} onClick={() => createMutation.mutate({ title: '', content: '' })}>Forge New Fragment</MagneticButton>
         </div>
       ) : (
-        <div style={{ columnCount: isMobile ? 1 : 2, columnGap: 24, paddingBottom: 100 }}>
+        <div style={{ columnCount: isMobile ? 1 : 2, columnGap: 24, paddingBottom: 160 }}>
           <AnimatePresence>
             {notes.map(n => <NoteCard key={n._id} note={n} />)}
           </AnimatePresence>
         </div>
       )}
+
+      {/* ─── Floating Action Button (Mobile) ────────────────────────── */}
+      <AnimatePresence>
+        {isMobile && !modal && (
+          <motion.button
+            initial={{ scale: 0, rotate: -45 }}
+            animate={{ scale: 1, rotate: 0 }}
+            exit={{ scale: 0, rotate: 45 }}
+            onClick={() => createMutation.mutate({ title: '', content: '' })}
+            className="fab-premium haptic-tap"
+            style={{
+              position: 'fixed',
+              bottom: 'calc(85px + 24px)',
+              right: 24,
+              width: 64,
+              height: 64,
+              borderRadius: 24,
+              background: 'var(--grad-premium)',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 15px 40px rgba(124, 109, 250, 0.4), 0 0 20px rgba(124, 109, 250, 0.2)',
+              zIndex: 100,
+              border: '1px solid rgba(255,255,255,0.2)'
+            }}
+          >
+            <Plus size={32} strokeWidth={2.5} />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {modal && <NoteEditor note={modal} onClose={() => { setModal(null); invalidate(); }} onSave={handleSave} isMobile={isMobile} />}

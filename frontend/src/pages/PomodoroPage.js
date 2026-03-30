@@ -82,12 +82,26 @@ export default function PomodoroPage() {
     'long-break': (prefs.pomodoroLong || 15) * 60
   };
 
-  const [mode, setMode] = useState('work');
-  const [timeLeft, setTimeLeft] = useState(DURATIONS.work);
-  const [running, setRunning] = useState(false);
-  const [sessions, setSessions] = useState(0);
-  const [currentPomoId, setCurrentPomoId] = useState(null);
-  const [startedAt, setStartedAt] = useState(null);
+  // Performance optimization: use local storage for persistence
+  const [mode, setMode] = useState(() => localStorage.getItem('df_pomo_mode') || 'work');
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const saved = localStorage.getItem('df_pomo_timeLeft');
+    const lastUpdate = localStorage.getItem('df_pomo_lastUpdate');
+    const running = localStorage.getItem('df_pomo_running') === 'true';
+    
+    if (saved && lastUpdate && running) {
+      const elapsed = Math.floor((Date.now() - parseInt(lastUpdate)) / 1000);
+      return Math.max(0, parseInt(saved) - elapsed);
+    }
+    return saved ? parseInt(saved) : DURATIONS[localStorage.getItem('df_pomo_mode') || 'work'];
+  });
+  const [running, setRunning] = useState(() => localStorage.getItem('df_pomo_running') === 'true');
+  const [sessions, setSessions] = useState(() => parseInt(localStorage.getItem('df_pomo_sessions')) || 0);
+  const [currentPomoId, setCurrentPomoId] = useState(() => localStorage.getItem('df_pomo_id'));
+  const [startedAt, setStartedAt] = useState(() => {
+    const s = localStorage.getItem('df_pomo_startedAt');
+    return s ? parseInt(s) : null;
+  });
   const [note, setNote] = useState('');
   const [linkedTask, setLinkedTask] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, action: null, message: '' });
@@ -97,6 +111,19 @@ export default function PomodoroPage() {
   const intervalRef = useRef(null);
   const audioCtxRef = useRef(null);
   const rainRef = useRef(null);
+
+  // Sync to local storage
+  useEffect(() => {
+    localStorage.setItem('df_pomo_mode', mode);
+    localStorage.setItem('df_pomo_timeLeft', timeLeft);
+    localStorage.setItem('df_pomo_running', running);
+    localStorage.setItem('df_pomo_sessions', sessions);
+    localStorage.setItem('df_pomo_lastUpdate', Date.now());
+    if (currentPomoId) localStorage.setItem('df_pomo_id', currentPomoId);
+    else localStorage.removeItem('df_pomo_id');
+    if (startedAt) localStorage.setItem('df_pomo_startedAt', startedAt);
+    else localStorage.removeItem('df_pomo_startedAt');
+  }, [mode, timeLeft, running, sessions, currentPomoId, startedAt]);
 
   const { data: statsData } = useQuery({
     queryKey: ['pomo-stats'],
@@ -387,8 +414,8 @@ export default function PomodoroPage() {
             letterSpacing: '-0.05em',
             lineHeight: 1.2
           }}>
-            <div className="auth-logo-icon aura-float" style={{ width: 48, height: 48, marginBottom: 0 }}>
-              <Timer size={24} color="white" strokeWidth={2.5} fill="white" />
+            <div className="auth-logo-icon aura-float" style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, marginBottom: 0 }}>
+              <Timer size={isMobile ? 20 : 24} color="white" strokeWidth={2.5} fill="white" />
             </div>
             Temporal Engine
           </div>
@@ -399,9 +426,9 @@ export default function PomodoroPage() {
         <button
           className="btn glass haptic-tap glow-on-hover"
           onClick={() => setIsFocusMode(true)}
-          style={{ borderRadius: 16, height: 54, padding: '0 24px', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)' }}
+          style={{ borderRadius: 16, height: isMobile ? 44 : 54, padding: isMobile ? '0 16px' : '0 24px', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)', fontSize: isMobile ? 12 : 14 }}
         >
-          <Maximize2 size={18} style={{ marginRight: 10 }} /> Immersive Mode
+          <Maximize2 size={isMobile ? 16 : 18} style={{ marginRight: isMobile ? 8 : 10 }} /> Immersive Mode
         </button>
       </div>
 
@@ -416,11 +443,11 @@ export default function PomodoroPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 20, minWidth: 0 }}>
 
           {/* Timer Card */}
-          <motion.div variants={itemVariants} className="glass-holographic aura-iridescent" style={{ textAlign: 'center', padding: 'var(--space-10) var(--space-6)', position: 'relative', overflow: 'hidden', borderRadius: 40, border: 'none' }}>
+          <motion.div variants={itemVariants} className="glass-holographic aura-iridescent" style={{ textAlign: 'center', padding: isMobile ? 'var(--space-6) var(--space-4)' : 'var(--space-10) var(--space-6)', position: 'relative', overflow: 'hidden', borderRadius: isMobile ? 32 : 40, border: 'none' }}>
             <div className="btn-glint" style={{ opacity: 0.05 }} />
 
             {/* Mode Switcher */}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: isMobile ? 32 : 56, background: 'rgba(255,255,255,0.03)', padding: 6, borderRadius: 50, border: '1px solid rgba(255,255,255,0.05)', width: 'fit-content', margin: '0 auto 56px' }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: isMobile ? 32 : 56, background: 'rgba(255,255,255,0.03)', padding: 6, borderRadius: 50, border: '1px solid rgba(255,255,255,0.05)', width: 'fit-content', margin: `0 auto ${isMobile ? '32px' : '56px'}` }}>
               {Object.entries(MODES).map(([key, info]) => (
                 <button
                   key={key}
@@ -504,7 +531,7 @@ export default function PomodoroPage() {
                     transition={{ duration: 0.2 }}
                     style={{
                       fontFamily: 'Syne, sans-serif',
-                      fontSize: isMobile ? '72px' : '88px',
+                      fontSize: isMobile ? '54px' : '88px',
                       fontWeight: 800,
                       letterSpacing: '-0.05em',
                       lineHeight: 1,
@@ -554,33 +581,33 @@ export default function PomodoroPage() {
             </div>
 
             {/* Controls */}
-            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: isMobile ? 12 : 16, justifyContent: 'center', alignItems: 'center' }}>
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 whileHover={{ scale: 1.02, boxShadow: `0 20px 40px ${modeInfo.color}33` }}
                 className="auth-button magnetic-btn"
                 onClick={handleStart}
                 style={{
-                  height: 64,
-                  fontSize: 18,
+                  height: isMobile ? 54 : 64,
+                  fontSize: isMobile ? 16 : 18,
                   fontWeight: 800,
                   background: modeInfo.gradient,
                   width: 'auto',
-                  padding: '0 56px',
-                  borderRadius: 20
+                  padding: isMobile ? '0 32px' : '0 56px',
+                  borderRadius: isMobile ? 16 : 20
                 }}
               >
                 <div className="btn-glint" />
-                {running ? <><Pause size={22} style={{ marginRight: 12 }} /> STasis</> : startedAt ? <><Play size={22} style={{ marginRight: 12 }} /> Resume</> : <><Play size={22} style={{ marginRight: 12 }} /> Initiate</>}
+                {running ? <><Pause size={isMobile ? 18 : 22} style={{ marginRight: isMobile ? 8 : 12 }} /> STasis</> : startedAt ? <><Play size={isMobile ? 18 : 22} style={{ marginRight: isMobile ? 8 : 12 }} /> Resume</> : <><Play size={isMobile ? 18 : 22} style={{ marginRight: isMobile ? 8 : 12 }} /> Initiate</>}
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 whileHover={{ background: 'rgba(255,255,255,0.08)' }}
                 className="btn glass haptic-tap"
                 onClick={handleReset}
-                style={{ width: 64, height: 64, padding: 0, borderRadius: 20, border: '1px solid rgba(255,255,255,0.08)' }}
+                style={{ width: isMobile ? 54 : 64, height: isMobile ? 54 : 64, padding: 0, borderRadius: isMobile ? 16 : 20, border: '1px solid rgba(255,255,255,0.08)' }}
               >
-                <RotateCcw size={20} />
+                <RotateCcw size={isMobile ? 18 : 20} />
               </motion.button>
             </div>
 

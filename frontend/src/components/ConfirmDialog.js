@@ -41,46 +41,61 @@ export default function ConfirmDialog({ open, title, message, confirmText = 'Del
                 >
                     <motion.div
                         key="confirm-box"
-                        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30, filter: 'blur(10px)' }}
-                        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30, filter: 'blur(10px)' }}
-                        transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                        className="confirm-dialog glass-holographic"
+                        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.94, y: 20 }}
+                        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+                        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.94, y: 20 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                        className="confirm-dialog premium-card aura-iridescent"
                         style={isMobile ? { 
                             width: '100%', 
-                            borderRadius: '24px 24px 0 0', 
-                            padding: '32px 24px calc(24px + env(safe-area-inset-bottom))',
+                            borderRadius: '32px 32px 0 0', 
+                            padding: '40px 24px calc(24px + env(safe-area-inset-bottom))',
                             maxWidth: 'none',
                             margin: 0,
                             border: 'none',
-                            position: 'relative'
-                        } : {
-                            border: 'none',
                             position: 'relative',
-                            boxShadow: '0 40px 100px rgba(0,0,0,0.6)'
+                            background: 'rgba(13, 13, 22, 0.95)',
+                            backdropFilter: 'blur(30px)'
+                        } : {
+                            width: '100%',
+                            maxWidth: 420,
+                            padding: '32px',
+                            borderRadius: '24px',
+                            border: '1px solid rgba(255,255,255,0.06)',
+                            position: 'relative',
+                            boxShadow: '0 40px 120px rgba(0,0,0,0.8)',
+                            background: 'rgba(13, 13, 22, 0.7)',
+                            backdropFilter: 'blur(40px) saturate(180%)'
                         }}
                     >
-                        <button className="modal-close" onClick={onCancel} style={{ position: 'absolute', top: 16, right: 16 }}>
+                        <button className="modal-close haptic-tap" onClick={onCancel} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.03)', padding: 8, borderRadius: 12 }}>
                             <X size={18} />
                         </button>
  
-                        <div className="confirm-icon" style={{ background: danger ? 'rgba(250,109,109,0.08)' : 'rgba(130,114,255,0.08)', borderColor: danger ? 'rgba(250,109,109,0.2)' : 'rgba(130,114,255,0.2)', width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                            <AlertTriangle size={22} style={{ color: danger ? 'var(--red)' : 'var(--accent)' }} />
+                        <div className="confirm-icon aura-float" style={{ 
+                            background: danger ? 'rgba(248, 113, 113, 0.1)' : 'rgba(124, 109, 250, 0.1)', 
+                            border: `1.5px solid ${danger ? 'rgba(248, 113, 113, 0.2)' : 'rgba(124, 109, 250, 0.2)'}`, 
+                            width: 52, height: 52, borderRadius: 16, 
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+                            boxShadow: `0 0 20px ${danger ? 'rgba(248, 113, 113, 0.1)' : 'rgba(124, 109, 250, 0.1)'}`
+                        }}>
+                            <AlertTriangle size={24} style={{ color: danger ? 'var(--red)' : 'var(--accent)' }} />
                         </div>
  
-                        <div className="confirm-title" style={{ fontFamily: 'Syne', fontSize: 20, fontWeight: 800, marginBottom: 8 }}>{title}</div>
-                        <div className="confirm-message" style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 24, lineHeight: 1.5 }}>{message}</div>
+                        <div className="confirm-title" style={{ fontFamily: 'Syne', fontSize: 24, fontWeight: 800, marginBottom: 12, letterSpacing: '-0.03em' }}>{title}</div>
+                        <div className="confirm-message" style={{ fontSize: 15, color: 'var(--muted)', marginBottom: 32, lineHeight: 1.6, fontWeight: 500 }}>{message}</div>
  
                         <div className="confirm-actions" style={{ display: 'flex', gap: 12 }}>
-                            <button className="btn btn-ghost" onClick={onCancel} style={{ flex: 1, height: 48, borderRadius: 12 }}>
-                                Cancel
+                            <button className="btn btn-ghost haptic-tap" onClick={onCancel} style={{ flex: 1, height: 52, borderRadius: 14, fontWeight: 700 }}>
+                                Abort
                             </button>
                             <button
-                                className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`}
+                                className={`btn ${danger ? 'btn-danger' : 'btn-primary'} haptic-tap`}
                                 onClick={onConfirm}
-                                style={{ flex: 1, height: 48, borderRadius: 12 }}
+                                style={{ flex: 1, height: 52, borderRadius: 14, fontWeight: 800, boxShadow: danger ? '0 8px 25px rgba(248, 113, 113, 0.25)' : '0 8px 25px rgba(124, 109, 250, 0.25)' }}
                                 autoFocus
                             >
+                                <div className="btn-glint" />
                                 {confirmText}
                             </button>
                         </div>
