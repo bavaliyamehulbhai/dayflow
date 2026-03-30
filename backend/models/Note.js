@@ -58,8 +58,12 @@ noteSchema.pre('save', function (next) {
 
 // Decrypt after fetching
 noteSchema.post('init', function (doc) {
-  if (doc.title) doc.title = decrypt(doc.title);
-  if (doc.content) doc.content = decrypt(doc.content);
+  try {
+    if (doc.title) doc.title = decrypt(doc.title);
+    if (doc.content) doc.content = decrypt(doc.content);
+  } catch (err) {
+    console.error(`Post-init Decryption Error for Note ${doc._id}:`, err.message);
+  }
 });
 
 noteSchema.index({ user: 1, isPinned: -1, updatedAt: -1 });

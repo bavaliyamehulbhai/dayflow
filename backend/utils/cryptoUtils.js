@@ -11,7 +11,8 @@ const AUTH_TAG_LENGTH = 16; // 16 bytes tag
 const encrypt = (text) => {
     if (!text) return text;
     if (!process.env.ENCRYPTION_KEY) {
-        throw new Error('ENCRYPTION_KEY is not set');
+        console.error('ENCRYPTION_KEY is not set');
+        return text;
     }
 
     const iv = crypto.randomBytes(IV_LENGTH);
@@ -38,7 +39,8 @@ const isHex = (str) => /^[0-9a-f]+$/i.test(str);
 const decrypt = (hash) => {
     if (!hash) return hash;
     if (!process.env.ENCRYPTION_KEY) {
-        throw new Error('ENCRYPTION_KEY is not set');
+        // Log once to avoid flooding
+        return hash;
     }
 
     // Encrypted format is exactly: ivHex.authTagHex.encryptedHex

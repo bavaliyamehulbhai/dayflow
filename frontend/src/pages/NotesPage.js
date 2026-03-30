@@ -161,7 +161,7 @@ export default function NotesPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['notes'],
-    queryFn: () => notesAPI.getAll({ limit: 1000 }).then(r => r.data.notes)
+    queryFn: () => notesAPI.getAll({ limit: 100 }).then(r => r.data.notes)
   });
 
   const invalidate = () => qc.invalidateQueries(['notes']);
