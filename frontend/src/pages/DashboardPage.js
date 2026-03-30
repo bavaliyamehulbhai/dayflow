@@ -134,7 +134,7 @@ function DashboardSkeleton() {
   );
 }
 
-const AuraOrb = ({ color, size, top, left, delay, duration = 15 }) => (
+const AuraOrb = React.memo(({ color, size, top, left, delay, duration = 15 }) => (
   <motion.div
     animate={{
       x: [0, 50, -30, 0],
@@ -162,7 +162,7 @@ const AuraOrb = ({ color, size, top, left, delay, duration = 15 }) => (
       willChange: 'transform, opacity'
     }}
   />
-);
+));
 
 function Clock() {
   const [time, setTime] = useState(new Date());
@@ -171,14 +171,13 @@ function Clock() {
     return () => clearInterval(t);
   }, []);
 
+  let GreetingIcon = Zap;
   const hours = time.getHours();
   const pct = Math.min(100, Math.max(0, ((hours - 6) * 60 + time.getMinutes()) / (17 * 60) * 100));
-
-  let GreetingIcon = Sunrise;
-  if (hours >= 12) GreetingIcon = Sunrise; // Good Morning
-  if (hours >= 17) GreetingIcon = Sun;     // Good Afternoon
-  if (hours >= 19) GreetingIcon = Sunset;  // Good Evening
-  if (hours >= 23) GreetingIcon = Moon;    // Good Night
+  if (hours < 12) GreetingIcon = Sunrise;      // Good Morning
+  else if (hours < 17) GreetingIcon = Sun;     // Good Afternoon
+  else if (hours < 21) GreetingIcon = Sunset;  // Good Evening
+  else GreetingIcon = Moon;                    // Good Night
 
   return (
     <motion.div 
@@ -280,13 +279,12 @@ export default function DashboardPage() {
   const completionPct = taskTotal ? Math.round((taskCompleted / taskTotal) * 100) : 0;
 
   const hours = new Date().getHours();
-  let greeting = 'Good Day';
-  let GreetingIcon = Zap;
+  let greeting = 'Good Morning';
+  let GreetingIcon = Sunrise;
   
-  if (hours >= 12) { greeting = 'Good Morning'; GreetingIcon = Sunrise; }
-  if (hours >= 17) { greeting = 'Good After Noon'; GreetingIcon = Sun; }
-  if (hours >= 19) { greeting = 'Good Evening'; GreetingIcon = Sunset; }
-  if (hours >= 23) { greeting = 'Good Night'; GreetingIcon = Moon; }
+  if (hours >= 12 && hours < 17) { greeting = 'Good Afternoon'; GreetingIcon = Sun; }
+  else if (hours >= 17 && hours < 21) { greeting = 'Good Evening'; GreetingIcon = Sunset; }
+  else if (hours >= 21 || hours < 5) { greeting = 'Good Night'; GreetingIcon = Moon; }
 
   const MobileFeed = () => {
     const nextEvent = d?.schedule?.today?.find(ev => {

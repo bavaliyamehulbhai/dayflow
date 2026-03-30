@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, subMonths, eachDayOfInterval, startOfMonth, endOfMonth, eachMonthOfInterval, getDay, differenceInDays } from 'date-fns';
 
-const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
+const ActivityHeatmapYear = React.memo(({ data = [], isMobile = false, onSelectDay }) => {
     const [hoveredDay, setHoveredDay] = useState(null);
     const [selectedDay, setSelectedDay] = useState(null);
 
@@ -306,6 +306,6 @@ const ActivityHeatmapYear = ({ data = [], isMobile = false, onSelectDay }) => {
             </div>
         </div>
     );
-};
+});
 
 export default ActivityHeatmapYear;

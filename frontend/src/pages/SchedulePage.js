@@ -429,7 +429,7 @@ export default function SchedulePage() {
         )}
       </AnimatePresence>
 
-      <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
+      <ConfirmDialog {...confirmDialog} onConfirm={confirmDialog.onConfirm} onCancel={() => setConfirmDialog({ open: false })} />
 
       <style>{`
         .text-accent { color: var(--accent); }

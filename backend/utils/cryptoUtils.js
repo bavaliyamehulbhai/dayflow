@@ -33,15 +33,26 @@ const encrypt = (text) => {
  * Decrypts text using AES-256-GCM
  * Input format: iv.authTag.encryptedContent
  */
+const isHex = (str) => /^[0-9a-f]+$/i.test(str);
+
 const decrypt = (hash) => {
-    if (!hash || !hash.includes('.')) return hash;
+    if (!hash) return hash;
     if (!process.env.ENCRYPTION_KEY) {
         throw new Error('ENCRYPTION_KEY is not set');
     }
 
-    try {
-        const [ivHex, authTagHex, encryptedHex] = hash.split('.');
+    // Encrypted format is exactly: ivHex.authTagHex.encryptedHex
+    const parts = hash.split('.');
+    if (parts.length !== 3) return hash; // Not encrypted data
 
+    const [ivHex, authTagHex, encryptedHex] = parts;
+
+    // Validate all parts are non-empty hex strings with expected lengths
+    if (!ivHex || !authTagHex || !encryptedHex) return hash;
+    if (!isHex(ivHex) || !isHex(authTagHex) || !isHex(encryptedHex)) return hash;
+    if (ivHex.length !== IV_LENGTH * 2 || authTagHex.length !== AUTH_TAG_LENGTH * 2) return hash;
+
+    try {
         const iv = Buffer.from(ivHex, 'hex');
         const authTag = Buffer.from(authTagHex, 'hex');
         const encrypted = Buffer.from(encryptedHex, 'hex');

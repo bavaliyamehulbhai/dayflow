@@ -517,10 +517,11 @@ export default function TasksPage() {
 
       <ConfirmDialog
         open={confirmState.open}
-        title="Remove Objective?"
+        title={confirmState.title || "Remove Objective?"}
+        message={confirmState.message || "Are you sure you want to proceed? This action cannot be undone."}
         confirmText="Remove"
-        onConfirm={() => handleDelete(confirmState.task)}
-        onCancel={() => setConfirmState({ open: false, task: null })}
+        onConfirm={confirmState.onConfirm || (() => handleDelete(confirmState.task))}
+        onCancel={() => setConfirmState({ open: false, task: null, onConfirm: null, title: null, message: null })}
       />
     </div>
   );

@@ -58,23 +58,35 @@ const getCoachInsights = async (userId) => {
     }
 
     // --- HEURISTIC 3: TASK OVERLOAD ---
-    const overdueCount = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date()).length;
+    const now = new Date();
+    const overdueCount = tasks.filter(t => t.dueDate && new Date(t.dueDate) < now).length;
     if (overdueCount > 3) {
         insights.push({
             type: 'warning',
             title: 'Task Overload',
-            message: `You have ${overdueCount} overdue tasks. Consider rescheduling some to avoid burnout.`,
+            message: `You have ${overdueCount} overdue tasks. Consider rescheduling some to avoid burnout and maintain clarity.`,
             priority: 'high'
         });
     }
 
     // --- HEURISTIC 4: HABIT CONSISTENCY ---
-    const inconsistentHabits = habits.filter(h => h.streak?.current === 0 && h.completions.length > 5);
+    // Only flag habits that the user has shown commitment to (at least 5 completions)
+    // but hasn't completed in the last 2 days.
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    
+    const inconsistentHabits = habits.filter(h => {
+        const lastCompletion = h.completions?.length > 0 
+            ? new Date(h.completions[h.completions.length - 1].date) 
+            : null;
+        return h.completions?.length >= 5 && (!lastCompletion || lastCompletion < twoDaysAgo);
+    });
+
     if (inconsistentHabits.length > 0) {
         insights.push({
             type: 'habit',
-            title: 'Habit Recovery',
-            message: `"${inconsistentHabits[0].name}" needs some love. Don't break the chain!`,
+            title: 'Ritual Recovery',
+            message: `Your ritual "${inconsistentHabits[0].name}" has lost its rhythm. Small actions today can restore your momentum.`,
             priority: 'medium'
         });
     }

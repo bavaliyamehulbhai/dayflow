@@ -1108,7 +1108,7 @@ export default function ProfilePage() {
 
         </motion.div>
       </AnimatePresence>
-      <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
+      <ConfirmDialog {...confirmDialog} onConfirm={confirmDialog.onConfirm} onCancel={() => setConfirmDialog({ open: false })} />
     </div>
   );
 }

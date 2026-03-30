@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     const filter = { user: req.user._id };
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
-    if (category) filter.category = new RegExp(category, 'i');
+    if (category) filter.category = category; // ReDoS Safe Exact Match
     // Use MongoDB text search if available, fall back to regex for partial matches
     if (search) {
       filter.$text = { $search: search };

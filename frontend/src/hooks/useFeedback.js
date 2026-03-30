@@ -1,12 +1,20 @@
 import { useCallback } from 'react';
 
+let globalAudioCtx = null;
+
 const useFeedback = () => {
     const playSound = useCallback((type) => {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
 
         try {
-            const ctx = new AudioContext();
+            if (!globalAudioCtx) {
+                globalAudioCtx = new AudioContext();
+            }
+            if (globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume();
+            }
+            const ctx = globalAudioCtx;
             const now = ctx.currentTime;
 
             const createLayer = (freq, type, gainValue, delay, duration, rampFreq) => {

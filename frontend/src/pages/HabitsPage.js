@@ -48,7 +48,7 @@ function useWindowWidth() {
   return w;
 }
 
-function HabitModal({ habit, onClose, onSave }) {
+function HabitModal({ habit, onClose, onSave, onDelete }) {
   const width = useWindowWidth();
   const isMobile = width <= 768;
   const [form, setForm] = useState({
@@ -157,9 +157,7 @@ function HabitModal({ habit, onClose, onSave }) {
               className="btn btn-icon glass" 
               style={{ width: isMobile ? 48 : 52, height: isMobile ? 48 : 52, borderRadius: 14, color: 'var(--red)' }}
               onClick={() => {
-                if (window.confirm('Banish this ritual forever?')) {
-                  onSave({ ...habit, _delete: true });
-                }
+                onDelete(habit);
               }}
             >
               <Trash2 size={20} />
@@ -305,17 +303,20 @@ export default function HabitsPage() {
 
   const createMutation = useMutation({
     mutationFn: habitsAPI.create,
-    onSuccess: () => { toast.success('Ritual established!'); setModal(null); invalidate(); }
+    onSuccess: () => { toast.success('Ritual established!'); setModal(null); invalidate(); },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to establish ritual.')
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => habitsAPI.update(id, data),
-    onSuccess: () => { toast.success('Ritual refined!'); setModal(null); invalidate(); }
+    onSuccess: () => { toast.success('Ritual refined!'); setModal(null); invalidate(); },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to refine ritual.')
   });
 
   const deleteMutation = useMutation({
     mutationFn: habitsAPI.delete,
-    onSuccess: () => { toast.success('Ritual banished'); invalidate(); }
+    onSuccess: () => { toast.success('Ritual banished'); invalidate(); },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to banish ritual.')
   });
 
   const completeMutation = useMutation({
@@ -334,7 +335,8 @@ export default function HabitsPage() {
           subtitle: "Ritual Synchronization Complete"
         });
       }
-    }
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Synchronization failed.')
   });
 
   const habits = (data || []).filter(h => 
@@ -554,11 +556,19 @@ export default function HabitsPage() {
             habit={modal === 'create' ? null : modal}
             onClose={() => setModal(null)}
             onSave={handleSave}
+            onDelete={(h) => {
+              setConfirmDialog({
+                open: true,
+                title: 'Banish Ritual?',
+                confirmText: 'Banish',
+                onConfirm: () => { deleteMutation.mutate(h._id); setConfirmDialog({ open: false }); setModal(null); }
+              });
+            }}
           />
         )}
       </AnimatePresence>
 
-      <ConfirmDialog {...confirmDialog} onCancel={() => setConfirmDialog({ open: false })} />
+      <ConfirmDialog {...confirmDialog} onConfirm={confirmDialog.onConfirm} onCancel={() => setConfirmDialog({ open: false })} />
       
       <Celebration 
         open={celebration.open} 
