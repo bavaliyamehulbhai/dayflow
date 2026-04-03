@@ -1,0 +1,99 @@
+/* ─── Mobile Premium UX Improvements ────────────────────────────── */
+
+/* ─── Haptic Feedback ─────────────────────────────────────────── */
+.haptic-tap {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.haptic-tap:active {
+  transform: scale(0.94) !important;
+  filter: brightness(1.1) saturate(1.1) !important;
+}
+
+.haptic-feedback:active {
+  transform: scale(0.98);
+  filter: brightness(0.95);
+}
+
+/* ─── Modern Bottom Sheet ────────────────────────────────────────── */
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(13, 13, 22, 0.98);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border-radius: 32px 32px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 2000;
+  box-shadow: 0 -20px 60px rgba(0,0,0,0.6);
+  padding-bottom: env(safe-area-inset-bottom);
+  transform: translateY(100%);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bottom-sheet.active {
+  transform: translateY(0);
+}
+
+.bottom-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin: 12px auto;
+  cursor: grab;
+}
+
+/* ─── Central Action FAB ─────────────────────────────────────────── */
+.central-action {
+  position: relative !important;
+  top: -24px !important;
+  padding: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.action-bubble {
+  width: 64px;
+  height: 64px;
+  background: var(--grad-premium);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(124, 109, 250, 0.4), 
+              0 0 0 6px rgba(13, 13, 22, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.central-action:hover .action-bubble {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 15px 40px rgba(124, 109, 250, 0.5), 
+              0 0 0 6px rgba(13, 13, 22, 1);
+}
+
+.central-action:active .action-bubble {
+  transform: scale(0.9);
+}
+
+/* ─── Bottom Tab Bar Adjustments ─────────────────────────────────── */
+.bottom-tab-bar.premium-glass-bottom {
+  background: rgba(8, 8, 12, 0.92) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  height: 85px !important;
+  padding-top: 5px !important;
+}
+
+.bottom-tab-glow {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: var(--accent);
+  filter: blur(12px);
+  opacity: 0.4;
+  border-radius: 50%;
+  box-shadow: 0 0 20px var(--accent);
+}

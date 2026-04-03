@@ -56,7 +56,7 @@ const BADGE_DEFS = [
     {
         id: 'streak_3',
         name: 'Streak Seeker',
-        description: 'Maintain a 3-day habit streak',
+        description: 'Maintain a 3-day productivity streak',
         icon: '🔥',
         tier: 'silver',
         check: async (user, counts) => (user.stats?.currentStreak || 0) >= 3
@@ -105,10 +105,18 @@ const BADGE_DEFS = [
     {
         id: 'streak_7',
         name: 'Flame Keeper',
-        description: 'Maintain a 7-day habit streak',
-        icon: '🔥',
+        description: 'Maintain a 7-day productivity streak',
+        icon: '⚔️',
         tier: 'gold',
-        check: async (user, counts) => (user.stats?.longestStreak || 0) >= 7
+        check: async (user, counts) => (user.stats?.currentStreak || 0) >= 7
+    },
+    {
+        id: 'streak_14',
+        name: 'Momentum Master',
+        description: 'Maintain a 14-day productivity streak',
+        icon: '☄️',
+        tier: 'gold',
+        check: async (user, counts) => (user.stats?.currentStreak || 0) >= 14
     },
     // Platinum
     {
@@ -128,9 +136,25 @@ const BADGE_DEFS = [
         check: async (user, counts) => (user.stats?.totalFocusMinutes || 0) >= 3000
     },
     {
+        id: 'streak_30',
+        name: 'Unstoppable',
+        description: 'Maintain a 30-day productivity streak',
+        icon: '🛡️',
+        tier: 'platinum',
+        check: async (user, counts) => (user.stats?.currentStreak || 0) >= 30
+    },
+    {
+        id: 'streak_100',
+        name: 'Productivity Titan',
+        description: 'Maintain a 100-day productivity streak',
+        icon: '🪐',
+        tier: 'platinum',
+        check: async (user, counts) => (user.stats?.currentStreak || 0) >= 100
+    },
+    {
         id: 'total_mastery',
         name: 'Total Mastery',
-        description: 'Earn all other 14 badges',
+        description: 'Earn all other badges',
         icon: '🌟',
         tier: 'platinum',
         check: async (user, counts) => {

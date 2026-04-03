@@ -9,7 +9,7 @@ import ActivityTimeline from '../components/ActivityTimeline';
 import ProductivityCircle from '../components/ProductivityCircle';
 import SessionManager from '../components/profile/SessionManager';
 import ActivityTags from '../components/ActivityTags';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../context/NotificationContext';
 import { format, differenceInDays } from 'date-fns';
 import {
   User, Lock, Timer, BarChart2, Medal, Shield, Zap, Trophy,
@@ -60,29 +60,9 @@ const TIER_CONFIG = {
   platinum: { label: 'Platinum', color: '#e5e4e2', glow: 'rgba(229,228,226,0.45)', gradient: 'linear-gradient(135deg,#e5e4e2,#9fa0a3)' },
 };
 
-function showBadgeToast(badge) {
+function showBadgeToast(badge, addToast) {
   const tier = TIER_CONFIG[badge.tier] || TIER_CONFIG.bronze;
-  toast.custom((t) => (
-    <motion.div
-      initial={{ opacity: 0, y: 60, scale: 0.85 }}
-      animate={{ opacity: t.visible ? 1 : 0, y: t.visible ? 0 : 60, scale: t.visible ? 1 : 0.85 }}
-      style={{
-        background: 'linear-gradient(135deg,#1a1a2e,#0f0f1e)', border: `1.5px solid ${tier.color}66`,
-        borderRadius: 18, padding: 'var(--space-4) var(--space-6)', display: 'flex', alignItems: 'center', gap: 16,
-        boxShadow: `0 16px 48px rgba(0,0,0,0.6),0 0 24px ${tier.glow}`, minWidth: 300, maxWidth: 360, cursor: 'pointer',
-      }}
-      onClick={() => toast.dismiss(t.id)}
-    >
-      <div style={{ fontSize: 44, filter: `drop-shadow(0 0 12px ${tier.color})`, flexShrink: 0 }}>{badge.icon}</div>
-      <div>
-        <div style={{ fontSize: 10, fontWeight: 800, color: tier.color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
-          🏅 Achievement Unlocked · {tier.label}
-        </div>
-        <div style={{ fontSize: 16, fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{badge.name}</div>
-        <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{badge.description}</div>
-      </div>
-    </motion.div>
-  ), { duration: 5000, position: 'bottom-right' });
+  addToast(`${badge.name}: ${badge.description}`, 'success', 6000, badge.icon);
 }
 
 // ── Animated SVG ring (productivity score) ───────────────────────────────────
@@ -115,6 +95,7 @@ function ScoreRing({ score, size = 120 }) {
 
 export default function ProfilePage() {
   const { user, updateUser, logout } = useAuth();
+  const { addToast } = useNotifications();
   const [accent, setAccent] = useZenTheme();
   const navigate = useNavigate();
   const width = useWindowWidth();
@@ -180,10 +161,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     badgesAPI.check().then(r => {
-      (r.data.newBadges || []).forEach(b => showBadgeToast(b));
+      (r.data.newBadges || []).forEach(b => showBadgeToast(b, addToast));
       if ((r.data.newBadges || []).length > 0) refetchBadges();
     }).catch(() => { });
-  }, []);
+  }, [addToast, refetchBadges]);
 
   const checkStrength = (pw) => {
     let s = 0;
@@ -196,14 +177,14 @@ export default function ProfilePage() {
 
   const profileMutation = useMutation({
     mutationFn: (data) => authAPI.updateProfile(data),
-    onSuccess: (r) => { updateUser(r.data.user); toast.success('Profile saved! ✨'); setEditingBio(false); },
-    onError: (e) => toast.error(e.response?.data?.error || 'Update failed')
+    onSuccess: (r) => { updateUser(r.data.user); addToast('Profile saved! ✨', 'success'); setEditingBio(false); },
+    onError: (e) => addToast(e.response?.data?.error || 'Update failed', 'error')
   });
 
   const passwordMutation = useMutation({
     mutationFn: (data) => authAPI.changePassword(data),
-    onSuccess: () => { toast.success('Password updated! 🔐'); setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); setPwStrength(0); },
-    onError: (e) => toast.error(e.response?.data?.error || 'Password change failed')
+    onSuccess: () => { addToast('Password updated! 🔐', 'success'); setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); setPwStrength(0); },
+    onError: (e) => addToast(e.response?.data?.error || 'Password change failed', 'error')
   });
 
   const handleProfileSave = (e) => {
@@ -222,8 +203,8 @@ export default function ProfilePage() {
 
   const handlePasswordChange = (e) => {
     e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirmPassword) return toast.error('Passwords do not match');
-    if (pwStrength < 2) return toast.error('Please use a stronger password');
+    if (pwForm.newPassword !== pwForm.confirmPassword) return addToast('Passwords do not match', 'error');
+    if (pwStrength < 2) return addToast('Please use a stronger password', 'error');
     passwordMutation.mutate({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
   };
 
@@ -236,9 +217,9 @@ export default function ProfilePage() {
       link.setAttribute('download', `dayflow_export_${user._id}.json`);
       document.body.appendChild(link);
       link.click();
-      toast.success('Data exported successfully! 📂');
+      addToast('Data exported successfully! 📂', 'success');
     } catch (err) {
-      toast.error('Export failed');
+      addToast('Export failed', 'error');
     }
   };
 
@@ -251,11 +232,11 @@ export default function ProfilePage() {
       onConfirm: async () => {
         try {
           await authAPI.deleteAccount();
-          toast.success('Account deleted. We will miss you! 👋');
+          addToast('Account deleted. We will miss you! 👋', 'info');
           logout();
           navigate('/login');
         } catch (err) {
-          toast.error('Deletion failed');
+          addToast('Deletion failed', 'error');
         }
       }
     });

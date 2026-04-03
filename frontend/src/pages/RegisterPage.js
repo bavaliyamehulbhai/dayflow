@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../context/NotificationContext';
 import { Eye, EyeOff, Zap, ArrowRight, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRef } from 'react';
@@ -82,6 +82,7 @@ const InputField = ({ label, type, placeholder, value, onChange, onBlur, error, 
 
 export default function RegisterPage() {
   const { register } = useAuth();
+  const { addToast } = useNotifications();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
@@ -113,17 +114,27 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
     setTouched({ name: true, email: true, password: true, confirm: true });
-    if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
-    if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
-    if (!/[A-Z]/.test(form.password)) { setError('Password must contain an uppercase letter.'); return; }
-    if (!/[0-9]/.test(form.password)) { setError('Password must contain a number.'); return; }
+    if (form.password !== form.confirm) { 
+      const msg = 'Passwords do not match.';
+      setError(msg); 
+      addToast(msg, 'error');
+      return; 
+    }
+    if (form.password.length < 8) { 
+      const msg = 'Security clearance requires 8+ characters.';
+      setError(msg); 
+      addToast(msg, 'error');
+      return; 
+    }
     setLoading(true);
     try {
       await register(form.name, form.email, form.password);
-      toast.success('Welcome to DayFlow!');
+      addToast('Account synchronized. Welcome to DayFlow!', 'success');
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      const errorMsg = err.response?.data?.error || 'Registration failed. Try different coordinates.';
+      setError(errorMsg);
+      addToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -359,8 +370,9 @@ export default function RegisterPage() {
             </motion.button>
           </motion.form>
 
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'none' }}>Login here</Link>
+            <div className="auth-footer">
+              Already have an account? <Link to="/login">Login here</Link>
+            </div>
         </motion.div>
       </motion.div>
 

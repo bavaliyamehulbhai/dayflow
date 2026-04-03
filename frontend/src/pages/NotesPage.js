@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notesAPI } from '../utils/api';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../context/NotificationContext';
 import { format } from 'date-fns';
 import {
   FileText, Search, Plus, Pin, Trash2, X, Sparkles, Tag,
@@ -44,6 +44,7 @@ const BackgroundParticles = () => (
 );
 
 function NoteEditor({ note, onClose, onSave, isMobile }) {
+  const { addToast } = useNotifications();
   const [title, setTitle] = useState(note?.title || '');
   const [content, setContent] = useState(note?.content || '');
   const [color, setColor] = useState(note?.color || '#7c6dfa');
@@ -59,7 +60,9 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
       setIsSyncing(true);
       saveTimer.current = setTimeout(() => {
         onSave({ title, content, color, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }, true);
-        setTimeout(() => setIsSyncing(false), 800);
+        setTimeout(() => {
+          setIsSyncing(false);
+        }, 800);
       }, 2000);
     }
     return () => clearTimeout(saveTimer.current);
@@ -173,6 +176,7 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
 
 export default function NotesPage() {
   const qc = useQueryClient();
+  const { addToast } = useNotifications();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
@@ -188,18 +192,25 @@ export default function NotesPage() {
 
   const createMutation = useMutation({
     mutationFn: notesAPI.create,
-    onSuccess: (r) => { setModal(r.data.note); invalidate(); }
+    onSuccess: (r) => { 
+      addToast('Essence manifested', 'success');
+      setModal(r.data.note); 
+      invalidate(); 
+    }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => notesAPI.update(id, data),
-    onSuccess: (r, { silent }) => { if (!silent) toast.success('Preserved'); invalidate(); }
+    onSuccess: (r, { silent }) => { 
+      if (!silent) addToast('Neural archive updated', 'success'); 
+      invalidate(); 
+    }
   });
 
   const deleteMutation = useMutation({
     mutationFn: notesAPI.delete,
     onSuccess: () => { 
-      toast.success('Vanished'); 
+      addToast('Memory archived', 'info'); 
       setModal(null); 
       setConfirmDialog({ open: false, title: '', message: '', id: null });
       invalidate(); 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pomodoroAPI, tasksAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../context/NotificationContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format } from 'date-fns';
 import {
@@ -70,6 +70,7 @@ function useWindowWidth() {
 export default function PomodoroPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { addToast } = useNotifications();
   const feedback = useFeedback();
   const width = useWindowWidth();
   const isMobile = width <= 768;
@@ -206,12 +207,12 @@ export default function PomodoroPage() {
       setSessions(s => s + 1);
     }
     const nextMode = mode === 'work' ? ((sessions + 1) % 4 === 0 ? 'long-break' : 'short-break') : 'work';
-    toast.success(`✨ ${modeInfo.label} session complete!`);
+    addToast(`✨ ${modeInfo.label} session complete!`, 'success', 4000);
     setTimeout(() => {
       setMode(nextMode); setTimeLeft(DURATIONS[nextMode]);
       setCurrentPomoId(null); setStartedAt(null);
     }, 500);
-  }, [mode, currentPomoId, sessions, startedAt, note, modeInfo, completeMutation, DURATIONS, playSound]);
+  }, [mode, currentPomoId, sessions, startedAt, note, modeInfo, completeMutation, DURATIONS, playSound, addToast]);
 
   useEffect(() => {
     if (running) {

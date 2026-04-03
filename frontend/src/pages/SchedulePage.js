@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scheduleAPI, tasksAPI } from '../utils/api';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../context/NotificationContext';
 import { format, addDays, subDays } from 'date-fns';
 import {
   Calendar as CalendarIcon, Clock, Layers, Plus, ChevronLeft, ChevronRight,
@@ -16,6 +16,7 @@ const CATEGORIES = ['work', 'personal', 'health', 'learning', 'social', 'other']
 const CAT_COLORS = { work: '#7c6dfa', personal: '#fa6d8a', health: '#6dfacc', learning: '#fad96d', social: '#fa9a6d', other: '#a3a3a3' };
 
 function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
+  const { addToast } = useNotifications();
   const [form, setForm] = useState({
     title: event?.title || '',
     description: event?.description || '',
@@ -90,8 +91,8 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
           </div>
         </div>
         <div className="modal-footer" style={{ padding: isMobile ? '16px 20px' : '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 10 }}>
-          <button className="btn btn-ghost" onClick={onClose} style={{ flex: 1, height: isMobile ? 48 : 52, borderRadius: 14 }}>Abort</button>
-          <button className="auth-button" style={{ flex: 2, height: isMobile ? 48 : 52, borderRadius: 14, fontSize: isMobile ? 15 : 16 }} onClick={() => { if (!form.title.trim() || !form.startTime || !form.date) return toast.error('Title, date and start time required'); onSave({ ...form, linkedTask: form.linkedTask || null }); }}>
+          <button className="btn btn-ghost haptic-tap" onClick={onClose} style={{ flex: 1, height: isMobile ? 48 : 52, borderRadius: 14 }}>Abort</button>
+          <button className="auth-button haptic-tap" style={{ flex: 2, height: isMobile ? 48 : 52, borderRadius: 14, fontSize: isMobile ? 15 : 16 }} onClick={() => { if (!form.title.trim() || !form.startTime || !form.date) return addToast('Title, date and start time required', 'error'); onSave({ ...form, linkedTask: form.linkedTask || null }); }}>
             <div className="btn-glint" />
             Commit Alignment
           </button>
@@ -113,6 +114,7 @@ function useWindowWidth() {
 
 export default function SchedulePage() {
   const qc = useQueryClient();
+  const { addToast } = useNotifications();
   const [currentDate, setCurrentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [modal, setModal] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false });
@@ -131,9 +133,9 @@ export default function SchedulePage() {
 
   const invalidate = () => qc.invalidateQueries(['schedule']);
 
-  const createMutation = useMutation({ mutationFn: scheduleAPI.create, onSuccess: () => { toast.success('Event manifested'); setModal(null); invalidate(); } });
-  const updateMutation = useMutation({ mutationFn: ({ id, data }) => scheduleAPI.update(id, data), onSuccess: () => { toast.success('Event refined'); setModal(null); invalidate(); } });
-  const deleteMutation = useMutation({ mutationFn: scheduleAPI.delete, onSuccess: () => { toast.success('Event vanished'); invalidate(); } });
+  const createMutation = useMutation({ mutationFn: scheduleAPI.create, onSuccess: () => { addToast('Temporal objective manifested', 'success'); setModal(null); invalidate(); }, onError: (err) => addToast(err.response?.data?.error || 'Failed to manifest alignment', 'error') });
+  const updateMutation = useMutation({ mutationFn: ({ id, data }) => scheduleAPI.update(id, data), onSuccess: () => { addToast('Temporal alignment refined', 'success'); setModal(null); invalidate(); }, onError: (err) => addToast(err.response?.data?.error || 'Failed to refine alignment', 'error') });
+  const deleteMutation = useMutation({ mutationFn: scheduleAPI.delete, onSuccess: () => { addToast('Temporal alignment vanished', 'info'); invalidate(); }, onError: (err) => addToast(err.response?.data?.error || 'Failed to banish alignment', 'error') });
   const toggleMutation = useMutation({ mutationFn: scheduleAPI.toggleComplete, onSuccess: () => invalidate() });
 
   const events = data || [];

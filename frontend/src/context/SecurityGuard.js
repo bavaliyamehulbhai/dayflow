@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { useAuth } from './AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, EyeOff, ShieldAlert, Zap } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useNotifications } from './NotificationContext';
 
 const SecurityContext = createContext();
 
@@ -10,6 +10,7 @@ export const useSecurity = () => useContext(SecurityContext);
 
 export const SecurityProvider = ({ children }) => {
   const { user, logout } = useAuth();
+  const { addToast } = useNotifications();
   const [isLocked, setIsLocked] = useState(false);
   const [isSecureMode, setIsSecureMode] = useState(false);
   const timerRef = useRef(null);
@@ -20,12 +21,9 @@ export const SecurityProvider = ({ children }) => {
   const lockSession = useCallback(() => {
     if (user && !isLocked) {
       setIsLocked(true);
-      toast('Session locked due to inactivity', {
-        icon: '🔒',
-        style: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }
-      });
+      addToast('Session locked due to inactivity', 'info', 3000, '🔒');
     }
-  }, [user, isLocked]);
+  }, [user, isLocked, addToast]);
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -56,10 +54,7 @@ export const SecurityProvider = ({ children }) => {
 
   const toggleSecureMode = () => {
       setIsSecureMode(v => !v);
-      toast(isSecureMode ? 'Environment Secured' : 'Privacy Mode Active', {
-          icon: isSecureMode ? '🛡️' : '🕶️',
-          style: { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }
-      });
+      addToast(isSecureMode ? 'Environment Secured' : 'Privacy Mode Active', 'info', 3000, isSecureMode ? '🛡️' : '🕶️');
   };
 
   // Visibility Guard: Auto-blur when tab is hidden

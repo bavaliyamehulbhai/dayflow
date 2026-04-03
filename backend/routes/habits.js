@@ -5,6 +5,8 @@ const Habit = require('../models/Habit');
 const { protect } = require('../middleware/auth');
 const { sanitizeFields } = require('../middleware/sanitizer');
 const { logActivity } = require('../services/activityService');
+const { updateStreak } = require('../services/streakService');
+const { cacheMiddleware, clearCache } = require('../middleware/cache');
 
 router.use(protect);
 
@@ -18,7 +20,7 @@ const habitValidation = [
 ];
 
 // GET all habits
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(60), async (req, res) => {
   try {
     const habits = await Habit.find({ user: req.user._id, isActive: true }).sort({ order: 1, createdAt: 1 });
     res.json({ success: true, habits });
@@ -34,6 +36,7 @@ router.post('/', habitValidation, async (req, res) => {
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
     const habit = await Habit.create({ ...req.body, user: req.user._id });
+    clearCache(req.user._id);
     res.status(201).json({ success: true, habit });
   } catch (err) {
     res.status(500).json({ error: 'Error creating habit.' });
@@ -56,6 +59,7 @@ router.put('/:id', habitValidation, async (req, res) => {
       { new: true, runValidators: true }
     );
     if (!habit) return res.status(404).json({ error: 'Habit not found.' });
+    clearCache(req.user._id);
     res.json({ success: true, habit });
   } catch (err) {
     res.status(500).json({ error: 'Error updating habit.' });
@@ -71,6 +75,7 @@ router.delete('/:id', async (req, res) => {
       { new: true }
     );
     if (!habit) return res.status(404).json({ error: 'Habit not found.' });
+    clearCache(req.user._id);
     res.json({ success: true, message: 'Habit archived.' });
   } catch (err) {
     res.status(500).json({ error: 'Error deleting habit.' });
@@ -107,6 +112,7 @@ router.post('/:id/complete',
         const todayStr = new Date().toISOString().split('T')[0];
         if (date === todayStr) {
           await logActivity(req.user._id, { habitsCompleted: 1 });
+          await updateStreak(req.user._id);
         }
       }
 
@@ -129,6 +135,7 @@ router.post('/:id/complete',
       habit.streak.lastCompletedDate = completedDates[completedDates.length - 1] || null;
 
       await habit.save();
+      clearCache(req.user._id);
       res.json({ success: true, habit });
     } catch (err) {
       res.status(500).json({ error: 'Error toggling habit completion.' });
@@ -136,7 +143,7 @@ router.post('/:id/complete',
   });
 
 // GET habit stats
-router.get('/:id/stats', async (req, res) => {
+router.get('/:id/stats', cacheMiddleware(120), async (req, res) => {
   try {
     const habit = await Habit.findOne({ _id: req.params.id, user: req.user._id });
     if (!habit) return res.status(404).json({ error: 'Habit not found.' });

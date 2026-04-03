@@ -40,13 +40,15 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   me: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
+  completeOnboarding: () => api.put('/auth/onboarding'),
   changePassword: (data) => api.put('/auth/password', data),
   getSecurityHistory: () => api.get('/auth/security-history'),
   getSessions: () => api.get('/auth/sessions'),
   revokeSession: (id) => api.delete(`/auth/sessions/${id}`),
   revokeAllSessions: () => api.delete('/auth/sessions/revoke/all'),
   exportData: () => api.get('/auth/export', { responseType: 'blob' }),
-  deleteAccount: () => api.delete('/auth/account')
+  deleteAccount: () => api.delete('/auth/account'),
+  updateDashboardLayout: (layout) => api.put('/auth/preferences/layout', { layout })
 };
 
 // ─── Tasks ────────────────────────────────────────────────────────────────────
@@ -115,5 +117,12 @@ export const badgesAPI = {
 // ─── AI Coach ─────────────────────────────────────────────────────────────────
 export const aiAPI = {
   getCoach: () => api.get('/ai/coach')
+};
+
+// ─── Google Calendar ──────────────────────────────────────────────────────────
+export const googleAPI = {
+  getAuthUrl: () => api.get('/google/auth'),
+  getEvents: () => api.get('/google/events'),
+  disconnect: () => api.delete('/google/disconnect')
 };
 

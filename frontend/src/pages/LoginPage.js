@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../context/NotificationContext';
 import { Eye, EyeOff, Lock, Zap, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRef } from 'react';
@@ -35,6 +35,7 @@ const Magnetic = ({ children }) => {
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { addToast } = useNotifications();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -49,16 +50,18 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(form.email, form.password);
-      toast.success('Welcome back!');
+      addToast('Synchronizing your workspace...', 'success');
       navigate('/');
     } catch (err) {
       const data = err.response?.data;
+      const errorMsg = data?.error || 'Login failed. Please verify credentials.';
       if (err.response?.status === 423) {
         setLockInfo(data?.lockedUntil ? new Date(data.lockedUntil) : null);
-        setError(data?.error || 'Account temporarily locked.');
+        setError(errorMsg);
       } else {
-        setError(data?.error || 'Login failed. Please try again.');
+        setError(errorMsg);
       }
+      addToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -68,10 +71,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login('demo@dayflow.app', 'Demo123!');
-      toast.success('Welcome to DayFlow Demo!');
+      addToast('Welcome to DayFlow Demo!', 'success');
       navigate('/');
     } catch {
-      setError('Demo account not available. Please register.');
+      const errorMsg = 'Demo account connectivity issues.';
+      setError(errorMsg);
+      addToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -320,10 +325,9 @@ export default function LoginPage() {
             ⚡ Try Demo Account
           </motion.button>
 
-            New here?{' '}
-            <Link to="/register" style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'none' }}>
-              Create Account
-            </Link>
+            <div className="auth-footer">
+              New here? <Link to="/register">Create Account</Link>
+            </div>
         </motion.div>
 
         {/* Floating elements behind card */}

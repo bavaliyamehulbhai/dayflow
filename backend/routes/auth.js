@@ -9,6 +9,7 @@ const sendEmail = require('../utils/sendEmail');
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const crypto = require('crypto');
+const { seedDemoData } = require('../utils/demoSeeder');
 
 // ─── Helper: Send token response & Track Session ──────────────────────────────
 const sendTokenResponse = async (user, statusCode, res, req) => {
@@ -180,6 +181,19 @@ router.post('/login',
           subject: 'DayFlow: New Login Detected',
           message: `A new login was detected for your account from IP: ${ip}. If this wasn't you, please change your password immediately.`
         });
+      }
+
+      // ─── Demo Mode: Seed Data on Login ──────────────────────────────────────
+      if (user.isDemo || user.email === 'demo@dayflow.app') {
+        if (!user.isDemo) {
+          user.isDemo = true;
+          await user.save();
+        }
+        try {
+          await seedDemoData(user._id);
+        } catch (err) {
+          console.error('[AUTH] Demo seeding failed during login:', err);
+        }
       }
 
       await sendTokenResponse(user, 200, res, req);
@@ -510,6 +524,40 @@ router.put('/profile', protect, async (req, res) => {
     res.json({ success: true, user });
   } catch (err) {
     res.status(500).json({ error: 'Server error updating profile.' });
+  }
+});
+
+// ─── Mark Onboarding as Completed ───────────────────────────────────────────
+router.put('/onboarding', protect, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id, 
+      { onboardingCompleted: true }, 
+      { new: true }
+    );
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error marking onboarding as completed.' });
+  }
+});
+
+// ─── Update Dashboard Layout ──────────────────────────────────────────────────
+router.put('/preferences/layout', protect, async (req, res) => {
+  try {
+    const { layout } = req.body;
+    if (!Array.isArray(layout)) {
+      return res.status(400).json({ error: 'Invalid layout format.' });
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { 'preferences.dashboardLayout': layout },
+      { new: true }
+    );
+    
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error updating dashboard layout.' });
   }
 });
 

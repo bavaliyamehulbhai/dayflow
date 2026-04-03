@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tasksAPI } from '../utils/api';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../context/NotificationContext';
 import { format } from 'date-fns';
 import {
   Plus, Search, Pencil, Trash2, AlertCircle, Check, CheckCircle2,
@@ -14,7 +14,10 @@ import EmptyState from '../components/EmptyState';
 import SensitivityShield from '../components/layout/SensitivityShield';
 import { useNavigate } from 'react-router-dom';
 import MagneticButton from '../components/common/MagneticButton';
-
+import { exportToCSV, exportToPDF } from '../utils/exportUtils';
+import { Download, FileText, FileSpreadsheet } from 'lucide-react';
+import MobileBottomSheet from '../components/common/MobileBottomSheet';
+import { useMotionValue, useTransform } from 'framer-motion';
 
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
@@ -32,7 +35,30 @@ function useWindowWidth() {
 }
 
 // ─── Memoized Task Item Component ──────────────────────────────────────────
-const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, setModal, setConfirmState, isMobile }) => {
+const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, setModal, setConfirmState, isMobile, deleteMutation }) => {
+  const x = useMotionValue(0);
+  const background = useTransform(
+    x,
+    [-100, 0, 100],
+    ['rgba(239, 68, 68, 0.5)', 'transparent', 'rgba(34, 197, 94, 0.5)']
+  );
+  const opacity = useTransform(x, [-100, -50, 0, 50, 100], [1, 0, 0, 0, 1]);
+  const scale = useTransform(x, [-100, 0, 100], [1.2, 1, 1.2]);
+
+  const handleDragEnd = (event, info) => {
+    if (info.offset.x > 100) {
+      toggleComplete(task);
+    } else if (info.offset.x < -100) {
+      setConfirmState({
+        open: true,
+        title: 'Remove Objective?',
+        message: `Delete "${task.title}"?`,
+        onConfirm: () => deleteMutation.mutate(task._id)
+      });
+    }
+  };
+
+
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
   const priorityAura = {
     urgent: '0 0 20px rgba(248, 113, 113, 0.15)',
@@ -42,22 +68,46 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
   }[task.priority];
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.005, y: -2 }}
-      className={`task-row-container premium-card ${selected ? 'selected-aura' : ''}`}
-      style={{ 
-        opacity: task.status === 'cancelled' ? 0.4 : 1, 
-        marginBottom: 12, 
-        padding: 0, 
-        overflow: 'hidden',
-        boxShadow: selected ? `0 0 30px var(--accent-glow)` : priorityAura,
-        border: selected ? '1.5px solid var(--accent)' : '1.5px solid var(--border)'
-      }}
-      onClick={() => setModal(task)}
-    >
+    <div className="relative overflow-hidden mb-3" style={{ borderRadius: 16 }}>
+      {/* Swipe Actions Background */}
+      <motion.div 
+        className="absolute inset-0 flex items-center justify-between px-6 z-0"
+        style={{ background }}
+      >
+        <motion.div style={{ opacity, scale }} className="text-white font-bold flex items-center gap-2">
+          <Trash2 size={24} />
+          <span>Delete</span>
+        </motion.div>
+        <motion.div style={{ opacity, scale }} className="text-white font-bold flex items-center gap-2">
+          <CheckCircle2 size={24} />
+          <span>Complete</span>
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        drag={isMobile ? "x" : false}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.7}
+        onDragEnd={handleDragEnd}
+        whileHover={!isMobile ? { scale: 1.005, y: -2 } : {}}
+        className={`task-row-container premium-card ${selected ? 'selected-aura' : ''}`}
+        style={{ 
+          x, 
+          zIndex: 1, 
+          position: 'relative',
+          opacity: task.status === 'cancelled' ? 0.4 : 1, 
+          padding: 0, 
+          overflow: 'hidden',
+          boxShadow: selected ? `0 0 30px var(--accent-glow)` : priorityAura,
+          border: selected ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+          background: 'var(--surface)'
+        }}
+        onClick={() => setModal(task)}
+      >
+
       <div className="task-row-main" style={{ 
         display: 'flex',
         alignItems: 'center',
@@ -132,8 +182,10 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
         </div>
       </div>
     </motion.div>
-  );
+  </div>
+);
 }, (prev, next) => {
+
   return prev.task._id === next.task._id && 
          prev.task.status === next.task.status && 
          prev.task.title === next.task.title &&
@@ -166,6 +218,7 @@ function TasksSkeleton() {
 
 // ─── Task modal ───────────────────────────────────────────────────────────────
 function TaskModal({ task, onClose, onSave }) {
+  const { addToast } = useNotifications();
   const isMobile = window.innerWidth <= 768;
   const [form, setForm] = useState({
     title: task?.title || '',
@@ -190,7 +243,7 @@ function TaskModal({ task, onClose, onSave }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.title.trim()) return toast.error('Title is required');
+    if (!form.title.trim()) return addToast('Objective title is required', 'error');
     onSave({
       ...form,
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
@@ -199,69 +252,129 @@ function TaskModal({ task, onClose, onSave }) {
     });
   };
 
+  const modalContent = (
+    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+      <div className="modal-body custom-scrollbar" style={{ 
+        padding: isMobile ? '0' : '32px', 
+        paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32,
+        flex: 1,
+        overflowY: 'auto'
+      }}>
+        <div className="form-group mb-6">
+          <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Objective Title</label>
+          <input 
+            className="auth-input haptic-feedback" 
+            style={{ 
+              height: isMobile ? 52 : 56, 
+              fontSize: isMobile ? 16 : 16,
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: 14
+            }}
+            value={form.title} 
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))} 
+            placeholder="Declare your intent..." 
+            autoFocus 
+          />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="form-group">
+            <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Priority</label>
+            <select className="select premium-select" style={{ height: 48, borderRadius: 14, width: '100%' }} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
+              {PRIORITIES.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Status</label>
+            <select className="select premium-select" style={{ height: 48, borderRadius: 14, width: '100%' }} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+              {STATUSES.map(s => <option key={s} value={s}>{s.replace('-', ' ').toUpperCase()}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-group mb-6">
+          <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Category</label>
+          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, category: cat }))}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${form.category === cat ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-white/5 text-muted hover:bg-white/10'}`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="form-group mb-8">
+          <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Timeline</label>
+          <input 
+            type="date" 
+            className="auth-input" 
+            style={{ height: 48, borderRadius: 14, background: 'rgba(255,255,255,0.03)' }}
+            value={form.dueDate} 
+            onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} 
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          className="auth-button w-full haptic-tap" 
+          style={{ height: 56, borderRadius: 16, fontSize: 16, fontWeight: 800 }}
+        >
+          {task ? 'REFINE OBJECTIVE' : 'MANIFEST OBJECTIVE'}
+        </button>
+      </div>
+    </form>
+  );
+
+  if (isMobile) {
+    return (
+      <MobileBottomSheet
+        isOpen={true}
+        onClose={onClose}
+        title={task ? 'Refine Mission' : 'New Objective'}
+      >
+        {modalContent}
+      </MobileBottomSheet>
+    );
+  }
+
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-        <motion.div
-        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
-        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.9, y: 30 }}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 30 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`auth-card aura-iridescent ${isMobile ? 'bottom-sheet' : ''}`}
+        className="auth-card aura-iridescent"
         style={{ width: '100%', maxWidth: 540, padding: 0, overflow: 'hidden' }}
       >
-        <div className="modal-header" style={{ padding: isMobile ? '16px 20px' : '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="modal-title" style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: isMobile ? 18 : 22 }}>
+        <div className="modal-header" style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="modal-title" style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22 }}>
             {task ? 'Refine Mission' : 'New Objective'}
           </div>
-          <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: isMobile ? 6 : 8 }}>
-            <X size={isMobile ? 18 : 20} />
+          <button className="modal-close haptic-tap" onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 8 }}>
+            <X size={20} />
           </button>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body" style={{ padding: isMobile ? '20px' : '32px', paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32 }}>
-            <div className="form-group mb-4">
-              <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Objective Title</label>
-              <input 
-                className="auth-input haptic-feedback" 
-                style={{ height: isMobile ? 48 : 56, fontSize: isMobile ? 15 : 16 }}
-                value={form.title} 
-                onChange={e => setForm(f => ({ ...f, title: e.target.value }))} 
-                placeholder="Declare your intent..." 
-                autoFocus 
-              />
-            </div>
-            <div className="grid-2" style={{ gap: isMobile ? 12 : 20 }}>
-              <div className="form-group">
-                <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Priority</label>
-                <select className="select" style={{ height: isMobile ? 44 : 52, borderRadius: 12 }} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
-                  {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 6 }}>Status</label>
-                <select className="select" style={{ height: isMobile ? 44 : 52, borderRadius: 12 }} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                  {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="modal-footer" style={{ padding: isMobile ? '16px 20px' : '20px 32px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 10 }}>
-            <button type="button" className="btn btn-ghost" style={{ flex: 1, height: isMobile ? 48 : 52, borderRadius: 14 }} onClick={onClose}>Abort</button>
-            <button type="submit" className="auth-button" style={{ flex: 2, height: isMobile ? 48 : 52, borderRadius: 14, fontSize: isMobile ? 15 : 16 }}>
-              <div className="btn-glint" />
-              Manifest
-            </button>
-          </div>
-        </form>
+        {modalContent}
       </motion.div>
     </div>
   );
 }
 
+
+
+
 // ─── Main Page ──────────────────────────────────────────────────────────────
+
 export default function TasksPage() {
   const qc = useQueryClient();
   const feedback = useFeedback();
+  const { addToast } = useNotifications();
   const navigate = useNavigate();
   const width = useWindowWidth();
   const isMobile = width <= 768;
@@ -311,17 +424,17 @@ export default function TasksPage() {
 
   const createMutation = useMutation({
     mutationFn: (d) => tasksAPI.create(d),
-    onSuccess: () => { toast.success('Objective Secured'); setModal(null); invalidate(); }
+    onSuccess: () => { addToast('Objective manifested successfully', 'success'); setModal(null); invalidate(); }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => tasksAPI.update(id, data),
-    onSuccess: () => { invalidate(); }
+    onSuccess: () => { addToast('Objective refined', 'success'); invalidate(); }
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => tasksAPI.delete(id),
-    onSuccess: () => { toast.success('Objective Removed'); setConfirmState({ open: false, task: null }); invalidate(); }
+    onSuccess: () => { addToast('Objective liquidated', 'info'); setConfirmState({ open: false, task: null }); invalidate(); }
   });
 
   const tasks = data?.tasks || [];
@@ -337,7 +450,12 @@ export default function TasksPage() {
 
   const toggleComplete = (task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-    if (newStatus === 'completed') feedback('success');
+    if (newStatus === 'completed') {
+      feedback('success');
+      addToast(`Objective secured: ${task.title}`, 'success');
+    } else {
+      addToast(`Objective reopened: ${task.title}`, 'info');
+    }
     updateMutation.mutate({ id: task._id, data: { status: newStatus } });
   };
 
@@ -355,7 +473,7 @@ export default function TasksPage() {
       }
     });
     setSelected([]);
-    toast.success('Objectives Secured');
+    addToast(`${selected.length} objectives secured in bulk`, 'success');
     feedback('success');
   };
 
@@ -414,13 +532,20 @@ export default function TasksPage() {
       )}
 
       {/* Compact High-Performance Filter Bar */}
-      <div className="glass-holographic aura-iridescent" style={{ padding: isMobile ? '12px' : '16px', borderRadius: 20, border: 'none', marginBottom: isMobile ? 16 : 24 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: isMobile ? 12 : 16 }}>
+      <div className="glass-holographic aura-iridescent" style={{ padding: isMobile ? '8px 12px' : '16px', borderRadius: 20, border: 'none', marginBottom: isMobile ? 12 : 24 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: isMobile ? 8 : 16 }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }} />
             <input
               className="auth-input"
-              style={{ paddingLeft: 40, height: isMobile ? 42 : 48, fontSize: 13, borderRadius: 12, width: '100%' }}
+              style={{ 
+                paddingLeft: 40, 
+                height: isMobile ? 44 : 48, 
+                fontSize: 13, 
+                borderRadius: 12, 
+                width: '100%',
+                background: 'rgba(255,255,255,0.03)'
+              }}
               placeholder="Search missions..."
               value={filters.search}
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
@@ -434,6 +559,27 @@ export default function TasksPage() {
             <div className="btn-glint" />
             <Plus size={20} /> {!isMobile && <span style={{ marginLeft: 8, fontWeight: 800 }}>OBJECTIVE</span>}
           </MagneticButton>
+          
+          {!isMobile && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button 
+                className="btn btn-icon glass haptic-tap" 
+                onClick={() => exportToCSV(tasks)}
+                title="Export CSV"
+                style={{ width: 48, height: 48, borderRadius: 12 }}
+              >
+                <FileSpreadsheet size={20} />
+              </button>
+              <button 
+                className="btn btn-icon glass haptic-tap" 
+                onClick={() => exportToPDF(tasks)}
+                title="Export PDF"
+                style={{ width: 48, height: 48, borderRadius: 12 }}
+              >
+                <FileText size={20} />
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ 
@@ -473,9 +619,11 @@ export default function TasksPage() {
               toggleComplete={toggleComplete}
               setModal={setModal}
               setConfirmState={setConfirmState}
+              deleteMutation={deleteMutation}
             />
           ))}
         </div>
+
       )}
 
       <AnimatePresence>

@@ -1,3 +1,5 @@
+const cluster = require('cluster');
+const os = require('os');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -76,12 +78,45 @@ app.use(helmet({
 app.use((req, res, next) => {
   const maskSensitive = (obj) => {
     if (!obj || typeof obj !== 'object') return obj;
-    const masked = { ...obj };
+    
+    // If it's a Mongoose document, convert to plain object first 
+    // to avoid breakage during serialization
+    const data = (obj.toObject && typeof obj.toObject === 'function') 
+      ? obj.toObject() 
+      : (obj.toJSON && typeof obj.toJSON === 'function' && !Array.isArray(obj))
+        ? obj.toJSON()
+        : obj;
+
+    const masked = Array.isArray(data) ? [...data] : { ...data };
     const sensitiveFields = ['password', 'email', 'newPassword', 'currentPassword', 'token', 'secret'];
-    sensitiveFields.forEach(field => {
-      if (masked[field]) masked[field] = '********';
-    });
-    return masked;
+    
+    const maskRecursive = (item) => {
+      if (!item || typeof item !== 'object') return item;
+      // Handle Mongoose documents deep inside the structure
+      const itemData = (item.toObject && typeof item.toObject === 'function') 
+        ? item.toObject() 
+        : (item.toJSON && typeof item.toJSON === 'function' && !Array.isArray(item))
+          ? item.toJSON()
+          : item;
+
+      if (Array.isArray(itemData)) return itemData.map(maskRecursive);
+      
+      const newObj = { ...itemData };
+      sensitiveFields.forEach(field => {
+        if (newObj[field]) newObj[field] = '********';
+      });
+      
+      // Also mask nested properties if any
+      Object.keys(newObj).forEach(key => {
+        if (typeof newObj[key] === 'object') {
+          newObj[key] = maskRecursive(newObj[key]);
+        }
+      });
+      
+      return newObj;
+    };
+
+    return maskRecursive(masked);
   };
 
   const oldJson = res.json;
@@ -232,6 +267,7 @@ app.use('/api/notes', require('./routes/notes'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/badges', require('./routes/badges'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/google', require('./routes/google'));
 
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
@@ -272,31 +308,44 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 DayFlow server running on port ${PORT}`);
-  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Pool size: 20 connections`);
-});
+// ─── Master / Worker Clustering ───────────────────────────────────────────────
+if (cluster.isMaster) {
+  const numCPUs = os.cpus().length || 1;
+  console.log(`🛡️ Master ${process.pid} is running. Spawning ${numCPUs} workers...`);
 
-server.on('error', (err) => {
-  console.error('❌ Server error:', err);
-  process.exit(1);
-});
+  // Fork workers
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
 
-// Graceful shutdown
-const gracefulShutdown = (signal) => {
-  console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
-  server.close(() => {
-    mongoose.connection.close();
-    console.log('🛑 Server shut down.');
-    process.exit(0);
+  cluster.on('exit', (worker, code, signal) => {
+    console.warn(`⚠️ Worker ${worker.process.pid} died. Spawning replacement...`);
+    cluster.fork();
   });
-};
+} else {
+  // ─── Start Server (Worker Process) ──────────────────────────────────────────
+  const PORT = process.env.PORT || 5000;
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 DayFlow Worker ${process.pid} running on port ${PORT}`);
+  });
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  server.on('error', (err) => {
+    console.error(`❌ Worker ${process.pid} error:`, err);
+    process.exit(1);
+  });
+
+  // Graceful shutdown for workers
+  const gracefulShutdown = (signal) => {
+    console.log(`\n🛑 Worker ${process.pid} received ${signal}. Shutting down...`);
+    server.close(() => {
+      mongoose.connection.close();
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+}
 
 module.exports = app;
 

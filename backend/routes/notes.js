@@ -5,6 +5,7 @@ const Note = require('../models/Note');
 const { protect } = require('../middleware/auth');
 const { sanitizeFields } = require('../middleware/sanitizer');
 const { logActivity } = require('../services/activityService');
+const { cacheMiddleware, clearCache } = require('../middleware/cache');
 
 router.use(protect);
 
@@ -18,7 +19,7 @@ const noteValidation = [
 ];
 
 // GET all notes
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(60), async (req, res) => {
   try {
     const { search, tag, archived = false, page = 1, limit = 50 } = req.query;
     const filter = { user: req.user._id, isArchived: archived === 'true' };
@@ -42,7 +43,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET single note
-router.get('/:id', async (req, res) => {
+router.get('/:id', cacheMiddleware(300), async (req, res) => {
   try {
     const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
     if (!note) return res.status(404).json({ error: 'Note not found.' });
@@ -103,6 +104,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const note = await Note.findOneAndDelete({ _id: req.params.id, user: req.user._id });
     if (!note) return res.status(404).json({ error: 'Note not found.' });
+    clearCache(req.user._id);
     res.json({ success: true, message: 'Note deleted.' });
   } catch (err) {
     res.status(500).json({ error: 'Error deleting note.' });
@@ -116,6 +118,7 @@ router.patch('/:id/pin', async (req, res) => {
     if (!note) return res.status(404).json({ error: 'Note not found.' });
     note.isPinned = !note.isPinned;
     await note.save();
+    clearCache(req.user._id);
     res.json({ success: true, note });
   } catch (err) {
     res.status(500).json({ error: 'Error toggling pin.' });
@@ -129,6 +132,7 @@ router.patch('/:id/archive', async (req, res) => {
     if (!note) return res.status(404).json({ error: 'Note not found.' });
     note.isArchived = !note.isArchived;
     await note.save();
+    clearCache(req.user._id);
     res.json({ success: true, note });
   } catch (err) {
     res.status(500).json({ error: 'Error archiving note.' });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 import {
   LayoutDashboard,
   CheckCircle2,
@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CommandPalette from './CommandPalette';
 import ShortcutsHelp from './ShortcutsHelp';
 import ShortcutOverlay from './ShortcutOverlay';
+import DemoBanner from './DemoBanner';
 import { useSecurity } from '../../context/SecurityGuard';
 
 const navItems = [
@@ -34,7 +35,7 @@ const navItems = [
 const mobileTabItems = [
   { to: '/', icon: LayoutDashboard, label: 'Home', exact: true },
   { to: '/tasks', icon: CheckCircle2, label: 'Tasks' },
-  { to: '/schedule', icon: Calendar, label: 'Schedule' },
+  { id: 'manifest', action: 'command', icon: LayoutDashboard, label: 'Manifest' },
   { to: '/habits', icon: RefreshCw, label: 'Habits' },
   { to: '/pomodoro', icon: Timer, label: 'Focus' },
   { to: '/notes', icon: FileText, label: 'Notes' },
@@ -42,11 +43,11 @@ const mobileTabItems = [
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { addToast } = useNotifications();
   const { isSecureMode, toggleSecureMode } = useSecurity();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Detect device type via window width
   const [isTablet, setIsTablet] = useState(window.innerWidth <= 1024 && window.innerWidth > 768);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -62,11 +63,20 @@ export default function Layout({ children }) {
 
   const handleLogout = () => {
     logout();
-    toast.success('See you soon! 👋');
+    addToast('See you soon! 👋', 'info');
     navigate('/login');
   };
 
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+
+  const triggerCommandPalette = () => {
+    // Dispatch shortcut for Command Palette
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'k',
+      ctrlKey: true,
+      bubbles: true
+    }));
+  };
 
   return (
     <div className="app-layout">
@@ -148,6 +158,7 @@ export default function Layout({ children }) {
 
       {/* ─── Main Content Area ─────────────────────────────────────────────── */}
       <div className="main-wrapper">
+        {user?.isDemo && <DemoBanner />}
         {/* ─── Mobile Top Header ─────────────────────────────────────────────── */}
         {isMobile && (
           <header className="mobile-header">
@@ -195,15 +206,11 @@ export default function Layout({ children }) {
                 return (
                   <button 
                     key={item.id} 
-                    className="bottom-tab central-action"
-                    onClick={() => {
-                      if (item.action === 'command') {
-                        window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'k' }));
-                      }
-                    }}
+                    className="bottom-tab central-action haptic-tap"
+                    onClick={triggerCommandPalette}
                   >
                     <div className="bottom-tab-icon-wrap action-bubble">
-                      <item.icon size={26} strokeWidth={3} />
+                      <LayoutDashboard size={26} strokeWidth={3} />
                     </div>
                     <span className="bottom-tab-label">{item.label}</span>
                   </button>
@@ -236,6 +243,7 @@ export default function Layout({ children }) {
           </nav>
         )
       }
+
       <CommandPalette />
       <ShortcutsHelp />
       <ShortcutOverlay />

@@ -4,7 +4,7 @@ import { authAPI } from '../../utils/api';
 import { Laptop, Smartphone, Globe, Monitor, XCircle, Clock, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 import ConfirmDialog from '../ConfirmDialog';
 
 const getBrowserIcon = (ua = '') => {
@@ -24,6 +24,7 @@ const getDeviceIcon = (ua = '') => {
 
 export default function SessionManager() {
     const queryClient = useQueryClient();
+    const { addToast } = useNotifications();
     const [confirmDialog, setConfirmDialog] = useState({ open: false });
     const { data, isLoading } = useQuery({
         queryKey: ['sessions'],
@@ -34,10 +35,10 @@ export default function SessionManager() {
         mutationFn: (id) => authAPI.revokeSession(id),
         onSuccess: () => {
             queryClient.invalidateQueries(['sessions']);
-            toast.success('Session revoked successfully');
+            addToast('Session neutralized successfully', 'success');
         },
         onError: (err) => {
-            toast.error(err.response?.data?.error || 'Failed to revoke session');
+            addToast(err.response?.data?.error || 'Failed to neutralize session', 'error');
         }
     });
 
@@ -45,10 +46,10 @@ export default function SessionManager() {
         mutationFn: () => authAPI.revokeAllSessions(),
         onSuccess: () => {
             queryClient.invalidateQueries(['sessions']);
-            toast.success('All other sessions revoked successfully! 🔐');
+            addToast('All other sessions neutralized! 🔐', 'success');
         },
         onError: (err) => {
-            toast.error(err.response?.data?.error || 'Failed to revoke all sessions');
+            addToast(err.response?.data?.error || 'Failed to neutralize all sessions', 'error');
         }
     });
 

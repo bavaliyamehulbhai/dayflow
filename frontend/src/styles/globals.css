@@ -1,4 +1,6 @@
+@import './mobile_ux.css';
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
 
 :root {
   /* Core Colors - Neutral & Professional */
@@ -1767,6 +1769,30 @@ body {
   position: relative;
   z-index: 1;
   animation: scaleIn 0.3s ease;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+  position: relative;
+  z-index: 10;
+  transform: translateZ(20px);
+}
+
+.auth-footer a {
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  margin-left: 4px;
+}
+
+.auth-footer a:hover {
+  color: var(--accent-hover);
+  text-shadow: 0 0 10px var(--accent-glow);
 }
 
 .auth-logo {
@@ -3686,6 +3712,7 @@ img {
   filter: drop-shadow(0 0 40px currentColor);
 }
 
+
 /* ─── Notes page ─────────────────────────────────────────────────── */
 .note-card {
   background: var(--surface);
@@ -4017,69 +4044,6 @@ img {
   border-color: rgba(130, 114, 255, 0.15);
 }
 
-@media (max-width: 768px) {
-  .profile-section {
-    padding: 16px;
-    border-radius: 14px;
-  }
-}
-
-/* ─── Danger zone section ────────────────────────────────────────── */
-.danger-section {
-  border-color: rgba(255, 107, 107, 0.2) !important;
-  background: rgba(255, 107, 107, 0.03) !important;
-}
-
-.danger-section:hover {
-  border-color: rgba(255, 107, 107, 0.35) !important;
-}
-
-/* ─── Avatar upload circle ──────────────────────────────────────── */
-.avatar-upload-circle {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 28px;
-  color: white;
-  cursor: pointer;
-  transition: var(--transition);
-  box-shadow: 0 8px 24px rgba(130, 114, 255, 0.3);
-}
-
-.avatar-upload-circle:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 32px rgba(130, 114, 255, 0.45);
-}
-
-/* ─── Settings toggle ────────────────────────────────────────────── */
-.settings-toggle {
-  width: 44px;
-  height: 24px;
-  border-radius: 12px;
-  border: none;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.25s ease;
-  flex-shrink: 0;
-}
-
-.settings-toggle::after {
-  content: '';
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: white;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
 
 .settings-toggle.on {
   background: var(--accent);
@@ -4362,56 +4326,5 @@ img {
   to { background-position: 200% center; }
 }
 
-/* ─── Mobile Navigation Fixes ───────────────────────────────────── */
-.bottom-tab-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 72px;
-  background: rgba(13, 13, 22, 0.95);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border-top: 1px solid var(--border-premium);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 1000;
-  padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-}
 
-.bottom-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 10px;
-  font-weight: 700;
-  transition: var(--transition);
-  flex: 1;
-}
 
-.bottom-tab.active {
-  color: var(--accent);
-}
-
-.bottom-tab-icon {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bottom-tab-glow {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  background: var(--accent);
-  filter: blur(12px);
-  opacity: 0.4;
-  border-radius: 50%;
-  box-shadow: 0 0 20px var(--accent);
-}
