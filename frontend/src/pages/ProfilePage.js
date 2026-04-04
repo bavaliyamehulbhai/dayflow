@@ -22,6 +22,7 @@ import {
 import { useZenTheme } from '../hooks/useZenTheme';
 import ConfirmDialog from '../components/ConfirmDialog';
 import SensitivityShield from '../components/layout/SensitivityShield';
+import AuraOrb from '../components/common/AuraOrb';
 
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
@@ -294,30 +295,84 @@ export default function ProfilePage() {
   }, [user]);
 
   return (
-    <div className="responsive-container pb-20">
-      
+    <div className="responsive-container" style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', paddingBottom: 120 }}>
+      {/* Immersive Background Layer */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+        <AuraOrb color="rgba(124, 109, 250, 0.12)" size="500px" top="-10%" left="-10%" delay={0} />
+        <AuraOrb color="rgba(110, 250, 204, 0.08)" size="400px" top="30%" left="70%" delay={3} />
+        <AuraOrb color="rgba(250, 109, 138, 0.06)" size="350px" top="80%" left="5%" delay={5} />
+      </div>
+
+      <div className="page-header" style={{ 
+        marginBottom: isMobile ? 32 : 48,
+        paddingTop: isMobile ? 12 : 24,
+        position: 'relative' 
+      }}>
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 16 }}
+        >
+          <div className="auth-logo-icon aura-float" style={{ 
+            width: isMobile ? 48 : 64, 
+            height: isMobile ? 48 : 64, 
+            background: 'var(--grad-premium)',
+            borderRadius: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 12px 30px rgba(124, 109, 250, 0.4)'
+          }}>
+            <User size={isMobile ? 24 : 32} color="white" strokeWidth={2.5} />
+          </div>
+          <div>
+            <div style={{ 
+              fontFamily: 'Syne, sans-serif', 
+              fontSize: isMobile ? '32px' : '48px', 
+              fontWeight: 800, 
+              letterSpacing: '-0.05em', 
+              lineHeight: 1,
+              background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Settings Hub
+            </div>
+            <p style={{ 
+              fontSize: '11px', 
+              fontWeight: 900, 
+              color: 'var(--muted)', 
+              textTransform: 'uppercase', 
+              letterSpacing: 3,
+              marginTop: 4
+            }}>Neural Configuration & Bio-Stats</p>
+          </div>
+        </motion.div>
+      </div>
+
       {/* ─── IDENTITY HERO ─────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-holographic aura-iridescent aura-float"
+        className="glass-holographic aura-iridescent"
         style={{
           marginBottom: 32, 
-          padding: isMobile ? '20px 12px' : '48px 64px',
-          borderRadius: isMobile ? 32 : 40,
+          padding: isMobile ? '32px 16px' : '48px 64px',
+          borderRadius: 32,
           position: 'relative',
           overflow: 'visible',
-          border: 'none'
+          border: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(255,255,255,0.02)',
+          backdropFilter: 'blur(30px)'
         }}
       >
         <div className="aura-pulse" style={{ 
           position: 'absolute', top: '50%', left: '50%', 
           width: '80%', height: '80%', 
           background: 'var(--grad-mesh-vibrant)', 
-          opacity: 0.15, filter: 'blur(80px)', 
+          opacity: 0.1, filter: 'blur(80px)', 
           transform: 'translate(-50%, -50%)', zIndex: -1 
         }} />
-        <div className="btn-glint" style={{ opacity: 0.1 }} />
         
         <div style={{
           display: 'flex',
@@ -333,28 +388,27 @@ export default function ProfilePage() {
             <motion.div
               whileHover={{ scale: 1.05 }}
               style={{
-                width: isMobile ? 84 : 160, 
-                height: isMobile ? 84 : 160, 
-                borderRadius: '50%',
+                width: isMobile ? 100 : 160, 
+                height: isMobile ? 100 : 160, 
+                borderRadius: '32px',
                 background: avatarGrad, 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
                 fontFamily: 'Syne, sans-serif', 
                 fontWeight: 800, 
-                fontSize: isMobile ? '32px' : '64px',
+                fontSize: isMobile ? '40px' : '64px',
                 color: 'white', 
                 boxShadow: `0 20px 60px ${profileForm.avatarGradient === 'purple' ? 'rgba(124,109,250,0.5)' : 'rgba(0,0,0,0.3)'}`,
                 cursor: 'pointer',
-                border: isMobile ? '2px solid rgba(255,255,255,0.1)' : '4px solid rgba(255,255,255,0.1)',
+                border: '4px solid rgba(255,255,255,0.1)',
                 backdropFilter: 'blur(10px)'
               }}
               onClick={() => setShowGradientPicker(v => !v)}
             >
-              <div style={{ position: 'absolute', inset: -8, border: '1.5px solid rgba(255,255,255,0.05)', borderRadius: '50%' }} />
               {initials}
-              <div style={{ position: 'absolute', bottom: 8, right: 8, width: 32, height: 32, borderRadius: '50%', background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                <Edit3 size={14} color="var(--text)" />
+              <div style={{ position: 'absolute', bottom: -10, right: -10, width: 36, height: 36, borderRadius: '12px', background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px rgba(0,0,0,0.3)' }}>
+                <Edit3 size={16} color="var(--text)" />
               </div>
             </motion.div>
 

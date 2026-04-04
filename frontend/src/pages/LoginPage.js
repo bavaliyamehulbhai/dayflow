@@ -6,6 +6,8 @@ import { Eye, EyeOff, Lock, Zap, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRef } from 'react';
 
+import AuraOrb from '../components/common/AuraOrb';
+
 const Magnetic = ({ children }) => {
   const ref = useRef(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -107,39 +109,12 @@ export default function LoginPage() {
       onMouseMove={handleCardMouseMove}
       onMouseLeave={handleCardMouseLeave}
       className="auth-container"
+      style={{ overflow: 'hidden', position: 'relative' }}
     >
-      {/* Animated Background Orbs */}
-      <div style={{
-        position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none',
-        background: 'radial-gradient(circle at 50% 50%, rgba(124, 109, 250, 0.08), transparent 70%)'
-      }}>
-        <motion.div 
-          animate={{ 
-            x: [0, 150, 50, 0], y: [0, 100, -50, 0],
-            scale: [1, 1.3, 1.1, 1],
-            rotate: [0, 120, 240, 360]
-          }}
-          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-          style={{
-            position: 'absolute', width: 800, height: 800, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(130,114,255,0.18), transparent 70%)',
-            top: '-300px', left: '-200px', filter: 'blur(120px)'
-          }} 
-        />
-        <motion.div 
-          animate={{ 
-            x: [0, -120, -40, 0], y: [0, -150, 80, 0],
-            scale: [1, 1.2, 1.4, 1],
-            rotate: [0, -180, -300, -360]
-          }}
-          transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
-          style={{
-            position: 'absolute', width: 700, height: 700, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(255, 107, 139, 0.12), transparent 70%)',
-            bottom: '-250px', right: '-150px', filter: 'blur(140px)'
-          }} 
-        />
-        {/* Spatial Grid Layer */}
+      {/* Immersive Background Orbs */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <AuraOrb color="rgba(124, 109, 250, 0.2)" size="600px" top="-10%" left="-10%" delay={0} />
+        <AuraOrb color="rgba(255, 107, 139, 0.15)" size="500px" top="60%" left="60%" delay={5} />
         <div style={{
             position: 'absolute', inset: 0,
             backgroundImage: `radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`,

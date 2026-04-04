@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardAPI, authAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import {
   Sun, Moon, Sunrise, Sunset, Zap, Sparkles
 } from 'lucide-react';
-import { motion, Reorder } from 'framer-motion';
+import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import Skeleton from '../components/Skeleton';
 import GuidedTour from '../components/common/GuidedTour';
 
@@ -44,60 +44,124 @@ function Clock() {
     return () => clearInterval(t);
   }, []);
 
-  let GreetingIcon = Zap;
   const hours = time.getHours();
   const pct = Math.min(100, Math.max(0, ((hours - 6) * 60 + time.getMinutes()) / (17 * 60) * 100));
-  if (hours < 12) GreetingIcon = Sunrise;      // Good Morning
-  else if (hours < 17) GreetingIcon = Sun;     // Good Afternoon
-  else if (hours < 21) GreetingIcon = Sunset;  // Good Evening
-  else GreetingIcon = Moon;                    // Good Night
-
   const isMobile = window.innerWidth <= 768;
+
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}
-      className="clock-card-premium"
-      style={{ marginBottom: 40 }}
+      className="hero-module-clock"
+      style={{
+        padding: isMobile ? '60px 0 30px' : '90px 0 50px',
+        textAlign: 'center',
+        position: 'relative',
+        zIndex: 1,
+        marginBottom: isMobile ? '50px' : '70px',
+        background: 'radial-gradient(circle at 50% 50%, rgba(124, 109, 250, 0.12) 0%, transparent 75%)'
+      }}
     >
-      <div className="greeting-icon-bg" style={{ color: 'var(--accent)' }}>
-        <GreetingIcon size={isMobile ? 48 : 120} />
-      </div>
-      
       <motion.div 
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        animate={{ filter: ["blur(0px)", "blur(0.5px)", "blur(0px)"] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
       >
-        <div className="clock-time-display">
-          {format(time, 'HH:mm:ss')}
+        <div style={{ 
+          fontSize: isMobile ? 'clamp(4.2rem, 18vw, 5.8rem)' : '10rem', 
+          fontWeight: 900, 
+          fontFamily: 'Syne, sans-serif',
+          letterSpacing: '-0.06em',
+          lineHeight: 0.9,
+          background: 'linear-gradient(135deg, #fff 30%, rgba(255,255,255,0.7) 60%, #fff 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          textShadow: '0 0 40px rgba(124, 109, 250, 0.4)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative'
+        }}>
+          {format(time, 'HH:mm')}
+          <span style={{ 
+            opacity: 0.4, 
+            fontSize: '0.35em', 
+            marginLeft: 12, 
+            WebkitTextFillColor: 'var(--accent)',
+            textShadow: 'none'
+          }}>{format(time, 'ss')}</span>
         </div>
-        <div className="clock-date-display">
+        <div className="clock-date-display" style={{ 
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontSize: isMobile ? '0.9rem' : '1.2rem',
+          fontWeight: 800,
+          color: 'var(--accent3)',
+          marginTop: 16,
+          textTransform: 'uppercase',
+          letterSpacing: '0.4em'
+        }}>
           {format(time, 'EEEE, MMMM do')}
         </div>
       </motion.div>
 
-      <div style={{ marginTop: isMobile ? '24px' : '48px', maxWidth: '800px', margin: `${isMobile ? '24px' : '48px'} auto 0` }}>
-        <div style={{ height: 6, background: 'rgba(255,255,255,0.03)', borderRadius: 3, overflow: 'hidden' }}>
+      <div style={{ 
+        marginTop: isMobile ? '40px' : '80px', 
+        maxWidth: '800px', 
+        margin: '0 auto',
+        position: 'relative',
+        padding: isMobile ? '0 20px' : '0'
+      }}>
+        <div style={{ 
+          height: 6, 
+          background: 'rgba(255,255,255,0.02)', 
+          borderRadius: 20, 
+          overflow: 'hidden',
+          border: '1px solid rgba(255,255,255,0.05)',
+          backdropFilter: 'blur(5px)'
+        }}>
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${pct}%` }}
-            transition={{ duration: 2, ease: "circOut" }}
+            transition={{ duration: 3, ease: "circOut" }}
             style={{ 
               height: '100%', 
-              background: 'var(--grad-premium)', 
-              borderRadius: 3, 
-              boxShadow: '0 0 25px var(--accent-glow)'
+              background: 'linear-gradient(90deg, #7c6dfa 0%, #00f2fe 100%)', 
+              borderRadius: 20, 
+              boxShadow: '0 0 25px rgba(124, 109, 250, 0.3)',
+              position: 'relative'
             }} 
-          />
+          >
+            <div className="shimmer-sweep" style={{ position: 'absolute', inset: 0, opacity: 0.5 }} />
+          </motion.div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', marginTop: 16, fontWeight: 800, letterSpacing: '0.1em' }}>
-          <span>SUNRISE</span>
-          <span style={{ color: 'var(--text)', background: 'rgba(124, 109, 250, 0.1)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(124, 109, 250, 0.2)' }}>
-            {Math.round(pct)}% JOURNEY COMPLETE
-          </span>
-          <span>SUNSET</span>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          fontSize: 10, 
+          color: 'var(--muted)', 
+          marginTop: 16, 
+          fontWeight: 900, 
+          letterSpacing: '0.2em' 
+        }}>
+          <span style={{ opacity: 0.5 }}>DAWN</span>
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{ 
+              color: '#fff', 
+              background: 'rgba(255, 255, 255, 0.05)', 
+              padding: '8px 20px', 
+              borderRadius: 30, 
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              fontSize: 11,
+              fontWeight: 800,
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+            }}
+          >
+            {Math.round(pct)}% COMPLETE
+          </motion.div>
+          <span style={{ opacity: 0.5 }}>DUSK</span>
         </div>
       </div>
     </motion.div>
@@ -192,6 +256,11 @@ export default function DashboardPage() {
     }
   };
 
+  // ─── Memoized Widget Renderer ───────────────────────────────────────
+  const MemoWidget = React.memo(({ itemId }) => {
+    return renderWidget(itemId);
+  });
+
   if (isLoading || !layout.length) {
     return (
       <div className="responsive-container">
@@ -204,12 +273,13 @@ export default function DashboardPage() {
     );
   }
 
-  const hours = new Date().getHours();
-  let greeting = 'Good Morning';
-  let GreetingIcon = Sunrise;
-  if (hours >= 12 && hours < 17) { greeting = 'Good Afternoon'; GreetingIcon = Sun; }
-  else if (hours >= 17 && hours < 21) { greeting = 'Good Evening'; GreetingIcon = Sunset; }
-  else if (hours >= 21 || hours < 5) { greeting = 'Good Night'; GreetingIcon = Moon; }
+  const { greeting, GreetingIcon } = useMemo(() => {
+    const hours = new Date().getHours();
+    if (hours >= 5 && hours < 12) return { greeting: 'Good Morning', GreetingIcon: Sunrise };
+    if (hours >= 12 && hours < 17) return { greeting: 'Good Afternoon', GreetingIcon: Sun };
+    if (hours >= 17 && hours < 21) return { greeting: 'Good Evening', GreetingIcon: Sunset };
+    return { greeting: 'Good Night', GreetingIcon: Moon };
+  }, []);
 
   const tourSteps = [
     { target: '#tour-welcome', title: 'Welcome!', content: 'Customize your workspace by dragging widgets to rearrange them.' },
@@ -237,20 +307,38 @@ export default function DashboardPage() {
         onReorder={handleReorder}
         style={{ 
           display: 'grid', 
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(380px, 1fr))', 
-          gap: 'clamp(16px, 3vw, 32px)',
-          paddingBottom: 40
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(420px, 1fr))', 
+          gap: isMobile ? '32px' : '48px',
+          paddingBottom: isMobile ? '120px' : '60px',
+          listStyle: 'none'
         }}
       >
-        {layout.map((widgetId) => (
-          <Reorder.Item 
-            key={widgetId} 
-            value={widgetId}
-            style={{ listStyle: 'none' }}
-          >
-            {renderWidget(widgetId)}
-          </Reorder.Item>
-        ))}
+        <AnimatePresence>
+          {layout.map((itemId, index) => (
+            <Reorder.Item 
+              key={itemId} 
+              value={itemId}
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1,
+                transition: { 
+                  duration: 0.6, 
+                  delay: index * 0.1, 
+                  ease: [0.16, 1, 0.3, 1] 
+                } 
+              }}
+              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+              style={{ listStyle: 'none' }}
+              whileDrag={{ scale: 1.05, boxShadow: "0 20px 50px rgba(0,0,0,0.4)" }}
+            >
+              <div style={{ height: '100%', perspective: '1000px' }} className="app-module-entrance gpu-accel">
+                <MemoWidget itemId={itemId} />
+              </div>
+            </Reorder.Item>
+          ))}
+        </AnimatePresence>
       </Reorder.Group>
 
       <GuidedTour 

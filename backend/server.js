@@ -79,53 +79,89 @@ app.use((req, res, next) => {
   const maskSensitive = (obj) => {
     if (!obj || typeof obj !== 'object') return obj;
     
-    // If it's a Mongoose document, convert to plain object first 
-    // to avoid breakage during serialization
-    const data = (obj.toObject && typeof obj.toObject === 'function') 
-      ? obj.toObject() 
-      : (obj.toJSON && typeof obj.toJSON === 'function' && !Array.isArray(obj))
-        ? obj.toJSON()
-        : obj;
-
-    const masked = Array.isArray(data) ? [...data] : { ...data };
     const sensitiveFields = ['password', 'email', 'newPassword', 'currentPassword', 'token', 'secret'];
     
-    const maskRecursive = (item) => {
+    // Safety helper to convert Mongoose documents to POJOs
+    const safeToPOJO = (item) => {
       if (!item || typeof item !== 'object') return item;
-      // Handle Mongoose documents deep inside the structure
-      const itemData = (item.toObject && typeof item.toObject === 'function') 
-        ? item.toObject() 
-        : (item.toJSON && typeof item.toJSON === 'function' && !Array.isArray(item))
-          ? item.toJSON()
-          : item;
+      try {
+        // Only call toObject if it's a full Mongoose document (has $__ internal state)
+        if (typeof item.toObject === 'function' && (item.$__ || item.constructor.name === 'model')) {
+          return item.toObject();
+        }
+        if (typeof item.toJSON === 'function' && !Array.isArray(item)) {
+          return item.toJSON();
+        }
+      } catch (err) {
+        // Fallback if Mongoose is in a broken state
+      }
+      return item;
+    };
 
-      if (Array.isArray(itemData)) return itemData.map(maskRecursive);
+    const maskRecursive = (item) => {
+      const data = safeToPOJO(item);
+      if (!data || typeof data !== 'object') return data;
+
+      if (Array.isArray(data)) return data.map(maskRecursive);
       
-      const newObj = { ...itemData };
+      const maskedObj = { ...data };
       sensitiveFields.forEach(field => {
-        if (newObj[field]) newObj[field] = '********';
+        if (maskedObj[field]) maskedObj[field] = '********';
       });
       
-      // Also mask nested properties if any
-      Object.keys(newObj).forEach(key => {
-        if (typeof newObj[key] === 'object') {
-          newObj[key] = maskRecursive(newObj[key]);
+      Object.keys(maskedObj).forEach(key => {
+        if (typeof maskedObj[key] === 'object') {
+          maskedObj[key] = maskRecursive(maskedObj[key]);
         }
       });
       
-      return newObj;
+      return maskedObj;
     };
 
-    return maskRecursive(masked);
+    return maskRecursive(obj);
+  };
+
+  // ─── Foolproof Mongoose-to-POJO Conversion (v3: The Final Wall) ─────────
+  const toPOJO = (data) => {
+    if (data === null || data === undefined) return data;
+    if (typeof data !== 'object') return data;
+    if (Array.isArray(data)) return data.map(toPOJO);
+    
+    // If it's a Mongoose document, we EXPLICITLY avoid its methods
+    // because they are unstable in this clustered environment.
+    const isMongoose = !!(data.$__ || data.constructor?.name === 'model');
+    
+    const cleanObj = {};
+    const keys = Object.keys(isMongoose && typeof data.toObject === 'function' ? data.toObject({ getters: true, virtuals: true }) : data);
+
+    for (const key of keys) {
+      // Exclude internal Mongoose state and functions
+      if (key.startsWith('$') || key === '__v') continue;
+      
+      const val = data[key];
+      if (typeof val === 'function') continue;
+      
+      cleanObj[key] = toPOJO(val);
+    }
+    
+    // Ensure _id is always present as a string for frontend consistency
+    if (data._id && !cleanObj._id) cleanObj._id = data._id.toString();
+    
+    return cleanObj;
   };
 
   const oldJson = res.json;
   res.json = function (data) {
+    // Force everything to a safe POJO before Express or our logger touches it
+    const safeData = toPOJO(data);
+
     // Only log in development
-    if (process.env.NODE_ENV === 'development' && data) {
-      console.log(`[OUTGOING] ${req.method} ${req.url} - Data:`, JSON.stringify(maskSensitive(data)));
+    if (process.env.NODE_ENV === 'development' && safeData) {
+      console.log(`[OUTGOING] ${req.method} ${req.url} - Data:`, JSON.stringify(maskSensitive(safeData)));
     }
-    return oldJson.call(this, data);
+    
+    // Pass the safe POJO to the original Express res.json
+    return oldJson.call(this, safeData);
   };
   next();
 });

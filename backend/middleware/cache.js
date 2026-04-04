@@ -36,7 +36,28 @@ const cacheMiddleware = (duration) => (req, res, next) => {
         // Intercept res.json to store the result in cache
         res.originalJson = res.json;
         res.json = (body) => {
-            cache.set(key, body, duration || 60);
+            // Ensure we cache a POJO (Plain Old JavaScript Object) 
+            // This prevents Mongoose "broken context" errors on cache hits
+            let cacheBody = body;
+            
+            try {
+                if (body && typeof body === 'object') {
+                    if (Array.isArray(body)) {
+                        cacheBody = body.map(item => 
+                            (item && item.$__ && typeof item.toObject === 'function') ? item.toObject() : item
+                        );
+                    } else if (body.$__ && typeof body.toObject === 'function') {
+                        cacheBody = body.toObject();
+                    }
+                }
+            } catch (err) {
+                // Squelch conversion errors only if they're harmless, otherwise log for dev
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('[CACHE] Document conversion warning:', err.message);
+                }
+            }
+
+            cache.set(key, cacheBody, duration || 60);
             res.originalJson(body);
         };
         next();

@@ -1093,7 +1093,7 @@ body {
     overflow-y: auto;
     width: 100vw;
     margin-left: 0 !important;
-    padding-top: 56px; /* Reduced spacer for fixed mobile header */
+    padding-top: 0; /* Removing gap; DemoBanner handles the offset via sticky: 64px */
   }
 }
 

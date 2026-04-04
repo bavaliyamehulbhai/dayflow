@@ -7,58 +7,77 @@ export default function MobileBottomSheet({
   onClose, 
   title, 
   children,
-  headerAction 
+  headerAction,
+  variant = 'centered' // 'centered' or 'full'
 }) {
-  // Prevent scrolling when bottom sheet is open
+  // Prevent scrolling and manage global focus when bottom sheet is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.setAttribute('data-bottom-sheet-active', 'true');
     } else {
       document.body.style.overflow = 'unset';
+      document.body.removeAttribute('data-bottom-sheet-active');
     }
     return () => {
       document.body.style.overflow = 'unset';
+      document.body.removeAttribute('data-bottom-sheet-active');
     };
   }, [isOpen]);
+
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
+  const modalVariants = {
+    centered: {
+      initial: { opacity: 0, scale: 0.9, x: '-50%', y: '-48%' },
+      animate: { opacity: 1, scale: 1, x: '-50%', y: '-50%' },
+      exit: { opacity: 0, scale: 0.9, x: '-50%', y: '-48%' }
+    },
+    full: isMobile ? {
+      initial: { x: '100%' },
+      animate: { x: 0 },
+      exit: { x: '100%' }
+    } : {
+      initial: { opacity: 0, scale: 0.9, x: '-50%', y: '-48%' },
+      animate: { opacity: 1, scale: 1, x: '-50%', y: '-50%' },
+      exit: { opacity: 0, scale: 0.9, x: '-50%', y: '-48%' }
+    }
+  };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Overlay */}
+          {/* Overlay - Deeper Immersion */}
           <motion.div 
-            className="fixed inset-0 bg-black/60 z-[1999] backdrop-blur-sm"
+            className="fixed inset-0 bg-black/85 z-[1999] backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
 
-          {/* Bottom Sheet */}
+          {/* Centered Focused Modal or Full Immersion */}
           <motion.div
-            className="bottom-sheet active z-[2000] flex flex-col"
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
+            className={`bottom-sheet active z-[2000] flex flex-col ${variant === 'full' ? 'full-screen-immersion' : ''}`}
+            initial={modalVariants[variant].initial}
+            animate={modalVariants[variant].animate}
+            exit={modalVariants[variant].exit}
             transition={{ 
               type: 'spring', 
               damping: 25, 
-              stiffness: 200,
+              stiffness: 300,
               mass: 0.8
             }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={0.4}
-            onDragEnd={(e, info) => {
-              if (info.offset.y > 100) onClose();
-            }}
           >
-            <div className="bottom-sheet-handle" />
+            {/* Handle intentionally removed for centered style */}
+
             
             <header className="flex items-center justify-between px-6 pb-4 border-b border-white/5">
               <h3 className="text-xl font-bold font-syne text-white tracking-tight">
-                {title}
+                {(!isMobile || variant !== 'full') && title}
               </h3>
+
               <div className="flex items-center gap-3">
                 {headerAction}
                 <button 

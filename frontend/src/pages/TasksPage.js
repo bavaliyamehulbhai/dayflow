@@ -5,20 +5,19 @@ import { useNotifications } from '../context/NotificationContext';
 import { format } from 'date-fns';
 import {
   Plus, Search, Pencil, Trash2, AlertCircle, Check, CheckCircle2,
-  X, ClipboardList, Clock, Tag, Calendar, Layers, Zap, Trophy, ChevronRight
+  X, ClipboardList, Clock, Tag, Calendar, Layers, Zap, Trophy, ChevronRight,
+  FileText, FileSpreadsheet
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import useFeedback from '../hooks/useFeedback';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
 import SensitivityShield from '../components/layout/SensitivityShield';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import MagneticButton from '../components/common/MagneticButton';
 import { exportToCSV, exportToPDF } from '../utils/exportUtils';
-import { Download, FileText, FileSpreadsheet } from 'lucide-react';
 import MobileBottomSheet from '../components/common/MobileBottomSheet';
-import { useMotionValue, useTransform } from 'framer-motion';
-
+import AuraOrb from '../components/common/AuraOrb';
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const STATUSES = ['pending', 'in-progress', 'completed', 'cancelled'];
@@ -40,10 +39,10 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
   const background = useTransform(
     x,
     [-100, 0, 100],
-    ['rgba(239, 68, 68, 0.5)', 'transparent', 'rgba(34, 197, 94, 0.5)']
+    ['rgba(239, 68, 68, 0.4)', 'transparent', 'rgba(34, 197, 94, 0.4)']
   );
   const opacity = useTransform(x, [-100, -50, 0, 50, 100], [1, 0, 0, 0, 1]);
-  const scale = useTransform(x, [-100, 0, 100], [1.2, 1, 1.2]);
+  const scale = useTransform(x, [-100, 0, 100], [1.1, 1, 1.1]);
 
   const handleDragEnd = (event, info) => {
     if (info.offset.x > 100) {
@@ -58,134 +57,119 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
     }
   };
 
-
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
   const priorityAura = {
-    urgent: '0 0 20px rgba(248, 113, 113, 0.15)',
-    high: '0 0 15px rgba(251, 146, 60, 0.1)',
+    urgent: '0 0 30px rgba(248, 113, 113, 0.12)',
+    high: '0 0 20px rgba(251, 146, 60, 0.08)',
     medium: 'none',
     low: 'none'
   }[task.priority];
 
   return (
-    <div className="relative overflow-hidden mb-3" style={{ borderRadius: 16 }}>
+    <div className="relative overflow-hidden mb-4" style={{ borderRadius: 24 }}>
       {/* Swipe Actions Background */}
       <motion.div 
-        className="absolute inset-0 flex items-center justify-between px-6 z-0"
-        style={{ background }}
+        className="absolute inset-0 flex items-center justify-between px-8 z-0"
+        style={{ background, borderRadius: 24 }}
       >
         <motion.div style={{ opacity, scale }} className="text-white font-bold flex items-center gap-2">
-          <Trash2 size={24} />
-          <span>Delete</span>
+          <Trash2 size={24} strokeWidth={2.5} />
+          <span style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.5 }}>Delete</span>
         </motion.div>
         <motion.div style={{ opacity, scale }} className="text-white font-bold flex items-center gap-2">
-          <CheckCircle2 size={24} />
-          <span>Complete</span>
+          <CheckCircle2 size={24} strokeWidth={2.5} />
+          <span style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.5 }}>Complete</span>
         </motion.div>
       </motion.div>
 
       <motion.div
         layout
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         drag={isMobile ? "x" : false}
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.7}
+        dragElastic={0.5}
         onDragEnd={handleDragEnd}
-        whileHover={!isMobile ? { scale: 1.005, y: -2 } : {}}
-        className={`task-row-container premium-card ${selected ? 'selected-aura' : ''}`}
+        whileTap={{ scale: 0.98 }}
+        className={`app-module-entrance premium-card ${selected ? 'selected-aura' : ''}`}
         style={{ 
           x, 
           zIndex: 1, 
           position: 'relative',
-          opacity: task.status === 'cancelled' ? 0.4 : 1, 
           padding: 0, 
           overflow: 'hidden',
-          boxShadow: selected ? `0 0 30px var(--accent-glow)` : priorityAura,
-          border: selected ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
-          background: 'var(--surface)'
+          boxShadow: selected ? `0 0 40px var(--accent-glow)` : priorityAura,
+          border: selected ? '2px solid var(--accent)' : '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'rgba(255, 255, 255, 0.03)',
+          backdropFilter: 'blur(30px) saturate(210%)',
+          borderRadius: 24
         }}
         onClick={() => setModal(task)}
       >
+        <div style={{ 
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          padding: '18px 20px',
+          background: 'transparent'
+        }}>
+          <div className="task-row-check" onClick={e => e.stopPropagation()}>
+            <motion.button
+              whileTap={{ scale: 0.8 }}
+              onClick={() => toggleComplete(task)}
+              style={{
+                width: 32, height: 32, borderRadius: 12, 
+                border: `3px solid ${task.status === 'completed' ? '#22c55e' : 'rgba(255,255,255,0.15)'}`,
+                background: task.status === 'completed' ? '#22c55e' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: task.status === 'completed' ? '0 0 25px rgba(34, 197, 94, 0.4)' : 'none'
+              }}
+            >
+              <AnimatePresence>
+                {task.status === 'completed' && (
+                  <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}>
+                    <Check size={18} color="white" strokeWidth={4} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
 
-      <div className="task-row-main" style={{ 
-        display: 'flex',
-        alignItems: 'center',
-        gap: isMobile ? 12 : 20,
-        padding: isMobile ? '12px 16px' : '16px 24px',
-        background: 'transparent'
-      }}>
-        <div className="task-row-check" onClick={e => e.stopPropagation()}>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => toggleComplete(task)}
-            className="status-checkbox haptic-tap"
-            style={{
-              width: 28, height: 28, borderRadius: 10, 
-              border: `2.5px solid ${task.status === 'completed' ? 'var(--green)' : 'var(--border)'}`,
-              background: task.status === 'completed' ? 'var(--green)' : 'rgba(255,255,255,0.03)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-              boxShadow: task.status === 'completed' ? '0 0 20px rgba(74, 222, 128, 0.3)' : 'none'
-            }}
-          >
-            <AnimatePresence>
-              {task.status === 'completed' && (
-                <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}>
-                  <Check size={16} color="white" strokeWidth={4} />
-                </motion.div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ 
+              fontSize: 16, fontWeight: 700,
+              textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+              color: task.status === 'completed' ? 'var(--muted)' : 'var(--text)',
+              marginBottom: 4,
+              fontFamily: 'Plus Jakarta Sans, sans-serif'
+            }}>
+              <SensitivityShield>
+                {task.title}
+              </SensitivityShield>
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 9, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {task.category && (
+                <span className="glass" style={{ padding: '2px 8px', borderRadius: 6, border: 'none' }}>{task.category}</span>
               )}
-            </AnimatePresence>
-          </motion.button>
-        </div>
-
-        <div className="task-row-content" style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ 
-            fontSize: isMobile ? 15 : 16, fontWeight: 700,
-            textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-            color: task.status === 'completed' ? 'var(--muted)' : 'var(--text)',
-            marginBottom: 4,
-            transition: 'color 0.3s ease',
-            fontFamily: 'Syne, sans-serif'
-          }}>
-            <SensitivityShield>
-              {task.title}
-            </SensitivityShield>
+              {task.priority !== 'medium' && (
+                <span style={{ color: `var(--${task.priority})` }}>{task.priority}</span>
+              )}
+              {task.dueDate && (
+                <span style={{ color: isOverdue ? 'var(--red)' : 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Clock size={10} /> {format(new Date(task.dueDate), 'MMM d')}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="task-row-meta" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {task.category && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.04)', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.04)' }}>
-                <Tag size={10} /> {task.category}
-              </span>
-            )}
-            {task.dueDate && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isOverdue ? 'var(--red)' : 'inherit' }}>
-                <Calendar size={10} /> {format(new Date(task.dueDate), 'MMM d')}
-              </span>
-            )}
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: `var(--${task.priority})` }}>
-              <Layers size={10} /> {task.priority}
-            </span>
+
+          <div className="task-row-actions" style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+            <button className={`btn btn-icon btn-sm haptic-tap ${selected ? 'text-accent' : 'text-muted'}`} onClick={() => toggleSelect(task._id)}><ChevronRight size={20} /></button>
           </div>
         </div>
-
-        <div className="task-row-actions" style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-          <button 
-            className={`btn btn-icon btn-sm haptic-tap ${selected ? 'text-accent' : 'text-muted'}`} 
-            onClick={() => toggleSelect(task._id)}
-            style={{ background: selected ? 'rgba(124, 109, 250, 0.1)' : 'transparent' }}
-          >
-            <CheckCircle2 size={18} />
-          </button>
-          <button className="btn btn-icon btn-ghost btn-sm text-red haptic-tap" onClick={() => setConfirmState({ open: true, task })}><Trash2 size={18} /></button>
-        </div>
-      </div>
-    </motion.div>
-  </div>
-);
+      </motion.div>
+    </div>
+  );
 }, (prev, next) => {
-
   return prev.task._id === next.task._id && 
          prev.task.status === next.task.status && 
          prev.task.title === next.task.title &&
@@ -491,175 +475,206 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="responsive-container">
+    <div className="responsive-container" style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', paddingBottom: 120 }}>
+      {/* Immersive Background Layer */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+        <AuraOrb color="rgba(124, 109, 250, 0.15)" size="400px" top="-10%" left="-10%" delay={0} />
+        <AuraOrb color="rgba(244, 63, 94, 0.1)" size="350px" top="30%" left="60%" delay={2} />
+        <AuraOrb color="rgba(6, 182, 212, 0.1)" size="300px" top="70%" left="10%" delay={4} />
+      </div>
+
       <div className="page-header" style={{ 
-        flexDirection: isMobile ? 'row' : 'row', 
-        justifyContent: 'space-between',
-        alignItems: 'center', 
-        marginBottom: isMobile ? 16 : 40,
+        marginBottom: isMobile ? 24 : 40,
+        paddingTop: isMobile ? 12 : 24,
         position: 'relative' 
       }}>
-        <div className="aura-pulse" style={{ 
-          position: 'absolute', top: -50, left: -50, 
-          width: 200, height: 200, 
-          background: 'var(--grad-mesh-vibrant)', 
-          opacity: 0.1, zIndex: -1 
-        }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16 }}>
-          <div className="auth-logo-icon aura-float" style={{ width: isMobile ? 36 : 48, height: isMobile ? 36 : 48, marginBottom: 0, flexShrink: 0 }}>
-            <ClipboardList size={isMobile ? 18 : 24} color="white" strokeWidth={2.5} />
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 16 }}
+        >
+          <div className="auth-logo-icon aura-float" style={{ 
+            width: isMobile ? 48 : 64, 
+            height: isMobile ? 48 : 64, 
+            background: 'var(--grad-premium)',
+            borderRadius: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 12px 30px rgba(124, 109, 250, 0.4)'
+          }}>
+            <ClipboardList size={isMobile ? 24 : 32} color="white" strokeWidth={2.5} />
           </div>
           <div>
-            <div className="page-title" style={{ fontFamily: 'Syne, sans-serif', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1 }}>
+            <div style={{ 
+              fontFamily: 'Syne, sans-serif', 
+              fontSize: isMobile ? '32px' : '48px', 
+              fontWeight: 800, 
+              letterSpacing: '-0.05em', 
+              lineHeight: 1,
+              background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
               Mission Control
             </div>
-            {!isMobile && <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 600, marginTop: 4 }}>Track and conquer tactical objectives</p>}
+            <p style={{ 
+              fontSize: '12px', 
+              fontWeight: 800, 
+              color: 'var(--muted)', 
+              textTransform: 'uppercase', 
+              letterSpacing: 2,
+              marginTop: 4
+            }}>Tactical Dashboard</p>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {statsData && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: isMobile ? 8 : 16, marginBottom: isMobile ? 16 : 32 }}>
-          <div className="glass" style={{ padding: isMobile ? '12px 16px' : '20px 24px', borderRadius: 20, background: 'rgba(255,255,255,0.02)', border: 'none' }}>
-            <div style={{ fontSize: 9, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1, marginBottom: 4, textTransform: 'uppercase' }}>Total</div>
-            <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 900, fontFamily: 'Syne', color: 'white' }}>{statsData.total}</div>
-          </div>
-          <div className="glass" style={{ padding: isMobile ? '12px 16px' : '20px 24px', borderRadius: 20, background: 'rgba(255,255,255,0.02)', border: 'none' }}>
-            <div style={{ fontSize: 9, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1, marginBottom: 4, textTransform: 'uppercase' }}>Secured</div>
-            <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 900, fontFamily: 'Syne', color: 'var(--green)' }}>{statsData.completed}</div>
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 24 }}>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="app-module-entrance"
+            style={{ 
+              padding: '20px', 
+              borderRadius: 24, 
+              background: 'rgba(255,255,255,0.03)', 
+              border: '1px solid rgba(255,255,255,0.05)',
+              backdropFilter: 'blur(20px)'
+            }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1.5, marginBottom: 4, textTransform: 'uppercase' }}>Active Tasks</div>
+            <div style={{ fontSize: '28px', fontWeight: 900, fontFamily: 'Syne', color: 'white' }}>{statsData.total}</div>
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="app-module-entrance"
+            style={{ 
+              padding: '20px', 
+              borderRadius: 24, 
+              background: 'rgba(255,255,255,0.03)', 
+              border: '1px solid rgba(255,255,255,0.05)',
+              backdropFilter: 'blur(20px)'
+            }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1.5, marginBottom: 4, textTransform: 'uppercase' }}>Secured</div>
+            <div style={{ fontSize: '28px', fontWeight: 900, fontFamily: 'Syne', color: 'var(--green)' }}>{statsData.completed}</div>
+          </motion.div>
         </div>
       )}
 
-      {/* Compact High-Performance Filter Bar */}
-      <div className="glass-holographic aura-iridescent" style={{ padding: isMobile ? '8px 12px' : '16px', borderRadius: 20, border: 'none', marginBottom: isMobile ? 12 : 24 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: isMobile ? 8 : 16 }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }} />
-            <input
-              className="auth-input"
-              style={{ 
-                paddingLeft: 40, 
-                height: isMobile ? 44 : 48, 
-                fontSize: 13, 
-                borderRadius: 12, 
-                width: '100%',
-                background: 'rgba(255,255,255,0.03)'
-              }}
-              placeholder="Search missions..."
-              value={filters.search}
-              onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
-            />
-          </div>
-          <MagneticButton 
-            className="auth-button haptic-tap" 
-            onClick={() => setModal('create')} 
-            style={{ width: isMobile ? 42 : 140, height: isMobile ? 42 : 48, padding: 0, borderRadius: 12, flexShrink: 0 }}
-          >
-            <div className="btn-glint" />
-            <Plus size={20} /> {!isMobile && <span style={{ marginLeft: 8, fontWeight: 800 }}>OBJECTIVE</span>}
-          </MagneticButton>
-          
-          {!isMobile && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button 
-                className="btn btn-icon glass haptic-tap" 
-                onClick={() => exportToCSV(tasks)}
-                title="Export CSV"
-                style={{ width: 48, height: 48, borderRadius: 12 }}
-              >
-                <FileSpreadsheet size={20} />
-              </button>
-              <button 
-                className="btn btn-icon glass haptic-tap" 
-                onClick={() => exportToPDF(tasks)}
-                title="Export PDF"
-                style={{ width: 48, height: 48, borderRadius: 12 }}
-              >
-                <FileText size={20} />
-              </button>
+      {/* Filter and Action Bar */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        style={{ marginBottom: 24 }}
+      >
+        <div className="glass-holographic" style={{ 
+          padding: '12px', 
+          borderRadius: 24, 
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          backdropFilter: 'blur(40px)'
+        }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
+              <input
+                className="auth-input"
+                style={{ 
+                  paddingLeft: 46, 
+                  height: 52, 
+                  fontSize: 14, 
+                  borderRadius: 16, 
+                  width: '100%',
+                  background: 'rgba(0,0,0,0.2)',
+                  border: '1px solid rgba(255,255,255,0.05)'
+                }}
+                placeholder="Search objectives..."
+                value={filters.search}
+                onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+              />
             </div>
-          )}
-        </div>
+            <MagneticButton 
+              className="auth-button haptic-tap" 
+              onClick={() => setModal('create')} 
+              style={{ width: 52, height: 52, padding: 0, borderRadius: 16, flexShrink: 0 }}
+            >
+              <Plus size={24} strokeWidth={2.5} />
+            </MagneticButton>
+          </div>
 
-        <div style={{ 
-          display: 'flex', 
-          gap: 6, 
-          overflowX: 'auto', 
-          paddingBottom: 2,
-          msOverflowStyle: 'none',
-          scrollbarWidth: 'none'
-        }} className="no-scrollbar">
-          <select className="select premium-select" style={{ height: 34, borderRadius: 8, minWidth: isMobile ? 100 : 130, flexShrink: 0, fontSize: 11, padding: '0 8px' }} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
-            <option value="">{isMobile ? 'All Status' : 'Status: All'}</option>
-            {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ')}</option>)}
-          </select>
-          <select className="select premium-select" style={{ height: 34, borderRadius: 8, minWidth: isMobile ? 100 : 130, flexShrink: 0, fontSize: 11, padding: '0 8px' }} value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
-            <option value="">{isMobile ? 'All Levels' : 'Priority: All'}</option>
-            {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-          </select>
-          <select className="select premium-select" style={{ height: 34, borderRadius: 8, minWidth: isMobile ? 100 : 130, flexShrink: 0, fontSize: 11, padding: '0 8px' }} value={filters.sortBy} onChange={e => setFilters(f => ({ ...f, sortBy: e.target.value }))}>
-            <option value="createdAt">{isMobile ? 'Recent' : 'Sort: Recent'}</option>
-            <option value="dueDate">{isMobile ? 'Temporal' : 'Sort: Temporal'}</option>
-            <option value="priority">{isMobile ? 'Severity' : 'Sort: Severity'}</option>
-            <option value="title">{isMobile ? 'Lexical' : 'Sort: Lexical'}</option>
-          </select>
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }} className="no-scrollbar">
+            <select className="select premium-select" style={{ height: 38, borderRadius: 12, minWidth: 120, fontSize: 11, background: 'rgba(255,255,255,0.03)' }} value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
+              <option value="">STATUS: ALL</option>
+              {STATUSES.map(s => <option key={s} value={s}>{s.replace('-', ' ').toUpperCase()}</option>)}
+            </select>
+            <select className="select premium-select" style={{ height: 38, borderRadius: 12, minWidth: 120, fontSize: 11, background: 'rgba(255,255,255,0.03)' }} value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
+              <option value="">PRIORITY: ALL</option>
+              {PRIORITIES.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
+            </select>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {isLoading ? <TasksSkeleton /> : (
         <div className="tasks-list">
-          {tasks.map((task, index) => (
-            <TaskItem 
-              key={task._id}
-              task={task}
-              isMobile={isMobile}
-              selected={selected.includes(task._id)}
-              toggleSelect={toggleSelect}
-              toggleComplete={toggleComplete}
-              setModal={setModal}
-              setConfirmState={setConfirmState}
-              deleteMutation={deleteMutation}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {tasks.length > 0 ? tasks.map((task, index) => (
+              <TaskItem 
+                key={task._id}
+                task={task}
+                isMobile={isMobile}
+                selected={selected.includes(task._id)}
+                toggleSelect={toggleSelect}
+                toggleComplete={toggleComplete}
+                setModal={setModal}
+                setConfirmState={setConfirmState}
+                deleteMutation={deleteMutation}
+              />
+            )) : (
+              <EmptyState 
+                icon={<ClipboardList size={48} />}
+                title="No Missions Found"
+                message="Adjust filters or manifest a new objective."
+              />
+            )}
+          </AnimatePresence>
         </div>
-
       )}
 
+      {/* Floating Bulk Actions - Adjusted for App Dock */}
       <AnimatePresence>
         {selected.length > 0 && (
           <motion.div
             initial={{ y: 100, x: '-50%', opacity: 0 }}
-            animate={{ y: 0, x: '-50%', opacity: 1 }}
+            animate={{ y: -20, x: '-50%', opacity: 1 }}
             exit={{ y: 100, x: '-50%', opacity: 0 }}
             className="floating-bulk-actions"
             style={{
-              position: 'fixed', bottom: isMobile ? 90 : 40, left: '50%',
-              zIndex: 900, background: 'rgba(13, 13, 22, 0.9)', padding: '10px 20px',
-              borderRadius: 24, backdropFilter: 'blur(30px) saturate(180%)',
-              border: '1.5px solid var(--accent)',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+              position: 'fixed', bottom: 100, left: '50%',
+              zIndex: 900, background: 'rgba(20, 20, 30, 0.85)', padding: '12px 24px',
+              borderRadius: 30, backdropFilter: 'blur(40px) saturate(200%)',
+              border: '2px solid var(--accent)',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
               display: 'flex', alignItems: 'center', gap: 20
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ background: 'var(--accent)', color: 'white', fontWeight: 900, borderRadius: 8, px: 8, height: 26, minWidth: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
-                {selected.length}
-              </div>
-              <span style={{ fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', opacity: 0.8, letterSpacing: 1, textTransform: 'uppercase' }}>Targets Selected</span>
-            </div>
-            
-            <div style={{ height: 20, width: 1, background: 'rgba(255,255,255,0.1)' }} />
-            
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn btn-sm btn-primary haptic-tap" onClick={handleBulkComplete} style={{ height: 38, borderRadius: 10, padding: '0 16px' }}>
-                <CheckCircle2 size={16} /> <span className="hide-mobile" style={{ marginLeft: 6 }}>Secure</span>
+            <span style={{ fontSize: 13, fontWeight: 900, color: 'white' }}>{selected.length} SELECTED</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-sm btn-primary haptic-tap" onClick={handleBulkComplete} style={{ height: 40, borderRadius: 12 }}>
+                <CheckCircle2 size={16} /> <span>Secure</span>
               </button>
-              <button className="btn btn-icon btn-sm glass haptic-tap text-red" onClick={handleBulkDelete} style={{ width: 38, height: 38, borderRadius: 10 }}>
+              <button className="btn btn-icon btn-sm glass haptic-tap text-red" onClick={handleBulkDelete} style={{ width: 40, height: 40, borderRadius: 12 }}>
                 <Trash2 size={16} />
               </button>
-              <button className="btn btn-icon btn-sm glass haptic-tap" onClick={() => setSelected([])} style={{ width: 38, height: 38, borderRadius: 10 }}>
-                <X size={16} />
+              <button className="btn btn-icon btn-sm glass haptic-tap" onClick={() => setSelected([])} style={{ width: 40, height: 40, borderRadius: 12 }}>
+                <X size={18} />
               </button>
             </div>
           </motion.div>
@@ -667,13 +682,19 @@ export default function TasksPage() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {modal && <TaskModal task={modal === 'create' ? null : modal} onClose={() => setModal(null)} onSave={handleSave} />}
+        {modal && (
+          <TaskModal 
+            task={modal === 'create' ? null : modal} 
+            onClose={() => setModal(null)} 
+            onSave={handleSave} 
+          />
+        )}
       </AnimatePresence>
 
       <ConfirmDialog
         open={confirmState.open}
         title={confirmState.title || "Remove Objective?"}
-        message={confirmState.message || "Are you sure you want to proceed? This action cannot be undone."}
+        message={confirmState.message || "Are you sure you want to proceed? This mission will be lost forever."}
         confirmText="Remove"
         onConfirm={confirmState.onConfirm || (() => handleDelete(confirmState.task))}
         onCancel={() => setConfirmState({ open: false, task: null, onConfirm: null, title: null, message: null })}

@@ -17,19 +17,7 @@ import SensitivityShield from '../components/layout/SensitivityShield';
 import Celebration from '../components/Celebration';
 import ShortcutsHelp from '../components/layout/ShortcutsHelp';
 import MobileBottomSheet from '../components/common/MobileBottomSheet';
-
-const AuraOrb = ({ color, size, top, left, delay }) => (
-  <motion.div
-    animate={{ 
-      x: [0, 30, -30, 0], 
-      y: [0, -30, 30, 0],
-      scale: [1, 1.2, 0.8, 1],
-      opacity: [0.08, 0.15, 0.08]
-    }}
-    transition={{ duration: 15 + delay, repeat: Infinity, ease: 'easeInOut' }}
-    style={{ position: 'absolute', width: size, height: size, borderRadius: '50%', background: color, filter: 'blur(80px)', top, left, zIndex: 0, pointerEvents: 'none' }}
-  />
-);
+import AuraOrb from '../components/common/AuraOrb';
 
 const ICONS = ['⭐', '💪', '🏃', '📚', '💧', '🧘', '🍎', '😴', '✍️', '🎯', '💊', '🌿', '🎨', '🎵', '🧹', '💻'];
 const COLORS = ['#7c6dfa', '#fa6d8a', '#6dfacc', '#fad96d', '#fa9a6d', '#6daafa', '#e96dfa', '#6dfaed'];
@@ -66,77 +54,98 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
   const modalContent = (
     <form onSubmit={(e) => { e.preventDefault(); if (!form.name.trim()) return addToast('Ritual name required', 'error'); onSave(form); }} className="flex flex-col h-full">
       <div className="modal-body custom-scrollbar" style={{ 
-        padding: isMobile ? '0' : '32px', 
-        paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32,
+        padding: isMobile ? '24px' : '32px 40px', 
+        paddingBottom: isMobile ? '140px' : 40,
         flex: 1,
         overflowY: 'auto'
       }}>
-        <div className="form-group mb-6">
-          <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Ritual Title</label>
+        <div className="form-group mb-8">
+          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12, display: 'block' }}>Ritual Title</label>
           <input 
-            className="auth-input haptic-feedback" 
+            className="auth-input haptic-feedback custom-ritual-input" 
             style={{ 
-              height: isMobile ? 52 : 56, 
-              fontSize: isMobile ? 16 : 16,
-              background: 'rgba(255,255,255,0.03)',
-              borderRadius: 14
+              height: 60, 
+              fontSize: 18,
+              fontWeight: 700,
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: 18,
+              border: '1px solid rgba(255,255,255,0.05)',
+              boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)',
+              width: '100%'
             }}
             value={form.name} 
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))} 
-            placeholder="e.g. Morning meditation" 
+            placeholder="e.g. MORNING MEDITATION" 
             autoFocus 
           />
         </div>
 
-        <div className="form-group mb-6">
-          <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Identity & Intent</label>
+        <div className="form-group mb-8">
+          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12, display: 'block' }}>Identity & Intent</label>
           <textarea 
             className="auth-input haptic-feedback" 
             value={form.description} 
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))} 
             placeholder="Why is this ritual essential to your biological evolution?" 
-            rows={isMobile ? 2 : 3} 
-            style={{ height: 'auto', minHeight: 80, padding: '16px 20px', borderRadius: 14, background: 'rgba(255,255,255,0.03)' }} 
+            rows={isMobile ? 3 : 4} 
+            style={{ height: 'auto', minHeight: 100, padding: '20px', borderRadius: 18, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', fontSize: 15, width: '100%' }} 
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-6 mb-8">
           <div className="form-group">
-            <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Frequency</label>
-            <select className="select premium-select" style={{ height: 48, borderRadius: 14, width: '100%' }} value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10, display: 'block' }}>Frequency</label>
+            <select className="auth-input" style={{ height: 56, borderRadius: 16, width: '100%', fontSize: 14, fontWeight: 700 }} value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
               {FREQ.map(f => <option key={f.value} value={f.value}>{f.label.toUpperCase()}</option>)}
             </select>
           </div>
           <div className="form-group">
-            <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Daily Target</label>
-            <div className="flex gap-2">
+            <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10, display: 'block' }}>Daily Target</label>
+            <div className="flex gap-4 items-center">
               <input 
                 type="number" 
                 className="auth-input" 
-                style={{ height: 48, borderRadius: 14, width: '60%', background: 'rgba(255,255,255,0.03)' }}
+                style={{ height: 56, borderRadius: 16, width: '60%', background: 'rgba(255,255,255,0.02)', fontWeight: 900, fontSize: 18, textAlign: 'center' }}
                 value={form.targetCount} 
                 onChange={e => setForm(f => ({ ...f, targetCount: parseInt(e.target.value) || 1 }))} 
               />
-              <span style={{ fontSize: 10, fontWeight: 900, opacity: 0.5, alignSelf: 'center' }}>{form.unit.toUpperCase()}</span>
+              <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1.5 }}>{form.unit.toUpperCase()}</span>
             </div>
           </div>
         </div>
 
-        <div className="form-group mb-8">
-          <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 12, display: 'block' }}>Atmosphere (Color)</label>
-          <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+        <div className="form-group mb-10">
+          <label style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16, display: 'block' }}>Atmosphere (Color)</label>
+          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
             {COLORS.map(c => (
-              <button
+              <motion.button
                 key={c}
                 type="button"
+                whileTap={{ scale: 0.9 }}
                 onClick={() => setForm(f => ({ ...f, color: c }))}
-                className="haptic-tap flex-shrink-0"
+                className="flex-shrink-0"
                 style={{ 
-                  width: 36, height: 36, borderRadius: '50%', background: c, 
-                  border: form.color === c ? '3px solid white' : 'none',
-                  boxShadow: form.color === c ? `0 0 15px ${c}` : 'none'
+                  width: 44, height: 44, borderRadius: '50%', background: c, 
+                  border: form.color === c ? '3px solid white' : '2px solid rgba(255,255,255,0.1)',
+                  position: 'relative'
                 }}
-              />
+              >
+                {form.color === c && (
+                  <motion.div 
+                    layoutId="active-color-ring"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1.25 }}
+                    style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: `2px solid ${c}`, opacity: 0.5 }}
+                  />
+                )}
+                {form.color === c && (
+                  <motion.div 
+                    animate={{ scale: [1, 1.4], opacity: [0.3, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: `2px solid ${c}` }}
+                  />
+                )}
+              </motion.button>
             ))}
           </div>
         </div>
@@ -144,7 +153,7 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
         <button 
           type="submit" 
           className="auth-button w-full haptic-tap" 
-          style={{ height: 56, borderRadius: 16, fontSize: 16, fontWeight: 800, background: form.color }}
+          style={{ height: 64, borderRadius: 20, fontSize: 16, fontWeight: 900, background: form.color, letterSpacing: 1.5 }}
         >
           {habit ? 'REFINE RITUAL' : 'FORGE RITUAL'}
         </button>
@@ -395,80 +404,108 @@ export default function HabitsPage() {
   };
 
   return (
-    <div className="responsive-container pb-28">
-      <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative', overflow: 'hidden', borderRadius: 32, padding: isMobile ? '32px 20px' : '48px 40px' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.02)', zIndex: -1 }} />
-        <AuraOrb color="var(--accent)" size={300} top="-100px" left="-50px" delay={0} />
-        <AuraOrb color="var(--accent2)" size={250} top="20%" left="60%" delay={2} />
-        
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div className="page-title flex items-center gap-4" style={{ fontFamily: 'Syne, sans-serif', fontSize: isMobile ? '32px' : 'var(--fs-2xl)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1 }}>
-            <div className="auth-logo-icon aura-float" style={{ width: 52, height: 52, marginBottom: 0 }}>
-              <RefreshCcw size={26} color="white" strokeWidth={2.5} />
-            </div>
-            Ritual Engine
-          </div>
-          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', opacity: 0.7, fontWeight: 700, marginTop: 12, maxWidth: 400 }}>Consistent biological evolution via neural maintenance</p>
-          
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%', marginTop: 24 }}>
-            <div style={{ 
-              background: 'rgba(255,255,255,0.03)', borderRadius: 16, 
-              padding: '0 14px', height: 48, flex: 1, 
-              display: 'flex', alignItems: 'center', gap: 10, border: '1px solid rgba(255,255,255,0.05)' 
-            }}>
-              <Search size={16} color="var(--muted)" />
-              <input 
-                placeholder="Find rituals..." 
-                value={search} 
-                onChange={e => setSearch(e.target.value)} 
-                style={{ background: 'none', border: 'none', outline: 'none', color: 'white', fontWeight: 600, width: '100%', fontSize: 13 }} 
-              />
-            </div>
-            <button 
-              onClick={() => setModal('create')} 
-              className="auth-button magnetic-btn haptic-tap" 
-              style={{ height: 48, padding: '0 18px', borderRadius: 14, width: 'auto', flexShrink: 0 }}
-            >
-              <Plus size={20} /> {!isMobile && <span style={{ marginLeft: 8 }}>FORGE</span>}
-            </button>
-          </div>
-        </div>
+    <div className="responsive-container" style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', paddingBottom: 120 }}>
+      {/* Immersive Background Layer */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+        <AuraOrb color="rgba(124, 109, 250, 0.15)" size="400px" top="-5%" left="-5%" delay={0} />
+        <AuraOrb color="rgba(110, 250, 204, 0.1)" size="350px" top="40%" left="65%" delay={3} />
+        <AuraOrb color="rgba(250, 109, 138, 0.08)" size="300px" top="75%" left="5%" delay={5} />
       </div>
 
-      <div className="stats-grid-auto mb-10">
-        <div className="stat-card-premium">
-          <div className="stat-card-glow" style={{ background: 'var(--accent)' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div className="stat-label">Active Rituals</div>
-            <SensitivityShield><div className="stat-value">{habits.length}</div></SensitivityShield>
+      <div className="page-header" style={{ 
+        marginBottom: isMobile ? 24 : 40,
+        paddingTop: isMobile ? 12 : 24,
+        position: 'relative' 
+      }}>
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 16 }}
+        >
+          <div className="auth-logo-icon aura-float" style={{ 
+            width: isMobile ? 48 : 64, 
+            height: isMobile ? 48 : 64, 
+            background: 'var(--grad-premium)',
+            borderRadius: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 12px 30px rgba(124, 109, 250, 0.4)'
+          }}>
+            <RefreshCcw size={isMobile ? 24 : 32} color="white" strokeWidth={2.5} />
           </div>
-        </div>
-        <div className="stat-card-premium">
-          <div className="stat-card-glow" style={{ background: 'var(--green)' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div className="stat-label">Done Today</div>
-            <SensitivityShield><div className="stat-value" style={{ color: 'var(--green)' }}>{completedTodayCount}</div></SensitivityShield>
+          <div>
+            <div style={{ 
+              fontFamily: 'Syne, sans-serif', 
+              fontSize: isMobile ? '32px' : '48px', 
+              fontWeight: 800, 
+              letterSpacing: '-0.05em', 
+              lineHeight: 1,
+              background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Ritual Engine
+            </div>
+            <p style={{ 
+              fontSize: '12px', 
+              fontWeight: 800, 
+              color: 'var(--muted)', 
+              textTransform: 'uppercase', 
+              letterSpacing: 2,
+              marginTop: 4
+            }}>Bio-Neural Maintenance</p>
           </div>
-        </div>
-        <div className="stat-card-premium">
-          <div className="stat-card-glow" style={{ background: syncRate > 80 ? 'var(--accent)' : 'var(--yellow)' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div className="stat-label">Synchronization</div>
-            <SensitivityShield><div className="stat-value" style={{ color: syncRate > 80 ? 'var(--accent)' : 'var(--yellow)' }}>
-              {syncRate}%
-            </div></SensitivityShield>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%', marginTop: 24 }}
+        >
+          <div className="glass" style={{ 
+            borderRadius: 16, 
+            padding: '0 16px', height: 52, flex: 1, 
+            display: 'flex', alignItems: 'center', gap: 12, 
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.05)'
+          }}>
+            <Search size={18} color="var(--muted)" />
+            <input 
+              placeholder="Find rituals..." 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+              style={{ background: 'none', border: 'none', outline: 'none', color: 'white', fontWeight: 600, width: '100%', fontSize: 14 }} 
+            />
           </div>
-        </div>
-        <div className="stat-card-premium hide-mobile">
-          <div className="stat-card-glow" style={{ background: 'var(--red)' }} />
-          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-            <div className="stat-label">System Streak</div>
-            <SensitivityShield><div className="stat-value" style={{ color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <Flame size={24} fill="var(--red)" />
-              {Math.max(...habits.map(h => h.streak?.current || 0), 0)}
-            </div></SensitivityShield>
-          </div>
-        </div>
+          <button 
+            onClick={() => setModal('create')} 
+            className="auth-button magnetic-btn haptic-tap" 
+            style={{ height: 52, width: 52, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+          >
+            <Plus size={24} strokeWidth={2.5} />
+          </button>
+        </motion.div>
+      </div>
+
+      <div className="stats-grid-auto mb-10" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 32 }}>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="app-module-entrance"
+          style={{ padding: '20px', borderRadius: 24, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)' }}
+        >
+          <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1.5, marginBottom: 4, textTransform: 'uppercase' }}>Active</div>
+          <div style={{ fontSize: '28px', fontWeight: 900, fontFamily: 'Syne', color: 'white' }}>{habits.length}</div>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="app-module-entrance"
+          style={{ padding: '20px', borderRadius: 24, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)' }}
+        >
+          <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--muted)', letterSpacing: 1.5, marginBottom: 4, textTransform: 'uppercase' }}>Sync Rate</div>
+          <div style={{ fontSize: '28px', fontWeight: 900, fontFamily: 'Syne', color: syncRate > 80 ? 'var(--green)' : 'var(--yellow)' }}>{syncRate}%</div>
+        </motion.div>
       </div>
 
       {isLoading ? (

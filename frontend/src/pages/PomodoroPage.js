@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import useFeedback from '../hooks/useFeedback';
 import ConfirmDialog from '../components/ConfirmDialog';
+import AuraOrb from '../components/common/AuraOrb';
 
 // ─── Sound Engine ─────────────────────────────────────────────────────────────
 const createRainSound = (ctx) => {
@@ -393,45 +394,46 @@ export default function PomodoroPage() {
   );
 
   return (
-    <>
-    <motion.div 
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className={`responsive-container ${running && isMobile ? 'focus-immersion' : ''}`}
-    >
-      <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative' }}>
-        <div className="aura-pulse" style={{ 
-          position: 'absolute', top: -50, left: -50, 
-          width: 200, height: 200, 
-          background: 'var(--grad-mesh-vibrant)', 
-          opacity: 0.1, zIndex: -1 
-        }} />
-        <div>
-          <div className="page-title flex items-center gap-4" style={{ 
-            fontFamily: 'Syne, sans-serif', 
-            fontSize: 'var(--fs-2xl)', 
-            fontWeight: 800,
-            letterSpacing: '-0.05em',
-            lineHeight: 1.2
-          }}>
-            <div className="auth-logo-icon aura-float" style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, marginBottom: 0 }}>
-              <Timer size={isMobile ? 20 : 24} color="white" strokeWidth={2.5} fill="white" />
+    <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
+      <AuraOrb color="rgba(124, 109, 250, 0.15)" size="600px" top="-10%" left="-10%" delay={0} />
+      <AuraOrb color="rgba(255, 77, 125, 0.1)" size="500px" top="60%" left="60%" delay={5} />
+
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className={`responsive-container ${running && isMobile ? 'focus-immersion' : ''}`}
+        style={{ position: 'relative', zIndex: 1 }}
+      >
+        <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative' }}>
+          <div>
+            <div className="page-title flex items-center gap-4" style={{ 
+              fontFamily: 'Syne, sans-serif', 
+              fontSize: 'clamp(28px, 5vw, 42px)', 
+              fontWeight: 900,
+              letterSpacing: '-0.05em',
+              lineHeight: 1,
+              background: 'linear-gradient(to right, #fff, rgba(255,255,255,0.7))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              <div className="auth-logo-icon aura-float" style={{ width: isMobile ? 40 : 54, height: isMobile ? 40 : 54, marginBottom: 0, background: 'var(--grad-premium)' }}>
+                <Timer size={isMobile ? 20 : 28} color="white" strokeWidth={2.5} fill="white" />
+              </div>
+              Temporal Engine
             </div>
-            Temporal Engine
+            <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--muted)', marginTop: 12, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.8 }}>
+              Optimizing cognitive output · v2.4
+            </p>
           </div>
-          <p className="page-subtitle" style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: 'var(--muted)', marginTop: 8, letterSpacing: '0.02em', opacity: 0.7 }}>
-            Optimize your cognitive output through high-precision intervals
-          </p>
+          <button
+            className="btn glass haptic-tap glow-on-hover"
+            onClick={() => setIsFocusMode(true)}
+            style={{ borderRadius: 20, height: isMobile ? 44 : 54, padding: isMobile ? '0 20px' : '0 32px', fontWeight: 900, border: '1px solid rgba(255,255,255,0.1)', fontSize: isMobile ? 12 : 14, background: 'rgba(255,255,255,0.03)', textTransform: 'uppercase', letterSpacing: 1 }}
+          >
+            <Maximize2 size={isMobile ? 16 : 18} style={{ marginRight: 10 }} /> IMMERSE
+          </button>
         </div>
-        <button
-          className="btn glass haptic-tap glow-on-hover"
-          onClick={() => setIsFocusMode(true)}
-          style={{ borderRadius: 16, height: isMobile ? 44 : 54, padding: isMobile ? '0 16px' : '0 24px', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)', fontSize: isMobile ? 12 : 14 }}
-        >
-          <Maximize2 size={isMobile ? 16 : 18} style={{ marginRight: isMobile ? 8 : 10 }} /> Immersive Mode
-        </button>
-      </div>
 
       {/* Main grid: on mobile stack vertically, tablet/desktop side-by-side */}
       <div style={{
@@ -810,12 +812,11 @@ export default function PomodoroPage() {
         )}
       </AnimatePresence>
 
-      </motion.div>
-
       <style>{`
         .text-accent { color: var(--accent); }
         .focus-immersion { filter: saturate(1.2); }
       `}</style>
-    </>
+    </motion.div>
+  </div>
   );
 }

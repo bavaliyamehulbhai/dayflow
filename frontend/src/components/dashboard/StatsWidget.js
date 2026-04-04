@@ -17,7 +17,7 @@ const AnimatedStat = React.memo(({ value, label, color, icon: Icon, onClick }) =
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ color, opacity: 0.9, marginBottom: 4 }}><Icon size={20} /></div>
         <SensitivityShield>
-          <div style={{ fontSize: 24, fontWeight: 900, color, letterSpacing: '-0.02em' }}>{display}</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color, letterSpacing: '-0.02em', fontFamily: 'Syne, sans-serif' }}>{display}</div>
         </SensitivityShield>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
       </div>
