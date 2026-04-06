@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { safeFormat } from './dateUtils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -15,8 +15,8 @@ export const exportToCSV = (tasks) => {
     task.status,
     task.priority,
     task.category || 'General',
-    task.dueDate ? format(new Date(task.dueDate), 'yyyy-MM-dd') : 'None',
-    format(new Date(task.createdAt), 'yyyy-MM-dd'),
+    task.dueDate ? safeFormat(task.dueDate, 'yyyy-MM-dd', 'None') : 'None',
+    safeFormat(task.createdAt, 'yyyy-MM-dd', 'N/A'),
     `"${(task.description || '').replace(/"/g, '""')}"`
   ]);
 
@@ -26,7 +26,7 @@ export const exportToCSV = (tasks) => {
   const link = document.createElement('a');
   
   link.setAttribute('href', url);
-  link.setAttribute('download', `dayflow_tasks_${format(new Date(), 'yyyyMMdd')}.csv`);
+  link.setAttribute('download', `dayflow_tasks_${safeFormat(new Date(), 'yyyyMMdd')}.csv`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
@@ -50,7 +50,7 @@ export const exportToPDF = (tasks) => {
       task.status,
       task.priority,
       task.category || 'General',
-      task.dueDate ? format(new Date(task.dueDate), 'yyyy-MM-dd') : 'None',
+      task.dueDate ? safeFormat(task.dueDate, 'yyyy-MM-dd', 'None') : 'None',
     ];
     tableRows.push(taskData);
   });
@@ -62,10 +62,10 @@ export const exportToPDF = (tasks) => {
   
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text(`Generated on ${format(new Date(), 'PPPP p')}`, 14, 30);
+  doc.text(`Generated on ${safeFormat(new Date(), 'PPPP p')}`, 14, 30);
 
   // Generate Table
-  autoTable(doc, {
+  doc.autoTable({
     head: [tableColumn],
     body: tableRows,
     startY: 40,
@@ -74,5 +74,5 @@ export const exportToPDF = (tasks) => {
     alternateRowStyles: { fillColor: [245, 245, 255] },
   });
 
-  doc.save(`dayflow_tasks_${format(new Date(), 'yyyyMMdd')}.pdf`);
+  doc.save(`dayflow_tasks_${safeFormat(new Date(), 'yyyyMMdd')}.pdf`);
 };

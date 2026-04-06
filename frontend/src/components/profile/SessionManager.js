@@ -70,12 +70,13 @@ export default function SessionManager() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <AnimatePresence mode="popLayout">
-                    {sessions.map((session) => {
+                    {sessions.map((session, index) => {
+                        const sid = typeof session._id === 'string' ? session._id : (session._id?.$oid || String(session._id));
                         const isCurrent = session.refreshToken === localStorage.getItem('dayflow_token');
 
                         return (
                             <motion.div
-                                key={session._id}
+                                key={sid !== '[object Object]' ? sid : `session-${index}`}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.98 }}
@@ -122,7 +123,16 @@ export default function SessionManager() {
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
                                             <Clock size={14} />
-                                            <span>Seen {formatDistanceToNow(new Date(session.lastActive))} ago</span>
+                                            <span>
+                                                Seen {(() => {
+                                                    try {
+                                                        const date = new Date(session.lastActive);
+                                                        return isNaN(date.getTime()) ? 'recently' : formatDistanceToNow(date);
+                                                    } catch (e) {
+                                                        return 'recently';
+                                                    }
+                                                })()} ago
+                                            </span>
                                         </div>
                                     </div>
                                 </div>

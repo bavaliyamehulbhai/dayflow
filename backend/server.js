@@ -123,31 +123,39 @@ app.use((req, res, next) => {
 
   // ─── Foolproof Mongoose-to-POJO Conversion (v3: The Final Wall) ─────────
   const toPOJO = (data) => {
-    if (data === null || data === undefined) return data;
-    if (typeof data !== 'object') return data;
-    if (Array.isArray(data)) return data.map(toPOJO);
-    
-    // If it's a Mongoose document, we EXPLICITLY avoid its methods
-    // because they are unstable in this clustered environment.
-    const isMongoose = !!(data.$__ || data.constructor?.name === 'model');
-    
-    const cleanObj = {};
-    const keys = Object.keys(isMongoose && typeof data.toObject === 'function' ? data.toObject({ getters: true, virtuals: true }) : data);
+    try {
+      if (data === null || data === undefined) return data;
+      if (typeof data !== 'object') return data;
+      if (Array.isArray(data)) return data.map(toPOJO);
+      
+      const isMongoose = !!(data.$__ || (data.constructor && data.constructor.name === 'model'));
+      
+      const cleanObj = {};
+      let source = data;
+      
+      if (isMongoose && typeof data.toObject === 'function') {
+        try {
+          source = data.toObject({ getters: true, virtuals: true, versionKey: false });
+        } catch (e) {
+          // Fallback to raw data if toObject fails
+          source = data._doc || data;
+        }
+      }
 
-    for (const key of keys) {
-      // Exclude internal Mongoose state and functions
-      if (key.startsWith('$') || key === '__v') continue;
+      const keys = Object.keys(source);
+      for (const key of keys) {
+        if (key.startsWith('$') || key === '__v') continue;
+        const val = source[key];
+        if (typeof val === 'function') continue;
+        cleanObj[key] = toPOJO(val);
+      }
       
-      const val = data[key];
-      if (typeof val === 'function') continue;
-      
-      cleanObj[key] = toPOJO(val);
+      if (data._id && !cleanObj._id) cleanObj._id = data._id.toString();
+      return cleanObj;
+    } catch (err) {
+      console.error('[toPOJO Error]', err);
+      return data; // Return original if all else fails
     }
-    
-    // Ensure _id is always present as a string for frontend consistency
-    if (data._id && !cleanObj._id) cleanObj._id = data._id.toString();
-    
-    return cleanObj;
   };
 
   const oldJson = res.json;

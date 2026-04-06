@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tasksAPI } from '../utils/api';
 import { useNotifications } from '../context/NotificationContext';
-import { format } from 'date-fns';
+import { format, startOfDay, addDays, isPast, differenceInDays } from 'date-fns';
+import { safeFormat } from '../utils/dateUtils';
 import {
   Plus, Search, Pencil, Trash2, AlertCircle, Check, CheckCircle2,
   X, ClipboardList, Clock, Tag, Calendar, Layers, Zap, Trophy, ChevronRight,
@@ -18,6 +19,7 @@ import MagneticButton from '../components/common/MagneticButton';
 import { exportToCSV, exportToPDF } from '../utils/exportUtils';
 import MobileBottomSheet from '../components/common/MobileBottomSheet';
 import AuraOrb from '../components/common/AuraOrb';
+import { getSafeId } from '../utils/idUtils';
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const STATUSES = ['pending', 'in-progress', 'completed', 'cancelled'];
@@ -34,7 +36,7 @@ function useWindowWidth() {
 }
 
 // ─── Memoized Task Item Component ──────────────────────────────────────────
-const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, setModal, setConfirmState, isMobile, deleteMutation }) => {
+const TaskItem = React.memo(React.forwardRef(({ task, selected, toggleSelect, toggleComplete, setModal, setConfirmState, isMobile, deleteMutation }, ref) => {
   const x = useMotionValue(0);
   const background = useTransform(
     x,
@@ -52,7 +54,7 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
         open: true,
         title: 'Remove Objective?',
         message: `Delete "${task.title}"?`,
-        onConfirm: () => deleteMutation.mutate(task._id)
+        onConfirm: () => deleteMutation.mutate(getSafeId(task))
       });
     }
   };
@@ -66,7 +68,15 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
   }[task.priority];
 
   return (
-    <div className="relative overflow-hidden mb-4" style={{ borderRadius: 24 }}>
+    <motion.div 
+      ref={ref}
+      layout
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="relative overflow-hidden mb-4" 
+      style={{ borderRadius: 24 }}
+    >
       {/* Swipe Actions Background */}
       <motion.div 
         className="absolute inset-0 flex items-center justify-between px-8 z-0"
@@ -83,9 +93,6 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
       </motion.div>
 
       <motion.div
-        layout
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
         drag={isMobile ? "x" : false}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.5}
@@ -156,20 +163,20 @@ const TaskItem = React.memo(({ task, selected, toggleSelect, toggleComplete, set
               )}
               {task.dueDate && (
                 <span style={{ color: isOverdue ? 'var(--red)' : 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Clock size={10} /> {format(new Date(task.dueDate), 'MMM d')}
+                  <Clock size={10} /> {safeFormat(task.dueDate, 'MMM d', 'PENDING')}
                 </span>
               )}
             </div>
           </div>
 
           <div className="task-row-actions" style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-            <button className={`btn btn-icon btn-sm haptic-tap ${selected ? 'text-accent' : 'text-muted'}`} onClick={() => toggleSelect(task._id)}><ChevronRight size={20} /></button>
+            <button className={`btn btn-icon btn-sm haptic-tap ${selected ? 'text-accent' : 'text-muted'}`} onClick={() => toggleSelect(getSafeId(task))}><ChevronRight size={20} /></button>
           </div>
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
-}, (prev, next) => {
+}), (prev, next) => {
   return prev.task._id === next.task._id && 
          prev.task.status === next.task.status && 
          prev.task.title === next.task.title &&
@@ -210,7 +217,7 @@ function TaskModal({ task, onClose, onSave }) {
     priority: task?.priority || 'medium',
     status: task?.status || 'pending',
     category: task?.category || 'General',
-    dueDate: task?.dueDate ? format(new Date(task.dueDate), 'yyyy-MM-dd') : '',
+    dueDate: task?.dueDate ? safeFormat(task.dueDate, 'yyyy-MM-dd', '') : '',
     estimatedMinutes: task?.estimatedMinutes || '',
     tags: task?.tags?.join(', ') || '',
     subtasks: task?.subtasks || []
@@ -423,9 +430,16 @@ export default function TasksPage() {
 
   const tasks = data?.tasks || [];
 
+  useEffect(() => {
+    const handler = () => setModal('create');
+    window.addEventListener('df_open_create_modal', handler);
+    return () => window.removeEventListener('df_open_create_modal', handler);
+  }, []);
+
   const handleSave = (formData) => {
-    if (modal && modal._id) {
-      updateMutation.mutate({ id: modal._id, data: formData });
+    const tid = getSafeId(modal);
+    if (modal && tid && modal !== 'create') {
+      updateMutation.mutate({ id: tid, data: formData });
       setModal(null);
     } else {
       createMutation.mutate(formData);
@@ -440,18 +454,18 @@ export default function TasksPage() {
     } else {
       addToast(`Objective reopened: ${task.title}`, 'info');
     }
-    updateMutation.mutate({ id: task._id, data: { status: newStatus } });
+    updateMutation.mutate({ id: getSafeId(task), data: { status: newStatus } });
   };
 
   const toggleSelect = (id) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
 
   const handleDelete = (task) => {
-    deleteMutation.mutate(task._id);
+    deleteMutation.mutate(getSafeId(task));
   };
 
   const handleBulkComplete = () => {
     selected.forEach(id => {
-      const task = tasks.find(t => t._id === id);
+      const task = tasks.find(t => getSafeId(t) === id);
       if (task && task.status !== 'completed') {
         updateMutation.mutate({ id, data: { status: 'completed' } });
       }
@@ -627,10 +641,10 @@ export default function TasksPage() {
           <AnimatePresence mode="popLayout">
             {tasks.length > 0 ? tasks.map((task, index) => (
               <TaskItem 
-                key={task._id}
+                key={getSafeId(task, `task-${index}`)}
                 task={task}
                 isMobile={isMobile}
-                selected={selected.includes(task._id)}
+                selected={selected.includes(getSafeId(task))}
                 toggleSelect={toggleSelect}
                 toggleComplete={toggleComplete}
                 setModal={setModal}
@@ -639,9 +653,10 @@ export default function TasksPage() {
               />
             )) : (
               <EmptyState 
-                icon={<ClipboardList size={48} />}
+                key="tasks-empty"
+                icon={ClipboardList}
                 title="No Missions Found"
-                message="Adjust filters or manifest a new objective."
+                description="Adjust filters or manifest a new objective."
               />
             )}
           </AnimatePresence>
@@ -690,6 +705,7 @@ export default function TasksPage() {
           />
         )}
       </AnimatePresence>
+
 
       <ConfirmDialog
         open={confirmState.open}

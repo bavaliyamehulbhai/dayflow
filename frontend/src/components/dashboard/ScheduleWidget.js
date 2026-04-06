@@ -1,7 +1,7 @@
 import React from 'react';
 import WidgetWrapper from './WidgetWrapper';
 import { Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { getSafeId } from '../../utils/idUtils';
 
 const ScheduleWidget = ({ data, navigate }) => {
   return (
@@ -9,6 +9,7 @@ const ScheduleWidget = ({ data, navigate }) => {
       {data?.schedule?.today?.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 300, overflowY: 'auto', paddingRight: 4 }}>
           {data.schedule.today.map((ev, i) => {
+            const eid = getSafeId(ev, `event-${i}`);
             const now = new Date();
             const nowMin = now.getHours() * 60 + now.getMinutes();
             const [sh, sm] = ev.startTime.split(':').map(Number);
@@ -17,7 +18,7 @@ const ScheduleWidget = ({ data, navigate }) => {
             const isPast = ev.endTime ? (() => { const [eh, em] = ev.endTime.split(':').map(Number); return nowMin >= eh * 60 + em; })() : false;
 
             return (
-              <div key={ev._id} style={{
+              <div key={eid} style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
                 borderRadius: 12, borderLeft: `4px solid ${isCurrent ? 'var(--green)' : isPast ? 'var(--muted)' : 'var(--accent)'}`,
                 background: isCurrent ? 'rgba(95,250,209,0.08)' : 'var(--surface2)',

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { safeFormat } from '../utils/dateUtils';
 import { CheckCircle2, Timer, Flame, BookOpen } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 
@@ -13,7 +13,7 @@ const ActivityTimeline = ({ selectedDay, data, isMobile = false }) => {
         );
     }
 
-    const dateStr = format(selectedDay, 'MMMM d, yyyy');
+    const dateStr = safeFormat(selectedDay, 'MMMM d, yyyy');
 
     const activities = [
         { id: 'tasks', label: 'Output (Tasks)', value: data?.tasksCompleted || 0, icon: CheckCircle2, color: 'var(--accent)' },

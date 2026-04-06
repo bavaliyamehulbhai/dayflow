@@ -92,7 +92,7 @@ export default function App() {
         <NotificationProvider>
           <AuthProvider>
             <SecurityProvider>
-              <BrowserRouter>
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <AppRoutes />
                 <ToastContainer />
               </BrowserRouter>
@@ -103,4 +103,3 @@ export default function App() {
     </ErrorBoundary>
   );
 }
-

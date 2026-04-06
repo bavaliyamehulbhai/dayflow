@@ -36,16 +36,28 @@ const cacheMiddleware = (duration) => (req, res, next) => {
         // Intercept res.json to store the result in cache
         res.originalJson = res.json;
         res.json = (body) => {
+            // Only cache if the status code is success (2xx or 3xx)
+            if (res.statusCode >= 400) {
+                return res.originalJson(body);
+            }
+
             // Ensure we cache a POJO (Plain Old JavaScript Object) 
             // This prevents Mongoose "broken context" errors on cache hits
             let cacheBody = body;
             
             try {
                 if (body && typeof body === 'object') {
+                    // Optimized: Only try to toObject if it's a Mongoose result
                     if (Array.isArray(body)) {
                         cacheBody = body.map(item => 
                             (item && item.$__ && typeof item.toObject === 'function') ? item.toObject() : item
                         );
+                    } else if (body.habits && Array.isArray(body.habits)) {
+                        // Special case for habits object response
+                        cacheBody = { 
+                            ...body, 
+                            habits: body.habits.map(h => (h && typeof h.toObject === 'function') ? h.toObject() : h)
+                        };
                     } else if (body.$__ && typeof body.toObject === 'function') {
                         cacheBody = body.toObject();
                     }
@@ -70,7 +82,7 @@ const cacheMiddleware = (duration) => (req, res, next) => {
  */
 const clearCache = (userId) => {
     const keys = cache.keys();
-    const prefix = userId ? `__cache__${userId}__` : `__cache__`;
+    const prefix = userId ? `__cache__${String(userId)}__` : `__cache__`;
     const keysToRemove = keys.filter(k => k.startsWith(prefix));
     
     if (keysToRemove.length > 0) {

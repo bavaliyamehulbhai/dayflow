@@ -10,7 +10,8 @@ import ProductivityCircle from '../components/ProductivityCircle';
 import SessionManager from '../components/profile/SessionManager';
 import ActivityTags from '../components/ActivityTags';
 import { useNotifications } from '../context/NotificationContext';
-import { format, differenceInDays } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, isSameDay, differenceInDays } from 'date-fns';
+import { safeFormat } from '../utils/dateUtils';
 import {
   User, Lock, Timer, BarChart2, Medal, Shield, Zap, Trophy,
   CheckCircle2, Flame, Clock, Brain, Coffee, Trees, Save,
@@ -245,8 +246,8 @@ export default function ProfilePage() {
 
   // ── Computed values ────────────────────────────────────────────────────────
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
-  const memberSince = user?.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '—';
-  const memberDays = user?.createdAt ? differenceInDays(new Date(), new Date(user.createdAt)) : 0;
+  const memberSince = user?.createdAt && !isNaN(new Date(user.createdAt).getTime()) ? safeFormat(user.createdAt, 'MMM d, yyyy', '—') : '—';
+  const memberDays = (user?.createdAt && !isNaN(new Date(user.createdAt).getTime())) ? Math.abs(differenceInDays(new Date(), new Date(user.createdAt))) : 0;
   const avatarGrad = AVATAR_GRADIENTS[profileForm.avatarGradient] || AVATAR_GRADIENTS.purple;
 
   const tasksCompleted = user?.stats?.tasksCompleted || 0;
@@ -267,8 +268,8 @@ export default function ProfilePage() {
     (Math.min(tasksCompleted, 100) / 100) * 35 +
     (Math.min(focusMinutes / 60, 50) / 50) * 30 +
     (Math.min(longestStreak, 30) / 30) * 20 +
-    (earnedCount / totalBadges) * 15
-  ));
+    (totalBadges > 0 ? (earnedCount / totalBadges) * 15 : 0)
+  )) || 0;
 
   // Profile completeness
   const profileFields = [
@@ -759,7 +760,7 @@ export default function ProfilePage() {
                           <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 }}>{log.action.replace('_', ' ')}</span>
                           <span style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 600 }}>IP: {log.ip || '0.0.0.0'}</span>
                         </div>
-                        <div style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 800 }}>{format(new Date(log.createdAt), 'MMM d, HH:mm')}</div>
+                        <div style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 800 }}>{safeFormat(log.createdAt, 'MMM d, HH:mm', 'N/A')}</div>
                       </div>
                     ))
                   )}
@@ -1131,7 +1132,7 @@ export default function ProfilePage() {
                           </div>
                           {badge.earned && badge.earnedAt && (
                             <div style={{ fontSize: 10, color: tc.color, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
-                              ACQUIRED • {format(new Date(badge.earnedAt), 'MMM d')}
+                              ACQUIRED • {safeFormat(badge.earnedAt, 'MMM d', 'N/A')}
                             </div>
                           )}
                         </motion.div>

@@ -2,6 +2,7 @@ import React from 'react';
 import WidgetWrapper from './WidgetWrapper';
 import { Target, ArrowRight, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getSafeId } from '../../utils/idUtils';
 
 const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
 
@@ -26,8 +27,10 @@ const TasksWidget = ({ data, navigate }) => {
 
       {data?.tasks?.today?.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {data.tasks.today.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2)).slice(0, 5).map(task => (
-            <div key={task._id} style={{
+          {data.tasks.today.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2)).slice(0, 5).map((task, index) => {
+            const tid = getSafeId(task, `task-${index}`);
+            return (
+              <div key={tid} style={{
               display: 'flex',
               alignItems: 'center',
               gap: 12,
@@ -42,7 +45,8 @@ const TasksWidget = ({ data, navigate }) => {
               <span style={{ flex: 1, fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</span>
               <span className={`badge badge-${task.priority}`} style={{ fontSize: 9 }}>{task.priority.toUpperCase()}</span>
             </div>
-          ))}
+            )
+          })}
           <button className="btn btn-sm btn-ghost mt-2" onClick={() => navigate('/tasks')} style={{ fontSize: 11, fontWeight: 800 }}>
             VIEW ALL <ArrowRight size={14} style={{ marginLeft: 4 }} />
           </button>

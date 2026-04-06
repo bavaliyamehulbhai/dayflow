@@ -4,7 +4,7 @@ import { pomodoroAPI, tasksAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { format } from 'date-fns';
+import { safeFormat } from '../utils/dateUtils';
 import {
   Target, Coffee, Trees, Play, Pause, RotateCcw,
   History, Zap, Trophy, Brain, Timer, Layers,
@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useFeedback from '../hooks/useFeedback';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AuraOrb from '../components/common/AuraOrb';
+import { getSafeId } from '../utils/idUtils';
 
 // ─── Sound Engine ─────────────────────────────────────────────────────────────
 const createRainSound = (ctx) => {
@@ -139,7 +140,7 @@ export default function PomodoroPage() {
 
   const startMutation = useMutation({
     mutationFn: (data) => pomodoroAPI.start(data),
-    onSuccess: (r) => setCurrentPomoId(r.data.pomodoro?._id)
+    onSuccess: (r) => setCurrentPomoId(getSafeId(r.data.pomodoro))
   });
 
   const completeMutation = useMutation({
@@ -157,8 +158,12 @@ export default function PomodoroPage() {
 
   const playSound = useCallback(() => {
     try {
-      const ctx = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
-      if (!audioCtxRef.current) audioCtxRef.current = ctx;
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') ctx.resume();
+      
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
@@ -170,8 +175,11 @@ export default function PomodoroPage() {
   }, []);
 
   const toggleSound = (type) => {
-    if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
     const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
 
     if (soundType === type) {
       if (rainRef.current) {
@@ -217,8 +225,17 @@ export default function PomodoroPage() {
 
   useEffect(() => {
     if (running) {
+      const startTimer = Date.now();
+      const initialTime = timeLeft;
+      
       intervalRef.current = setInterval(() => {
-        setTimeLeft(t => { if (t <= 1) { handleComplete(); return 0; } return t - 1; });
+        const delta = Math.floor((Date.now() - startTimer) / 1000);
+        const nextTime = Math.max(0, initialTime - delta);
+        
+        setTimeLeft(nextTime);
+        if (nextTime <= 0) {
+          handleComplete();
+        }
       }, 1000);
     }
     return () => clearInterval(intervalRef.current);
@@ -314,7 +331,10 @@ export default function PomodoroPage() {
         <div style={{ position: 'relative' }}>
           <select className="auth-input" style={{ height: 50, fontSize: 14, borderRadius: 14 }} value={linkedTask} onChange={e => setLinkedTask(e.target.value)}>
             <option value="">— Unlinked Session —</option>
-            {tasksData?.map(t => <option key={t._id} value={t._id}>{t.title}</option>)}
+            {tasksData?.map((t, index) => {
+              const tid = getSafeId(t, `task-${index}`);
+              return <option key={tid} value={tid}>{t.title}</option>
+            })}
           </select>
         </div>
       </motion.div>
@@ -402,7 +422,7 @@ export default function PomodoroPage() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className={`responsive-container ${running && isMobile ? 'focus-immersion' : ''}`}
+        className={`responsive-container ${running && isMobile && isFocusMode ? 'focus-immersion' : ''}`}
         style={{ position: 'relative', zIndex: 1 }}
       >
         <div className="page-header mb-10" style={{ alignItems: 'flex-start', position: 'relative' }}>
@@ -435,21 +455,16 @@ export default function PomodoroPage() {
           </button>
         </div>
 
-      {/* Main grid: on mobile stack vertically, tablet/desktop side-by-side */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: isMobile || isTablet ? '1fr' : '1fr 320px',
         gap: isMobile ? 16 : 24,
         minWidth: 0
       }}>
-        {/* LEFT: Timer */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 20, minWidth: 0 }}>
-
-          {/* Timer Card */}
           <motion.div variants={itemVariants} className="glass-holographic aura-iridescent" style={{ textAlign: 'center', padding: isMobile ? 'var(--space-6) var(--space-4)' : 'var(--space-10) var(--space-6)', position: 'relative', overflow: 'hidden', borderRadius: isMobile ? 32 : 40, border: 'none' }}>
             <div className="btn-glint" style={{ opacity: 0.05 }} />
 
-            {/* Mode Switcher */}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: isMobile ? 32 : 56, background: 'rgba(255,255,255,0.03)', padding: 6, borderRadius: 50, border: '1px solid rgba(255,255,255,0.05)', width: 'fit-content', margin: `0 auto ${isMobile ? '32px' : '56px'}` }}>
               {Object.entries(MODES).map(([key, info]) => (
                 <button
@@ -477,7 +492,6 @@ export default function PomodoroPage() {
               ))}
             </div>
 
-            {/* SVG Circular Timer — fully responsive */}
             <div style={{ position: 'relative', display: 'inline-block', marginBottom: isMobile ? 16 : 44 }}>
               <svg
                 width={timerSize}
@@ -495,9 +509,7 @@ export default function PomodoroPage() {
                     <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
                   </filter>
                 </defs>
-                {/* Track */}
                 <circle cx={timerSize / 2} cy={timerSize / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth={isMobile ? 8 : 12} />
-                {/* Progress */}
                 <motion.circle
                   cx={timerSize / 2} cy={timerSize / 2} r={radius}
                   fill="none"
@@ -510,7 +522,6 @@ export default function PomodoroPage() {
                   filter="url(#pomoGlow)"
                 />
               </svg>
-              {/* Defs outside SVG for better reactivity if needed, or inside */}
               <svg width="0" height="0" style={{ position: 'absolute' }}>
                 <defs>
                   <linearGradient id={`pomoGradient-${mode}`} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -523,7 +534,6 @@ export default function PomodoroPage() {
                   </filter>
                 </defs>
               </svg>
-              {/* Timer UI components */}
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -551,7 +561,6 @@ export default function PomodoroPage() {
               </div>
             </div>
 
-            {/* Session dots */}
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: isMobile ? 32 : 48 }}>
               {[0, 1, 2, 3].map(i => {
                 const isActive = i === (sessions % 4);
@@ -583,7 +592,6 @@ export default function PomodoroPage() {
               )}
             </div>
 
-            {/* Controls */}
             <div style={{ display: 'flex', gap: isMobile ? 12 : 16, justifyContent: 'center', alignItems: 'center' }}>
               <motion.button
                 whileTap={{ scale: 0.95 }}
@@ -614,14 +622,12 @@ export default function PomodoroPage() {
               </motion.button>
             </div>
 
-            {/* Today's focus */}
             <div style={{ marginTop: isMobile ? 20 : 28, fontSize: 13, color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <Zap size={13} style={{ color: 'var(--accent)' }} />
               Sessions this week: <strong style={{ color: 'var(--text)', marginLeft: 4 }}>{statsData?.periodPomos || 0}</strong>
             </div>
           </motion.div>
 
-          {/* Chart */}
           <div className="card glass-card">
             <div className="card-title" style={{ marginBottom: 20 }}>
               <Award size={16} className="text-accent" /> 7-Day Focus Trend
@@ -641,7 +647,7 @@ export default function PomodoroPage() {
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: 'var(--muted)', fontSize: 10 }}
-                    tickFormatter={d => format(new Date(d), 'EEE')}
+                    tickFormatter={d => safeFormat(d, 'EEE')}
                   />
                   <YAxis
                     axisLine={false}
@@ -654,7 +660,7 @@ export default function PomodoroPage() {
                     cursor={{ fill: 'rgba(130,114,255,0.05)' }}
                     contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12 }}
                     formatter={(value) => [`${value} minutes`, 'Focus Time']}
-                    labelFormatter={(label) => format(new Date(label), 'MMMM do, yyyy')}
+                    labelFormatter={(label) => safeFormat(label, 'MMMM do, yyyy')}
                   />
                   <Bar dataKey="minutes" radius={[6, 6, 0, 0]} barSize={isMobile ? 18 : 24}>
                     {statsData?.daily?.map((_, i) => <Cell key={i} fill="url(#barGrad)" />)}
@@ -664,7 +670,6 @@ export default function PomodoroPage() {
             </div>
           </div>
 
-          {/* On mobile/tablet: show sidebar cards inline below chart */}
           {(isMobile || isTablet) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 20 }}>
               {sidebarContent}
@@ -672,13 +677,13 @@ export default function PomodoroPage() {
           )}
         </div>
 
-        {/* RIGHT: side panel — only on desktop */}
         {!isMobile && !isTablet && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {sidebarContent}
           </div>
         )}
       </div>
+      </motion.div>
 
       <ConfirmDialog
         open={confirmState.open}
@@ -708,7 +713,6 @@ export default function PomodoroPage() {
               overflow: 'hidden'
             }}
           >
-            {/* Immersive Breathing Background */}
             <motion.div 
               animate={{ 
                 scale: running ? [1, 1.1, 1] : 1,
@@ -796,27 +800,20 @@ export default function PomodoroPage() {
                   style={{ 
                       marginTop: 100, padding: '40px', background: 'rgba(255,255,255,0.01)', 
                       borderRadius: 40, border: '1px solid rgba(255,255,255,0.05)', 
-                      maxWidth: 600, margin: '100px auto 0'
+                      backdropFilter: 'blur(40px)', position: 'relative', overflow: 'hidden'
                   }}
                 >
-                  <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 6, marginBottom: 16, fontWeight: 900 }}>Dominant Objective</div>
-                  <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: -1, fontFamily: 'Syne' }}>{tasksData?.find(t => t._id === linkedTask)?.title}</div>
+                  <div className="btn-glint" style={{ opacity: 0.05 }} />
+                  <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 16 }}>Linked Objective</div>
+                  <div style={{ fontSize: 32, fontWeight: 900, color: 'white', fontFamily: 'Syne' }}>
+                    {tasksData?.find(t => getSafeId(t) === linkedTask)?.title || 'Undefined Core'}
+                  </div>
                 </motion.div>
               )}
-            </div>
-
-            <div style={{ position: 'absolute', bottom: 40, color: 'var(--muted)', fontSize: 13, fontWeight: 900, letterSpacing: 4, opacity: 0.3 }}>
-              COGNITIVE ARCHIVE SYNCHRONIZED · ESC TO RELEASE
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      <style>{`
-        .text-accent { color: var(--accent); }
-        .focus-immersion { filter: saturate(1.2); }
-      `}</style>
-    </motion.div>
-  </div>
+    </div>
   );
 }

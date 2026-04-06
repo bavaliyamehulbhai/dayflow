@@ -14,7 +14,7 @@ const eventValidation = [
   body('title').trim().isLength({ min: 1, max: 100 }).withMessage('Title 1-100 characters'),
   body('date').isISO8601().withMessage('Valid date required'),
   body('startTime').matches(/^([01]\d|2[0-3]):?([0-5]\d)$/).withMessage('Start time HH:mm required'),
-  body('endTime').matches(/^([01]\d|2[0-3]):?([0-5]\d)$/).withMessage('End time HH:mm required')
+  body('endTime').optional().matches(/^([01]\d|2[0-3]):?([0-5]\d)$/).withMessage('End time HH:mm required')
 ];
 
 // GET schedule for date range
@@ -58,7 +58,8 @@ router.post('/', eventValidation, async (req, res) => {
     const populated = await event.populate('linkedTask', 'title status priority');
     res.status(201).json({ success: true, event: populated });
   } catch (err) {
-    res.status(500).json({ error: 'Error creating event.' });
+    console.error('[SCHEDULE CREATE ERROR]', err);
+    res.status(500).json({ error: 'Error creating event.', details: process.env.NODE_ENV === 'development' ? err.message : undefined });
   }
 });
 
@@ -78,7 +79,8 @@ router.put('/:id', eventValidation, async (req, res) => {
     if (!event) return res.status(404).json({ error: 'Event not found.' });
     res.json({ success: true, event });
   } catch (err) {
-    res.status(500).json({ error: 'Error updating event.' });
+    console.error('[SCHEDULE UPDATE ERROR]', err);
+    res.status(500).json({ error: 'Error updating event.', details: process.env.NODE_ENV === 'development' ? err.message : undefined });
   }
 });
 

@@ -2,7 +2,9 @@ import React from 'react';
 import WidgetWrapper from './WidgetWrapper';
 import { Bell, Clock, ArrowRight, AlertCircle, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { format, isAfter, isBefore, addHours, parseISO } from 'date-fns';
+import { isAfter, isBefore, addHours, parseISO } from 'date-fns';
+import { safeFormat } from '../../utils/dateUtils';
+import { getSafeId } from '../../utils/idUtils';
 
 const NotificationsWidget = ({ data, navigate }) => {
   // Filter tasks due within the next 48 hours that are not completed
@@ -27,7 +29,7 @@ const NotificationsWidget = ({ data, navigate }) => {
             
             return (
               <motion.div
-                key={task._id}
+                key={getSafeId(task, `notif-${idx}`)}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.1 }}
@@ -81,7 +83,7 @@ const NotificationsWidget = ({ data, navigate }) => {
                     gap: 4
                   }}>
                     <Calendar size={10} />
-                    {format(dueDate, 'MMM d, h:mm a')}
+                    {safeFormat(dueDate, 'MMM d, h:mm a', 'Time TBD')}
                   </div>
                 </div>
 

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notesAPI } from '../utils/api';
 import { useNotifications } from '../context/NotificationContext';
-import { format } from 'date-fns';
+import { safeFormat } from '../utils/dateUtils';
+import { getSafeId } from '../utils/idUtils';
 import {
   FileText, Search, Plus, Pin, Trash2, X, Sparkles, Tag,
   History, Clock, Zap, ArrowRight, Activity, MousePointer2, Layers
@@ -257,7 +258,7 @@ export default function NotesPage() {
   });
 
   const handleSave = (formData, silent = false, isDeletion = false) => {
-    const id = modal?._id;
+    const id = getSafeId(modal);
     if (isDeletion) {
       if (id) {
         setConfirmDialog({
@@ -314,7 +315,7 @@ export default function NotesPage() {
             <h3 style={{ fontFamily: 'Syne', fontSize: isMobile ? 16 : 22, fontWeight: 900, color: 'white', margin: 0, textTransform: 'uppercase', letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.title || 'Untitled Essence'}</h3>
           </SensitivityShield>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-              <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2 }}>{format(new Date(note.updatedAt), 'MMM d, yyyy')}</span>
+              <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2 }}>{safeFormat(note.updatedAt, 'MMM d, yyyy', 'RECENTLY')}</span>
               <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
               <div style={{ fontSize: 10, color: note.color, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>{note.content?.length || 0} NODES</div>
           </div>
@@ -329,7 +330,7 @@ export default function NotesPage() {
         onClick={(e) => { 
             e.preventDefault();
             e.stopPropagation(); 
-            setConfirmDialog({ open: true, title: 'Banish Manifestation?', message: 'Erase this memory from the neural archive?', confirmText: 'Banish', id: note._id }); 
+            setConfirmDialog({ open: true, title: 'Banish Manifestation?', message: 'Erase this memory from the neural archive?', confirmText: 'Banish', id: getSafeId(note) }); 
         }}
         onMouseDown={(e) => e.stopPropagation()}
         style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(255,107,107,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 12, flexShrink: 0, zIndex: 10, border: 'none', cursor: 'pointer' }}
@@ -409,7 +410,10 @@ export default function NotesPage() {
       ) : (
         <div style={{ columnCount: isMobile ? 1 : 2, columnGap: 24, paddingBottom: 160 }}>
           <AnimatePresence>
-            {notes.map(n => <NoteCard key={n._id} note={n} />)}
+            {notes.map((n, index) => {
+              const nid = getSafeId(n, `note-${index}`);
+              return <NoteCard key={nid} note={n} />;
+            })}
           </AnimatePresence>
         </div>
       )}

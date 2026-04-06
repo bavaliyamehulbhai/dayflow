@@ -1,14 +1,17 @@
 import React from 'react';
 import WidgetWrapper from './WidgetWrapper';
 import { RefreshCw, Flame, Check } from 'lucide-react';
+import { getSafeId } from '../../utils/idUtils';
 
 const HabitsWidget = ({ data, navigate }) => {
   return (
     <WidgetWrapper title="Rituals" icon={RefreshCw}>
       {data?.habits?.list?.length ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {data.habits.list.slice(0, 5).map(h => (
-            <div key={h._id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }} onClick={() => navigate('/habits')}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {data.habits.list.slice(0, 5).map((h, index) => {
+            const hid = getSafeId(h, `habit-${index}`);
+            return (
+              <div key={hid} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }} onClick={() => navigate('/habits')}>
               <div style={{ fontSize: 20 }}>{h.icon}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{h.name}</div>
@@ -26,7 +29,8 @@ const HabitsWidget = ({ data, navigate }) => {
                 {h.completedToday && <Check size={14} strokeWidth={3} />}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <div className="empty-state" style={{ padding: '40px 24px', opacity: 0.8 }}>

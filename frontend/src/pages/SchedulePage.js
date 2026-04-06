@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scheduleAPI, tasksAPI } from '../utils/api';
 import { useNotifications } from '../context/NotificationContext';
-import { format, addDays, subDays } from 'date-fns';
+import { format, addDays, subDays, isValid, parseISO } from 'date-fns';
+import { safeFormat, safeNewDate, safeToLocalISO } from '../utils/dateUtils';
+import { getSafeId } from '../utils/idUtils';
 import {
   Calendar as CalendarIcon, Clock, Layers, Plus, ChevronLeft, ChevronRight,
   CheckCircle2, Trash2, Sparkles, MapPin, X, Pencil, Activity, Target
@@ -79,14 +81,21 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
             <div className="form-group">
               <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8, display: 'block' }}>DOMAIN</label>
               <select className="auth-input" style={{ height: 52, borderRadius: 14, fontSize: 14 }} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
+                {CATEGORIES.map((c, cIdx) => <option key={`cat-${cIdx}`} value={c}>{c.toUpperCase()}</option>)}
               </select>
             </div>
             <div className="form-group">
               <label style={{ fontSize: 10, fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8, display: 'block' }}>LINK OBJECTIVE</label>
               <select className="auth-input" style={{ height: 52, borderRadius: 14, fontSize: 14 }} value={form.linkedTask} onChange={e => setForm(f => ({ ...f, linkedTask: e.target.value }))}>
                 <option value="">NO LINK</option>
-                {tasks?.map(t => <option key={t._id} value={t._id}>{t.title}</option>)}
+                {tasks?.map((t, tIdx) => {
+                  const tid = getSafeId(t, `task-${tIdx}`);
+                  return (
+                    <option key={tid} value={tid}>
+                      {t.title} ({t.priority?.toUpperCase() || 'NORMAL'})
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
@@ -160,12 +169,19 @@ export default function SchedulePage() {
   };
 
   const handleSave = (data) => {
-    if (modal && modal._id) updateMutation.mutate({ id: modal._id, data });
+    const mid = getSafeId(modal);
+    if (modal && mid) updateMutation.mutate({ id: mid, data });
     else createMutation.mutate(data);
   };
 
-  const prevDay = () => setCurrentDate(format(subDays(new Date(currentDate + 'T00:00:00'), 1), 'yyyy-MM-dd'));
-  const nextDay = () => setCurrentDate(format(addDays(new Date(currentDate + 'T00:00:00'), 1), 'yyyy-MM-dd'));
+  const prevDay = () => {
+    const d = safeNewDate(currentDate + 'T00:00:00') || new Date();
+    setCurrentDate(safeFormat(subDays(d, 1), 'yyyy-MM-dd'));
+  };
+  const nextDay = () => {
+    const d = safeNewDate(currentDate + 'T00:00:00') || new Date();
+    setCurrentDate(safeFormat(addDays(d, 1), 'yyyy-MM-dd'));
+  };
 
   const hours = Array.from({ length: 18 }, (_, i) => i + 6);
 
@@ -226,17 +242,17 @@ export default function SchedulePage() {
             <motion.button whileTap={{ scale: 0.9 }} className="btn btn-icon glass haptic-tap" onClick={prevDay} style={{ borderRadius: 14, width: 44, height: 44 }}><ChevronLeft size={24} /></motion.button>
             <div style={{ textAlign: 'center', minWidth: isMobile ? 'auto' : 220 }}>
               <div style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Syne, sans-serif', color: 'white', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                  {format(new Date(currentDate + 'T00:00:00'), 'EEEE')}
+                  {safeFormat(currentDate + 'T00:00:00', 'EEEE')}
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', marginTop: 6, letterSpacing: 2, textTransform: 'uppercase' }}>
-                  {format(new Date(currentDate + 'T00:00:00'), 'MMMM d, yyyy')}
+                  {safeFormat(currentDate + 'T00:00:00', 'MMMM d, yyyy')}
                 </div>
             </div>
             <motion.button whileTap={{ scale: 0.9 }} className="btn btn-icon glass haptic-tap" onClick={nextDay} style={{ borderRadius: 14, width: 44, height: 44 }}><ChevronRight size={24} /></motion.button>
           </div>
 
           <div style={{ display: 'flex', gap: 12, flex: isMobile ? '1 1 100%' : 'none', width: isMobile ? '100%' : 'auto', alignItems: 'center' }}>
-            <button className="btn glass haptic-tap" style={{ fontWeight: 900, height: 44, padding: '0 24px', borderRadius: 14, fontSize: 13, letterSpacing: 1 }} onClick={() => setCurrentDate(format(new Date(), 'yyyy-MM-dd'))}>TODAY</button>
+            <button className="btn glass haptic-tap" style={{ fontWeight: 900, height: 44, padding: '0 24px', borderRadius: 14, fontSize: 13, letterSpacing: 1 }} onClick={() => setCurrentDate(safeFormat(new Date(), 'yyyy-MM-dd'))}>TODAY</button>
             <div style={{ height: 32, width: 1, background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} className="hide-mobile" />
             <input type="date" className="auth-input" style={{ flex: isMobile ? 1 : 'none', width: isMobile ? 'auto' : 180, height: 44, borderRadius: 14, fontSize: 13, fontWeight: 800, padding: '0 16px' }} value={currentDate} onChange={e => setCurrentDate(e.target.value)} />
           </div>
@@ -260,7 +276,7 @@ export default function SchedulePage() {
               ))}
 
               {/* Indicator */}
-              {currentDate === format(new Date(), 'yyyy-MM-dd') && now.getHours() >= 6 && now.getHours() <= 23 && (
+              {currentDate === safeFormat(new Date(), 'yyyy-MM-dd') && now.getHours() >= 6 && now.getHours() <= 23 && (
                 <div style={{
                   position: 'absolute',
                   top: getEventTop(`${now.getHours()}:${now.getMinutes()}`) + 62,
@@ -275,16 +291,17 @@ export default function SchedulePage() {
 
               {/* Rendered Events */}
               <AnimatePresence>
-                {events.map(ev => {
-                  const status = currentDate === format(new Date(), 'yyyy-MM-dd') ? getStatus(ev) : 'future';
+                {events.length > 0 ? events.map((ev, idx) => {
+                  const status = currentDate === safeFormat(new Date(), 'yyyy-MM-dd') ? getStatus(ev) : 'future';
                   const top = getEventTop(ev.startTime);
                   const height = getEventHeight(ev.startTime, ev.endTime);
                   const color = CAT_COLORS[ev.category] || 'var(--accent)';
 
+                  const eventKey = getSafeId(ev, `ev-${idx}`);
                   return (
                     <motion.div
-                      key={ev._id}
-                      layoutId={ev._id}
+                      key={eventKey}
+                      layoutId={eventKey}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
@@ -321,7 +338,7 @@ export default function SchedulePage() {
                       )}
                     </motion.div>
                   );
-                })}
+                }) : null}
               </AnimatePresence>
             </div>
           </div>
@@ -345,10 +362,11 @@ export default function SchedulePage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {events.map((ev, i) => {
                   const color = CAT_COLORS[ev.category] || 'var(--accent)';
-                  const status = currentDate === format(new Date(), 'yyyy-MM-dd') ? getStatus(ev) : 'future';
+                  const status = currentDate === safeFormat(new Date(), 'yyyy-MM-dd') ? getStatus(ev) : 'future';
+                  const evListKey = getSafeId(ev, `ev-side-${i}`);
                   return (
                     <motion.div
-                      key={ev._id}
+                      key={getSafeId(ev, `ev-list-${i}`)}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
@@ -372,7 +390,7 @@ export default function SchedulePage() {
                           <button 
                             className="btn glass btn-sm haptic-tap" 
                             style={{ width: 34, height: 34, borderRadius: 10, color: ev.isCompleted ? 'var(--green)' : 'var(--muted)' }}
-                            onClick={() => toggleMutation.mutate(ev._id)}
+                            onClick={() => toggleMutation.mutate(getSafeId(ev))}
                           >
                             <CheckCircle2 size={18} />
                           </button>

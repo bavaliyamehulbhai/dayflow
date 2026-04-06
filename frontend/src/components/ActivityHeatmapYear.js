@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, subMonths, eachDayOfInterval, startOfMonth, endOfMonth, eachMonthOfInterval, getDay, differenceInDays } from 'date-fns';
+import { subMonths, eachDayOfInterval, startOfMonth, endOfMonth, eachMonthOfInterval, getDay, differenceInDays } from 'date-fns';
+import { safeFormat } from '../utils/dateUtils';
 
 const ActivityHeatmapYear = React.memo(({ data = [], isMobile = false, onSelectDay }) => {
     const [hoveredDay, setHoveredDay] = useState(null);
@@ -62,7 +63,7 @@ const ActivityHeatmapYear = React.memo(({ data = [], isMobile = false, onSelectD
             const startDayOfWeek = getDay(mStart);
 
             return {
-                label: format(monthStart, 'MMM'),
+                label: safeFormat(monthStart, 'MMM'),
                 days: monthDays,
                 startOffset: startDayOfWeek
             };
@@ -70,7 +71,7 @@ const ActivityHeatmapYear = React.memo(({ data = [], isMobile = false, onSelectD
     }, [today, startDate]);
 
     const handleSelect = (day, log) => {
-        const dateStr = format(day, 'yyyy-MM-dd');
+        const dateStr = safeFormat(day, 'yyyy-MM-dd');
         setSelectedDay(dateStr);
         if (onSelectDay) onSelectDay(day, log);
     };
@@ -144,7 +145,7 @@ const ActivityHeatmapYear = React.memo(({ data = [], isMobile = false, onSelectD
                 }}>
                     <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
                         <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Active Presence</div>
-                        <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: 'var(--accent)', fontFamily: 'Syne' }}>{stats.activeDays}<span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 4, fontWeight: 600 }}>CYCLES</span></div>
+                        <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: 'var(--accent)', fontFamily: 'Syne' }}>{stats?.activeDays || 0}<span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 4, fontWeight: 600 }}>CYCLES</span></div>
                     </div>
                     <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
                         <div style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>Peak Sequence</div>
@@ -180,7 +181,7 @@ const ActivityHeatmapYear = React.memo(({ data = [], isMobile = false, onSelectD
                     minWidth: 'max-content'
                 }}>
                     {monthsData.map((month, mIdx) => (
-                        <div key={mIdx} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <div key={`month-${mIdx}-${month.label}`} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                             <div style={{
                                 display: 'grid',
                                 gridTemplateRows: `repeat(7, ${isMobile ? '14px' : '12px'})`,
@@ -193,11 +194,11 @@ const ActivityHeatmapYear = React.memo(({ data = [], isMobile = false, onSelectD
                                 ))}
 
                                 {month.days.map((day) => {
-                                    const dateStr = format(day, 'yyyy-MM-dd');
+                                    const dateStr = safeFormat(day, 'yyyy-MM-dd');
                                     const log = data.find(l => l.date === dateStr);
                                     const intensity = log ? (log.intensity || 0) : 0;
                                     const isFuture = day > today;
-                                    const isToday = dateStr === format(today, 'yyyy-MM-dd');
+                                    const isToday = dateStr === safeFormat(today, 'yyyy-MM-dd');
                                     const isSelected = selectedDay === dateStr;
                                     const isRecord = log && log.score > 0 && log.score >= maxScore * 0.95 && maxScore > 0;
 
@@ -252,7 +253,7 @@ const ActivityHeatmapYear = React.memo(({ data = [], isMobile = false, onSelectD
                                                         }}
                                                     >
                                                         <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
-                                                            {format(day, 'MMMM d, yyyy')}
+                                                            {safeFormat(day, 'MMMM d, yyyy')}
                                                         </div>
                                                         <div style={{ fontSize: 18, fontWeight: 900, color: 'white', marginBottom: 12, fontFamily: 'Syne' }}>
                                                             {log?.score || 0} <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600 }}>COGNITIVE XP</span>
@@ -299,7 +300,7 @@ const ActivityHeatmapYear = React.memo(({ data = [], isMobile = false, onSelectD
                 <span>Inert</span>
                 <div style={{ display: 'flex', gap: 4 }}>
                     {intensityColors.map((color, i) => (
-                        <div key={i} style={{ width: 12, height: 12, background: color, borderRadius: 3, border: i === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }} />
+                        <div key={`intensity-${i}`} style={{ width: 12, height: 12, background: color, borderRadius: 3, border: i === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }} />
                     ))}
                 </div>
                 <span>Zenith</span>

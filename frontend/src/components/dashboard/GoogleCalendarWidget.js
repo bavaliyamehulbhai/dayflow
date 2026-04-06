@@ -3,7 +3,7 @@ import { googleAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import WidgetWrapper from './WidgetWrapper';
 import { Calendar, RefreshCw, ExternalLink, AlertCircle, CheckCircle2, LogOut } from 'lucide-react';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -160,15 +160,19 @@ const GoogleCalendarWidget = () => {
                           color: 'var(--accent)'
                         }}
                       >
-                        <div className="text-[10px] font-bold uppercase">{event.start?.dateTime ? format(new Date(event.start.dateTime), 'MMM') : 'ALL'}</div>
-                        <div className="text-lg font-black leading-none">{event.start?.dateTime ? format(new Date(event.start.dateTime), 'd') : 'DAY'}</div>
+                        <div className="text-[10px] font-bold uppercase">
+                          {safeFormat(event.start?.dateTime || event.start?.date, 'MMM', '???')}
+                        </div>
+                        <div className="text-lg font-black leading-none">
+                          {safeFormat(event.start?.dateTime || event.start?.date, 'd', '??')}
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h5 className="text-sm font-bold truncate mb-0.5">{event.summary || 'Untitled Event'}</h5>
                         <div className="text-xs text-muted flex items-center gap-1">
-                          {event.start?.dateTime 
-                            ? `${format(new Date(event.start.dateTime), 'h:mm a')} - ${format(new Date(event.end.dateTime), 'h:mm a')}`
-                            : 'All Day'
+                          {event.start?.dateTime
+                            ? `${safeFormat(event.start.dateTime, 'h:mm a')} - ${safeFormat(event.end.dateTime, 'h:mm a')}`
+                            : (event.start?.date ? 'All Day' : 'Time TBD')
                           }
                         </div>
                       </div>

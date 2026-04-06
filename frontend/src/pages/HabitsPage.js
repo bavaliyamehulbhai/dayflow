@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { habitsAPI } from '../utils/api';
 import { useNotifications } from '../context/NotificationContext';
-import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { subDays, eachDayOfInterval } from 'date-fns';
+import { safeFormat, safeToLocalISO } from '../utils/dateUtils';
+import { getSafeId } from '../utils/idUtils';
 import {
   Plus, Flame, Target, Trophy, Check, X, Pencil, Trash2,
   Sparkles, Calendar, Activity, Award, ChevronLeft, ChevronRight,
@@ -217,12 +219,13 @@ const RitualCard = ({ habit, today, isCompleted, onComplete, onEdit, onDelete })
   }), []);
   
   const completionStatus = React.useMemo(() => last7.map(d => {
-    const dateStr = format(d, 'yyyy-MM-dd');
+    const dateStr = safeFormat(d, 'yyyy-MM-dd');
+    const todayStr = safeFormat(new Date(), 'yyyy-MM-dd');
     return {
       dateStr,
       done: isCompleted(habit, dateStr),
-      isToday: dateStr === today,
-      label: format(d, 'MMM d')
+      isToday: dateStr === todayStr,
+      label: safeFormat(d, 'MMM d')
     };
   }), [habit.completions, today, last7]);
 
@@ -292,7 +295,7 @@ const RitualCard = ({ habit, today, isCompleted, onComplete, onEdit, onDelete })
             transition={{ type: 'spring', stiffness: 400, damping: 15 }}
             onClick={(e) => { 
               e.stopPropagation(); 
-              onComplete({ id: habit._id, date: today }); 
+              onComplete({ id: getSafeId(habit), date: today }); 
             }}
             className={`haptic-tap ${isTodayCompleted ? 'done' : ''}`}
             style={{
@@ -326,6 +329,96 @@ const RitualCard = ({ habit, today, isCompleted, onComplete, onEdit, onDelete })
   );
 };
 
+// ─── Mobile Ritual Card Component ──────────────────────────────────────────
+const MobileRitualCard = ({ habit, today, completed, onComplete, onEdit, onDelete }) => {
+  const x = useMotionValue(0);
+  const background = useTransform(
+    x,
+    [-100, 0, 100],
+    ["rgba(239, 68, 68, 0.2)", "rgba(255, 255, 255, 0.03)", "rgba(34, 197, 94, 0.2)"]
+  );
+
+  return (
+    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 24 }}>
+       {/* Swipe Background Logic */}
+       <motion.div 
+         style={{ 
+           position: 'absolute', inset: 0, background, 
+           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+           padding: '0 24px', zIndex: 0
+         }}
+       >
+         <div style={{ opacity: 0.5 }}><Trash2 size={24} color="#ef4444" /></div>
+         <div style={{ opacity: 0.5 }}><Check size={24} color="#22c55e" /></div>
+       </motion.div>
+
+       <motion.div 
+        drag="x"
+        dragConstraints={{ left: -100, right: 100 }}
+        style={{ 
+          x, 
+          position: 'relative', 
+          zIndex: 1,
+          borderRadius: 24, 
+          border: `1.5px solid ${completed ? `${habit.color}33` : 'rgba(255,255,255,0.08)'}`,
+          overflow: 'hidden',
+          background: 'rgba(20, 20, 25, 0.95)'
+        }}
+        onDragEnd={(e, info) => {
+          if (info.offset.x > 80) {
+            onComplete({ id: getSafeId(habit), date: today });
+          } else if (info.offset.x < -80) {
+            onDelete(habit);
+          }
+        }}
+        className="glass-holographic aura-iridescent haptic-tap" 
+        onClick={() => onEdit(habit)}
+      >
+        <div className="btn-glint" style={{ opacity: 0.05 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '22px 24px' }}>
+          <div style={{ 
+            fontSize: 28, 
+            filter: completed ? `drop-shadow(0 0 12px ${habit.color})` : 'none',
+            background: completed ? `${habit.color}15` : 'rgba(255,255,255,0.03)',
+            width: 54, height: 54, borderRadius: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {habit.icon}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 17, fontFamily: 'Syne', letterSpacing: '-0.02em', color: completed ? 'white' : 'var(--text)' }}>
+              {habit.name}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Flame size={12} style={{ color: habit.streak?.current > 0 ? '#ff7c6d' : 'var(--muted)' }} fill={habit.streak?.current > 0 ? '#ff7c6d' : 'none'} />
+              {habit.streak?.current}d Streak • {habit.frequency}
+            </div>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.85 }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              onComplete({ id: getSafeId(habit), date: today }); 
+            }}
+            className="haptic-tap"
+            style={{ 
+              width: 48, height: 48, borderRadius: 16, 
+              background: completed ? habit.color : 'rgba(255,255,255,0.05)',
+              boxShadow: completed ? `0 8px 20px ${habit.color}44` : 'none',
+              border: completed ? 'none' : '1.5px solid rgba(255,255,255,0.05)', 
+              color: 'white',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          >
+            {completed ? <Check size={24} strokeWidth={3} /> : <div className="shimmer-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />}
+          </motion.button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 export default function HabitsPage() {
   const qc = useQueryClient();
   const feedback = useFeedback();
@@ -334,13 +427,13 @@ export default function HabitsPage() {
   const [search, setSearch] = useState('');
   const [celebration, setCelebration] = useState({ open: false, title: '', subtitle: '' });
   const [confirmDialog, setConfirmDialog] = useState({ open: false });
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const today = safeToLocalISO(new Date());
   const width = useWindowWidth();
   const isMobile = width <= 768;
 
   const { data, isLoading } = useQuery({
     queryKey: ['habits'],
-    queryFn: () => habitsAPI.getAll().then(r => r.data.habits)
+    queryFn: () => habitsAPI.getAll().then(r => r.data?.habits || [])
   });
 
   const invalidate = () => { qc.invalidateQueries(['habits']); qc.invalidateQueries(['dashboard']); };
@@ -395,11 +488,10 @@ export default function HabitsPage() {
 
   const handleSave = (formData) => {
     if (formData._delete) {
-      deleteMutation.mutate(formData._id);
       setModal(null);
       return;
     }
-    if (modal && modal._id) updateMutation.mutate({ id: modal._id, data: formData });
+    if (modal && getSafeId(modal)) updateMutation.mutate({ id: getSafeId(modal), data: formData });
     else createMutation.mutate(formData);
   };
 
@@ -530,109 +622,34 @@ export default function HabitsPage() {
              <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 3, fontWeight: 900 }}>Daily Objectives</span>
           </div>
           {habits.map((habit, idx) => {
-            const completed = isCompleted(habit, today);
-            
-            // Swipe Actions logic
-            const x = useMotionValue(0);
-            const background = useTransform(
-              x,
-              [-100, 0, 100],
-              ["rgba(239, 68, 68, 0.2)", "rgba(255, 255, 255, 0.03)", "rgba(34, 197, 94, 0.2)"]
-            );
-
+            const hid = getSafeId(habit, `habit-${idx}`);
             return (
-              <div key={habit._id} style={{ position: 'relative', overflow: 'hidden', borderRadius: 24 }}>
-                 {/* Swipe Background Logic */}
-                 <motion.div 
-                   style={{ 
-                     position: 'absolute', inset: 0, background, 
-                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                     padding: '0 24px', zIndex: 0
-                   }}
-                 >
-                   <div style={{ opacity: 0.5 }}><Trash2 size={24} color="#ef4444" /></div>
-                   <div style={{ opacity: 0.5 }}><Check size={24} color="#22c55e" /></div>
-                 </motion.div>
-
-                 <motion.div 
-                  drag="x"
-                  dragConstraints={{ left: -100, right: 100 }}
-                  style={{ 
-                    x, 
-                    position: 'relative', 
-                    zIndex: 1,
-                    borderRadius: 24, 
-                    border: `1.5px solid ${completed ? `${habit.color}33` : 'rgba(255,255,255,0.08)'}`,
-                    overflow: 'hidden',
-                    background: 'rgba(20, 20, 25, 0.95)'
-                  }}
-                  onDragEnd={(e, info) => {
-                    if (info.offset.x > 80) {
-                      completeMutation.mutate({ id: habit._id, date: today });
-                    } else if (info.offset.x < -80) {
-                      setConfirmDialog({
-                        open: true,
-                        title: 'Banish Ritual?',
-                        confirmText: 'Banish',
-                        onConfirm: () => { deleteMutation.mutate(habit._id); setConfirmDialog({ open: false }); }
-                      });
-                    }
-                  }}
-                  className="glass-holographic aura-iridescent haptic-tap" 
-                  onClick={() => setModal(habit)}
-                >
-                  <div className="btn-glint" style={{ opacity: 0.05 }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '22px 24px' }}>
-                    <div style={{ 
-                      fontSize: 28, 
-                      filter: completed ? `drop-shadow(0 0 12px ${habit.color})` : 'none',
-                      background: completed ? `${habit.color}15` : 'rgba(255,255,255,0.03)',
-                      width: 54, height: 54, borderRadius: 16,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>
-                      {habit.icon}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: 17, fontFamily: 'Syne', letterSpacing: '-0.02em', color: completed ? 'white' : 'var(--text)' }}>
-                        {habit.name}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Flame size={12} style={{ color: habit.streak?.current > 0 ? '#ff7c6d' : 'var(--muted)' }} fill={habit.streak?.current > 0 ? '#ff7c6d' : 'none'} />
-                        {habit.streak?.current}d Streak • {habit.frequency}
-                      </div>
-                    </div>
-                    <motion.button
-                      whileTap={{ scale: 0.85 }}
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        completeMutation.mutate({ id: habit._id, date: today }); 
-                      }}
-                      className="haptic-tap"
-                      style={{ 
-                        width: 48, height: 48, borderRadius: 16, 
-                        background: completed ? habit.color : 'rgba(255,255,255,0.05)',
-                        boxShadow: completed ? `0 8px 20px ${habit.color}44` : 'none',
-                        border: completed ? 'none' : '1.5px solid rgba(255,255,255,0.05)', 
-                        color: 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
-                    >
-                      {completed ? <Check size={24} strokeWidth={3} /> : <div className="shimmer-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />}
-                    </motion.button>
-                  </div>
-                </motion.div>
-              </div>
+              <MobileRitualCard 
+                key={`mobile-${hid}`}
+              habit={habit}
+              today={today}
+              completed={isCompleted(habit, today)}
+              onComplete={completeMutation.mutate}
+              onEdit={setModal}
+              onDelete={(h) => setConfirmDialog({
+                open: true,
+                title: 'Banish Ritual?',
+                confirmText: 'Banish',
+                onConfirm: () => { deleteMutation.mutate(getSafeId(h)); setConfirmDialog({ open: false }); }
+              })}
+              />
             );
           })}
         </div>
       ) : (
         <div className="rituals-grid">
-           <AnimatePresence>
-            {habits.map(habit => (
-              <RitualCard 
-                key={habit._id}
-                habit={habit}
+          <AnimatePresence>
+            {habits.map((habit, idx) => {
+              const hid = getSafeId(habit, `habit-${idx}`);
+              return (
+                <RitualCard 
+                  key={`desktop-${hid}`}
+                  habit={habit}
                 today={today}
                 isCompleted={isCompleted}
                 onComplete={completeMutation.mutate}
@@ -641,10 +658,11 @@ export default function HabitsPage() {
                   open: true,
                   title: 'Banish Ritual?',
                   confirmText: 'Banish',
-                  onConfirm: () => { deleteMutation.mutate(h._id); setConfirmDialog({ open: false }); }
+                  onConfirm: () => { deleteMutation.mutate(getSafeId(h)); setConfirmDialog({ open: false }); }
                 })}
-              />
-            ))}
+                  />
+                );
+              })}
            </AnimatePresence>
         </div>
       )}
@@ -660,7 +678,7 @@ export default function HabitsPage() {
                 open: true,
                 title: 'Banish Ritual?',
                 confirmText: 'Banish',
-                onConfirm: () => { deleteMutation.mutate(h._id); setConfirmDialog({ open: false }); setModal(null); }
+                onConfirm: () => { deleteMutation.mutate(getSafeId(h)); setConfirmDialog({ open: false }); setModal(null); }
               });
             }}
           />

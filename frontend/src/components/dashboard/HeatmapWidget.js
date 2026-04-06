@@ -2,7 +2,7 @@ import React from 'react';
 import ActivityHeatmapYear from '../ActivityHeatmapYear';
 import WidgetWrapper from './WidgetWrapper';
 import { Activity, ArrowRight, CheckCircle2, Timer, Trophy, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { safeFormat } from '../../utils/dateUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import MagneticButton from '../common/MagneticButton';
 
@@ -39,7 +39,7 @@ const HeatmapWidget = ({ activityData, isMobile, navigate, selectedLog, setSelec
                     Inspecting Progress
                   </div>
                   <h3 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>
-                    {format(new Date(selectedLog.date), 'EEEE, MMMM do')}
+                    {safeFormat(selectedLog.date, 'EEEE, MMMM do', 'Date Undefined')}
                   </h3>
                 </div>
                 <button 
@@ -109,7 +109,9 @@ const HeatmapWidget = ({ activityData, isMobile, navigate, selectedLog, setSelec
               border: '1px solid rgba(255,255,255,0.04)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
             }} className="hover-lift">
-              <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.8 }}>{format(new Date(log.date), 'MMMM do')}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.8 }}>
+                {safeFormat(log.date, 'MMMM do', 'N/A')}
+              </span>
               <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent3)', fontFamily: 'Syne, sans-serif', letterSpacing: '0.02em' }}>{log.tasksCompleted} execs</span>
                 <div style={{

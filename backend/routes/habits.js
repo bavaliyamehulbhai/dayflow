@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 const Habit = require('../models/Habit');
 const { protect } = require('../middleware/auth');
@@ -15,17 +16,22 @@ const habitValidation = [
   sanitizeFields(['name', 'description', 'icon']),
   body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name 1-100 characters'),
   body('description').optional().trim().isLength({ max: 500 }),
-  body('frequency').optional().isIn(['daily', 'weekly']),
+  body('frequency').optional().isIn(['daily', 'weekly', 'weekdays', 'weekends', 'custom']),
   body('color').optional().matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).withMessage('Invalid color hex')
 ];
 
 // GET all habits
 router.get('/', cacheMiddleware(60), async (req, res) => {
   try {
-    const habits = await Habit.find({ user: req.user._id, isActive: true }).sort({ order: 1, createdAt: 1 });
+    console.log(`[HABITS] Fetching for user: ${req.user?._id}`);
+    const habits = await Habit.find({ user: req.user._id, isActive: true })
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+    console.log(`[HABITS] Found ${habits?.length || 0} habits`);
     res.json({ success: true, habits });
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching habits.' });
+    console.error('[GET HABITS ERROR]', err);
+    res.status(500).json({ error: 'Error fetching habits.', details: err.message });
   }
 });
 
@@ -39,7 +45,8 @@ router.post('/', habitValidation, async (req, res) => {
     clearCache(req.user._id);
     res.status(201).json({ success: true, habit });
   } catch (err) {
-    res.status(500).json({ error: 'Error creating habit.' });
+    console.error('[HABIT CREATE ERROR]', err);
+    res.status(500).json({ error: 'Error creating habit.', details: process.env.NODE_ENV === 'development' ? err.message : undefined });
   }
 });
 
@@ -96,8 +103,13 @@ router.post('/:id/complete',
       if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
       const { date, count = 1, note = '' } = req.body;
+      const { id } = req.params;
 
-      const habit = await Habit.findOne({ _id: req.params.id, user: req.user._id });
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid ritual identifier.' });
+      }
+
+      const habit = await Habit.findOne({ _id: id, user: req.user._id });
       if (!habit) return res.status(404).json({ error: 'Habit not found.' });
 
       const existing = habit.completions.find(c => c.date === date);
@@ -116,29 +128,35 @@ router.post('/:id/complete',
         }
       }
 
-      // Recalculate streak
-      const todayStr = new Date().toISOString().split('T')[0];
+      // Recalculate streak: Walk backwards from the most recent completion
       const completedDates = habit.completions.map(c => c.date).sort();
-
-      // Current streak
+      const lastCompleted = completedDates[completedDates.length - 1];
+      
       let streak = 0;
-      let checkDateStr = todayStr;
-      while (completedDates.includes(checkDateStr)) {
-        streak++;
-        const d = new Date(checkDateStr);
-        d.setDate(d.getDate() - 1);
-        checkDateStr = d.toISOString().split('T')[0];
+      if (lastCompleted) {
+        // Use a more robust date decrement approach to avoid T-drift
+        let current = lastCompleted;
+        while (completedDates.includes(current)) {
+          streak++;
+          let d = new Date(current + 'T12:00:00Z'); // Fixed noon anchor
+          d.setUTCDate(d.getUTCDate() - 1);
+          current = d.toISOString().split('T')[0];
+        }
       }
 
       habit.streak.current = streak;
       habit.streak.longest = Math.max(habit.streak.longest, streak);
-      habit.streak.lastCompletedDate = completedDates[completedDates.length - 1] || null;
+      habit.streak.lastCompletedDate = lastCompleted || null;
 
       await habit.save();
       clearCache(req.user._id);
       res.json({ success: true, habit });
     } catch (err) {
-      res.status(500).json({ error: 'Error toggling habit completion.' });
+      console.error('[HABIT TOGGLE ERROR]', err);
+      res.status(500).json({ 
+        error: 'Error toggling habit completion.', 
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined 
+      });
     }
   });
 

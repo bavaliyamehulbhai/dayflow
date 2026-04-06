@@ -14,7 +14,8 @@ import {
   User,
   Shield,
   ShieldOff,
-  Bell
+  Bell,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CommandPalette from './CommandPalette';
@@ -36,7 +37,7 @@ const navItems = [
 const mobileTabItems = [
   { to: '/', icon: LayoutDashboard, label: 'Home', exact: true },
   { to: '/tasks', icon: CheckCircle2, label: 'Tasks' },
-  { id: 'manifest', action: 'command', icon: LayoutDashboard, label: 'Manifest' },
+  { id: 'manifest', action: 'command', icon: Plus, label: 'Manifest' },
   { to: '/habits', icon: RefreshCw, label: 'Habits' },
   { to: '/notes', icon: FileText, label: 'Notes' },
 ];
@@ -289,12 +290,19 @@ export default function Layout({ children }) {
                     <button 
                       key={item.id} 
                       className="bottom-tab action-orb-wrapper haptic-tap"
-                      onClick={triggerCommandPalette}
+                      onClick={() => {
+                        // If on tasks page, trigger create modal intent
+                        if (location.pathname === '/tasks') {
+                          window.dispatchEvent(new CustomEvent('df_open_create_modal'));
+                        } else {
+                          triggerCommandPalette();
+                        }
+                      }}
                     >
                       <div className="holographic-orb-container">
                         <div className="orb-event-horizon" />
                         <div className="holographic-orb">
-                          <LayoutDashboard size={28} strokeWidth={2.5} color="white" />
+                          <Plus size={32} strokeWidth={3} color="white" />
                         </div>
                       </div>
                     </button>
