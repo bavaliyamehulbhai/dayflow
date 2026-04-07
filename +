@@ -1,0 +1,19 @@
+improve ui & ux
+// Fix NotePage JSX //
+# Conflicts:
+#	frontend/src/pages/NotesPage.js
+#	frontend/src/styles/globals.css
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# interactive rebase in progress; onto 8e4e313
+# Last commands done (2 commands done):
+#    pick 39e99fb # fix the problem
+#    pick e894eb3 # improve ui & ux
+# No commands remaining.
+# You are currently rebasing branch 'main' on '8e4e313'.
+#
+# Changes to be committed:
+#	modified:   frontend/src/pages/NotesPage.js
+#
