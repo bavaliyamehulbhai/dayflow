@@ -93,6 +93,7 @@ router.put('/:id', noteValidation, async (req, res) => {
       { new: true, runValidators: true }
     );
     if (!note) return res.status(404).json({ error: 'Note not found.' });
+    clearCache(req.user._id);
     res.json({ success: true, note });
   } catch (err) {
     res.status(500).json({ error: 'Error updating note.' });

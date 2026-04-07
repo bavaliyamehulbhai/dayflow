@@ -41,26 +41,14 @@ const cacheMiddleware = (duration) => (req, res, next) => {
                 return res.originalJson(body);
             }
 
-            // Ensure we cache a POJO (Plain Old JavaScript Object) 
-            // This prevents Mongoose "broken context" errors on cache hits
+            // Ensure we cache a cleanly serialized JSON object
+            // This prevents node-cache deep clone from stripping ObjectId/Date prototypes
+            // which causes them to become plain objects and stringify as [object Object] on cache hit
             let cacheBody = body;
             
             try {
-                if (body && typeof body === 'object') {
-                    // Optimized: Only try to toObject if it's a Mongoose result
-                    if (Array.isArray(body)) {
-                        cacheBody = body.map(item => 
-                            (item && item.$__ && typeof item.toObject === 'function') ? item.toObject() : item
-                        );
-                    } else if (body.habits && Array.isArray(body.habits)) {
-                        // Special case for habits object response
-                        cacheBody = { 
-                            ...body, 
-                            habits: body.habits.map(h => (h && typeof h.toObject === 'function') ? h.toObject() : h)
-                        };
-                    } else if (body.$__ && typeof body.toObject === 'function') {
-                        cacheBody = body.toObject();
-                    }
+                if (body) {
+                    cacheBody = JSON.parse(JSON.stringify(body));
                 }
             } catch (err) {
                 // Squelch conversion errors only if they're harmless, otherwise log for dev

@@ -148,6 +148,7 @@ router.put('/:id',
         await updateStreak(req.user._id);
       }
 
+      clearCache(req.user._id);
       res.json({ success: true, task, newBadges });
     } catch (err) {
       res.status(500).json({ error: 'Error updating task.' });
@@ -212,7 +213,7 @@ router.patch('/:id/subtasks/:subtaskId', async (req, res) => {
     subtask.completed = !subtask.completed;
     subtask.completedAt = subtask.completed ? new Date() : null;
     await task.save();
-
+    clearCache(req.user._id);
     res.json({ success: true, task });
   } catch (err) {
     res.status(500).json({ error: 'Error updating subtask.' });

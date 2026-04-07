@@ -131,7 +131,7 @@ export default function ProfilePage() {
   const { data: activityResponse } = useQuery({
     queryKey: ['activity12m'],
     queryFn: () => dashboardAPI.getActivity12m().then(r => r.data),
-    initialData: { logs: [], analytics: {} }
+    initialData: { activity: [], analytics: {} }
   });
 
   const { data: securityHistory } = useQuery({
@@ -140,7 +140,7 @@ export default function ProfilePage() {
     initialData: { logs: [] }
   });
 
-  const activityData = activityResponse.logs || [];
+  const activityData = activityResponse.activity || activityResponse.logs || [];
   const analytics = activityResponse.analytics || {};
 
   const activityStatsRaw = useMemo(() => {

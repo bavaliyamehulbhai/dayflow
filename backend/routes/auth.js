@@ -461,34 +461,6 @@ router.post('/logout', protect, async (req, res) => {
   }
 });
 
-// ─── Delete Account (Right to be Forgotten) ──────────────────────────────────
-router.delete('/account', protect, async (req, res) => {
-  try {
-    const userId = req.user._id;
-
-    // Cascading delete
-    await Promise.all([
-      require('../models/Task').deleteMany({ user: userId }),
-      require('../models/Note').deleteMany({ user: userId }),
-      require('../models/Habit').deleteMany({ user: userId }),
-      require('../models/Schedule').deleteMany({ user: userId }),
-      require('../models/User').findByIdAndDelete(userId)
-    ]);
-
-    // Clear cookies
-    const clearCookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
-    };
-    res.clearCookie('accessToken', clearCookieOptions);
-    res.clearCookie('refreshToken', clearCookieOptions);
-
-    res.json({ success: true, message: 'Account and all associated data deleted successfully.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error deleting account.' });
-  }
-});
 
 // ─── Get Me ───────────────────────────────────────────────────────────────────
 router.get('/me', protect, async (req, res) => {

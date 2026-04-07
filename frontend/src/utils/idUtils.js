@@ -21,7 +21,22 @@ export const getSafeId = (item, fallbackIndex = 'id') => {
   // Check _id
   if (item._id) {
     if (typeof item._id === 'string' && item._id !== '[object Object]') return item._id;
-    if (typeof item._id === 'object' && item._id.$oid) return String(item._id.$oid);
+    if (typeof item._id === 'object') {
+      // Handle { buffer: {...}, _id: "hexstring" } shape (server.js toPOJO artifact)
+      if (item._id._id && typeof item._id._id === 'string') return item._id._id;
+      // Handle { $oid: "hexstring" } shape (raw MongoDB JSON)
+      if (item._id.$oid) return String(item._id.$oid);
+      // Handle { type: 'Buffer', data: [...] } shape (JSON-serialized Buffer)
+      if (item._id.type === 'Buffer' && Array.isArray(item._id.data)) {
+        return item._id.data.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+      // Handle { buffer: { 0: n, 1: n, ... } } numeric-keyed buffer
+      if (item._id.buffer && typeof item._id.buffer === 'object') {
+        const buf = item._id.buffer;
+        const bytes = Object.keys(buf).sort((a,b) => Number(a)-Number(b)).map(k => buf[k]);
+        if (bytes.length === 12) return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+    }
     const strId = String(item._id);
     if (strId !== '[object Object]') return strId;
   }
