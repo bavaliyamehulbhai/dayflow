@@ -80,87 +80,55 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
 
   return (
-    <MobileBottomSheet
-      isOpen={!!note}
-      onClose={onClose}
-      variant="centered"
-      title={isMobile ? "" : "FRAGMENT ARCHIVE"}
-      headerAction={
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {/* Explicit Save/Manifest Button */}
-          <button
-            onClick={() => {
-              onSave(
-                {
-                  title,
-                  content,
-                  color,
-                  tags: tags
-                    .split(",")
-                    .map((t) => t.trim())
-                    .filter(Boolean),
-                },
-                false,
-              );
-              onClose();
-            }}
-            style={{
-              background: "var(--grad-premium)",
-              borderRadius: "12px",
-              padding: "8px 16px",
-              border: "none",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              fontSize: 10,
-              fontWeight: 900,
-              boxShadow: "0 8px 20px rgba(124, 109, 250, 0.3)",
-            }}
-          >
-            <Sparkles size={14} />
-            MANIFEST
-          </button>
-
-          <button
-            onClick={() =>
-              isDeleting
-                ? onSave(null, false, true)
-                : (setIsDeleting(true),
-                  setTimeout(() => setIsDeleting(false), 3000))
-            }
-            style={{
-              background: isDeleting
-                ? "rgba(255, 100, 100, 0.2)"
-                : "rgba(255,255,255,0.03)",
-              borderRadius: "12px",
-              padding: "8px",
-              border: isDeleting
-                ? "1px solid var(--red)"
-                : "1px solid rgba(255,255,255,0.05)",
-              color: isDeleting ? "white" : "rgba(255,100,100,0.7)",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              fontSize: 10,
-              fontWeight: 900,
-              transition: "all 0.3s ease",
-            }}
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      }
+    <div
+      className="modal-overlay note-editor-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{
+        zIndex: 1000,
+        background: "rgba(0,0,0,0.85)",
+        backdropFilter: "blur(10px)",
+      }}
     >
-      <div
+      <motion.div
+        animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.2, 0.1] }}
+        transition={{ duration: 8, repeat: Infinity }}
         style={{
-          position: "relative",
+          position: "fixed",
+          inset: 0,
+          background: `radial-gradient(circle at center, ${color} 0%, transparent 75%)`,
+          filter: "blur(120px)",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      />
+      <motion.div
+        initial={isMobile ? { x: "100%" } : { opacity: 0, scale: 0.9, y: 30 }}
+        animate={{ x: 0, opacity: 1, scale: 1 }}
+        exit={isMobile ? { x: "100%" } : { opacity: 0, scale: 0.9, y: 30 }}
+        className={`auth-card elite-editor-plate ${isMobile ? "full-screen-immersion" : ""}`}
+        style={{
+          maxWidth: isMobile ? 420 : 950,
+          width: isMobile ? "92%" : "95%",
+          padding: 0,
           display: "flex",
           flexDirection: "column",
-          gap: 20,
+          height: isMobile ? "78dvh" : "85vh",
+          borderRadius: isMobile ? 24 : 44,
+          background: "rgba(12, 12, 22, 1)",
+          backdropFilter: "blur(40px)",
+          border: isMobile ? `1px solid ${color}33` : `1px solid ${color}44`,
+          boxShadow: isMobile
+            ? `0 24px 80px rgba(0,0,0,0.7), 0 0 30px ${color}22`
+            : `0 30px 100px rgba(0,0,0,0.8), 0 0 40px ${color}11`,
+          position: isMobile ? "relative" : "fixed",
+          bottom: isMobile ? "auto" : 0,
+          top: isMobile ? "auto" : 0,
+          left: isMobile ? "auto" : "50%",
+          transform: isMobile ? "none" : "translate(-50%, -50%)",
+          zIndex: 1001,
+          overflow: "hidden",
         }}
       >
-        {/* Dynamic Atmosphere Glow */}
         <div
           style={{
             position: "absolute",
@@ -314,8 +282,8 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
             </div>
           </div>
         </div>
-      </div>
-    </MobileBottomSheet>
+      </motion.div>
+    </div>
   );
 }
 
@@ -755,7 +723,7 @@ export default function NotesPage() {
           </div>
         ) : notes.length === 0 ? (
           <div
-            className="card glass-card aura-iridescent"
+            className="card glass-card aura-iridescent notes-empty-card"
             style={{
               padding: "64px 24px",
               textAlign: "center",
@@ -773,7 +741,7 @@ export default function NotesPage() {
               }}
               style={{ fontSize: 64, marginBottom: 24 }}
             >
-              BRAIN
+              🧠
             </motion.div>
             <div
               style={{
@@ -812,6 +780,7 @@ export default function NotesPage() {
           </div>
         ) : (
           <div
+            className="notes-output"
             style={{
               columnCount: isMobile ? 1 : 2,
               columnGap: 24,
@@ -819,10 +788,9 @@ export default function NotesPage() {
             }}
           >
             <AnimatePresence>
-              {notes.map((n, index) => {
-                const nid = getSafeId(n, `note-${index}`);
-                return <NoteCard key={nid} note={n} />;
-              })}
+              {notes.map((n) => (
+                <NoteCard key={n._id} note={n} />
+              ))}
             </AnimatePresence>
           </div>
         )}
