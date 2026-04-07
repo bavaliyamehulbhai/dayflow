@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../context/NotificationContext';
 import { Eye, EyeOff, Zap, ArrowRight, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRef } from 'react';
+
+import AuraOrb from '../components/common/AuraOrb';
 
 const Magnetic = ({ children }) => {
   const ref = useRef(null);
@@ -48,40 +50,9 @@ function getPasswordStrength(password) {
   return { score, label: 'Crystal', color: '#8272ff' };
 }
 
-const InputField = ({ label, type, placeholder, value, onChange, onBlur, error, success, autoComplete, autoFocus, className }) => (
-  <div className="form-group">
-    <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-      {label}
-    </label>
-    <div style={{ position: 'relative' }}>
-      <input
-        type={type}
-        className={`auth-input haptic-feedback ${className} ${error ? 'input-error' : success ? 'input-ok' : ''}`}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        autoComplete={autoComplete}
-        autoFocus={autoFocus}
-      />
-    </div>
-    <AnimatePresence>
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}
-        >
-          {error}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-);
-
 export default function RegisterPage() {
   const { register } = useAuth();
+  const { addToast } = useNotifications();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
@@ -113,17 +84,27 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
     setTouched({ name: true, email: true, password: true, confirm: true });
-    if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
-    if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
-    if (!/[A-Z]/.test(form.password)) { setError('Password must contain an uppercase letter.'); return; }
-    if (!/[0-9]/.test(form.password)) { setError('Password must contain a number.'); return; }
+    if (form.password !== form.confirm) { 
+      const msg = 'Passwords do not match.';
+      setError(msg); 
+      addToast(msg, 'error');
+      return; 
+    }
+    if (form.password.length < 8) { 
+      const msg = 'Security clearance requires 8+ characters.';
+      setError(msg); 
+      addToast(msg, 'error');
+      return; 
+    }
     setLoading(true);
     try {
       await register(form.name, form.email, form.password);
-      toast.success('Welcome to DayFlow!');
+      addToast('Account synchronized. Welcome to DayFlow!', 'success');
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      const errorMsg = err.response?.data?.error || 'Registration failed. Try different coordinates.';
+      setError(errorMsg);
+      addToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -155,20 +136,12 @@ export default function RegisterPage() {
       onMouseMove={handleCardMouseMove}
       onMouseLeave={handleCardMouseLeave}
       className="auth-container"
+      style={{ overflow: 'hidden', position: 'relative' }}
     >
-      {/* Background Orbs */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', background: 'radial-gradient(circle at 50% 50%, rgba(124,109,250,0.08), transparent 70%)' }}>
-        <motion.div 
-          animate={{ x: [-100, 100, -100], y: [80, -80, 80], scale: [1, 1.3, 1], rotate: [0, 180, 360] }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          style={{ position: 'absolute', width: 800, height: 800, borderRadius: '50%', background: 'radial-gradient(circle, rgba(130,114,255,0.18), transparent 70%)', top: '-250px', right: '-150px', filter: 'blur(100px)' }} 
-        />
-        <motion.div 
-          animate={{ x: [80, -80, 80], y: [-60, 60, -60], scale: [1, 1.2, 1], rotate: [0, -180, -360] }}
-          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-          style={{ position: 'absolute', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,107,139,0.12), transparent 70%)', bottom: '-200px', left: '-150px', filter: 'blur(120px)' }} 
-        />
-        {/* Spatial Grid Layer */}
+      {/* Immersive Background Orbs */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <AuraOrb color="rgba(110, 250, 204, 0.15)" size="600px" top="-10%" left="60%" delay={2} />
+        <AuraOrb color="rgba(124, 109, 250, 0.2)" size="500px" top="50%" left="-10%" delay={0} />
         <div style={{
             position: 'absolute', inset: 0,
             backgroundImage: `radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`,
@@ -233,10 +206,19 @@ export default function RegisterPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            style={{ marginBottom: 20, transform: 'translateZ(30px)' }}
+            style={{ marginBottom: 24, transform: 'translateZ(30px)' }}
           >
-            <h2 style={{ fontSize: 26, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.04em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Create Account</h2>
-            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 700, marginTop: 4, opacity: 0.8 }}>Join DayFlow to start your journey.</p>
+            <h2 style={{ 
+              fontSize: 32, 
+              fontWeight: 900, 
+              fontFamily: 'Syne', 
+              letterSpacing: '-0.05em', 
+              lineHeight: 1,
+              background: 'linear-gradient(to right, #fff, rgba(255,255,255,0.7))', 
+              WebkitBackgroundClip: 'text', 
+              WebkitTextFillColor: 'transparent' 
+            }}>Begin Journey</h2>
+            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 800, marginTop: 4, textTransform: 'uppercase', letterSpacing: 2 }}>Initialize personality core</p>
           </motion.div>
 
           {error && (
@@ -359,8 +341,9 @@ export default function RegisterPage() {
             </motion.button>
           </motion.form>
 
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'none' }}>Login here</Link>
+            <div className="auth-footer">
+              Already have an account? <Link to="/login">Login here</Link>
+            </div>
         </motion.div>
       </motion.div>
 

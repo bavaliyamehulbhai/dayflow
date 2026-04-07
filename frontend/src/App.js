@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SecurityProvider } from './context/SecurityGuard';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -61,6 +60,9 @@ const PageWrapper = ({ children }) => (
   </motion.div>
 );
 
+import { NotificationProvider } from './context/NotificationContext';
+import ToastContainer from './components/common/ToastContainer';
+
 function AppRoutes() {
   const location = useLocation();
   return (
@@ -87,30 +89,17 @@ export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <SecurityProvider>
-            <BrowserRouter>
-              <AppRoutes />
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  style: {
-                    background: '#1a1a26',
-                    color: '#e8e8f0',
-                    border: '1px solid #2a2a3d',
-                    borderRadius: '10px',
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    fontSize: '13px'
-                  },
-                  success: { iconTheme: { primary: '#6dfacc', secondary: '#0a0a0f' } },
-                  error: { iconTheme: { primary: '#fa6d6d', secondary: '#0a0a0f' } }
-                }}
-              />
-            </BrowserRouter>
-          </SecurityProvider>
-        </AuthProvider>
+        <NotificationProvider>
+          <AuthProvider>
+            <SecurityProvider>
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <AppRoutes />
+                <ToastContainer />
+              </BrowserRouter>
+            </SecurityProvider>
+          </AuthProvider>
+        </NotificationProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
 }
-

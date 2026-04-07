@@ -4,7 +4,7 @@ import { authAPI } from '../../utils/api';
 import { Laptop, Smartphone, Globe, Monitor, XCircle, Clock, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 import ConfirmDialog from '../ConfirmDialog';
 
 const getBrowserIcon = (ua = '') => {
@@ -24,6 +24,7 @@ const getDeviceIcon = (ua = '') => {
 
 export default function SessionManager() {
     const queryClient = useQueryClient();
+    const { addToast } = useNotifications();
     const [confirmDialog, setConfirmDialog] = useState({ open: false });
     const { data, isLoading } = useQuery({
         queryKey: ['sessions'],
@@ -34,10 +35,10 @@ export default function SessionManager() {
         mutationFn: (id) => authAPI.revokeSession(id),
         onSuccess: () => {
             queryClient.invalidateQueries(['sessions']);
-            toast.success('Session revoked successfully');
+            addToast('Session neutralized successfully', 'success');
         },
         onError: (err) => {
-            toast.error(err.response?.data?.error || 'Failed to revoke session');
+            addToast(err.response?.data?.error || 'Failed to neutralize session', 'error');
         }
     });
 
@@ -45,10 +46,10 @@ export default function SessionManager() {
         mutationFn: () => authAPI.revokeAllSessions(),
         onSuccess: () => {
             queryClient.invalidateQueries(['sessions']);
-            toast.success('All other sessions revoked successfully! 🔐');
+            addToast('All other sessions neutralized! 🔐', 'success');
         },
         onError: (err) => {
-            toast.error(err.response?.data?.error || 'Failed to revoke all sessions');
+            addToast(err.response?.data?.error || 'Failed to neutralize all sessions', 'error');
         }
     });
 
@@ -69,12 +70,13 @@ export default function SessionManager() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <AnimatePresence mode="popLayout">
-                    {sessions.map((session) => {
+                    {sessions.map((session, index) => {
+                        const sid = typeof session._id === 'string' ? session._id : (session._id?.$oid || String(session._id));
                         const isCurrent = session.refreshToken === localStorage.getItem('dayflow_token');
 
                         return (
                             <motion.div
-                                key={session._id}
+                                key={sid !== '[object Object]' ? sid : `session-${index}`}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.98 }}
@@ -121,7 +123,16 @@ export default function SessionManager() {
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
                                             <Clock size={14} />
-                                            <span>Seen {formatDistanceToNow(new Date(session.lastActive))} ago</span>
+                                            <span>
+                                                Seen {(() => {
+                                                    try {
+                                                        const date = new Date(session.lastActive);
+                                                        return isNaN(date.getTime()) ? 'recently' : formatDistanceToNow(date);
+                                                    } catch (e) {
+                                                        return 'recently';
+                                                    }
+                                                })()} ago
+                                            </span>
                                         </div>
                                     </div>
                                 </div>

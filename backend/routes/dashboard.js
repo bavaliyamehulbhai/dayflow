@@ -8,11 +8,12 @@ const Note = require('../models/Note');
 const User = require('../models/User');
 const Activity = require('../models/Activity');
 const { protect } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cache');
 
 router.use(protect);
 
 // GET complete dashboard summary
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(60), async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
@@ -108,6 +109,14 @@ router.get('/', async (req, res) => {
       return { date, pomos: pomo?.count || 0, minutes: Math.round(pomo?.minutes || 0), tasksCompleted: tasks?.count || 0 };
     });
 
+    const weeklyTasksCompleted = weekData.reduce((acc, day) => acc + (day.tasksCompleted || 0), 0);
+    const weeklyGoal = user.preferences?.weeklyGoal || 30;
+    const weeklyProgress = {
+      completed: weeklyTasksCompleted,
+      goal: weeklyGoal,
+      percentage: Math.min(100, Math.round((weeklyTasksCompleted / weeklyGoal) * 100))
+    };
+
     res.json({
       success: true,
       dashboard: {
@@ -127,7 +136,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET 12-month activity data with advanced analytics
-router.get('/activity/12m', async (req, res) => {
+router.get('/activity/12m', cacheMiddleware(300), async (req, res) => {
   try {
     const months = 12;
     const startDate = new Date();

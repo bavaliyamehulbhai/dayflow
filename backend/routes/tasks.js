@@ -7,12 +7,14 @@ const { protect } = require('../middleware/auth');
 const { sanitizeFields } = require('../middleware/sanitizer');
 const { awardBadges } = require('../services/badgeService');
 const { logActivity } = require('../services/activityService');
+const { updateStreak } = require('../services/streakService');
+const { cacheMiddleware, clearCache } = require('../middleware/cache');
 
 // All routes protected
 router.use(protect);
 
 // ─── GET all tasks ────────────────────────────────────────────────────────────
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(60), async (req, res) => {
   try {
     const { status, priority, category, search, sortBy = 'createdAt', order = 'desc', page = 1, limit = 50, dueDate } = req.query;
 
@@ -51,7 +53,7 @@ router.get('/', async (req, res) => {
 });
 
 // ─── GET single task ──────────────────────────────────────────────────────────
-router.get('/:id', async (req, res) => {
+router.get('/:id', cacheMiddleware(300), async (req, res) => {
   try {
     const task = await Task.findOne({ _id: req.params.id, user: req.user._id });
     if (!task) return res.status(404).json({ error: 'Task not found.' });
@@ -87,6 +89,7 @@ router.post('/',
         subtasks: Array.isArray(subtasks) ? subtasks.map(s => ({ title: String(s.title || '').trim(), completed: Boolean(s.completed) })) : [],
         user: req.user._id
       });
+      clearCache(req.user._id);
       res.status(201).json({ success: true, task });
     } catch (err) {
       res.status(500).json({ error: 'Error creating task.' });
@@ -142,8 +145,10 @@ router.put('/:id',
       if (updates.status === 'completed') {
         newBadges = await awardBadges(req.user._id);
         await logActivity(req.user._id, { tasksCompleted: 1 });
+        await updateStreak(req.user._id);
       }
 
+      clearCache(req.user._id);
       res.json({ success: true, task, newBadges });
     } catch (err) {
       res.status(500).json({ error: 'Error updating task.' });
@@ -156,6 +161,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const task = await Task.findOneAndDelete({ _id: req.params.id, user: req.user._id });
     if (!task) return res.status(404).json({ error: 'Task not found.' });
+    clearCache(req.user._id);
     res.json({ success: true, message: 'Task deleted.' });
   } catch (err) {
     res.status(500).json({ error: 'Error deleting task.' });
@@ -168,6 +174,7 @@ router.post('/bulk/delete', async (req, res) => {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids)) return res.status(400).json({ error: 'IDs array required.' });
     const result = await Task.deleteMany({ _id: { $in: ids }, user: req.user._id });
+    clearCache(req.user._id);
     res.json({ success: true, deleted: result.deletedCount });
   } catch (err) {
     res.status(500).json({ error: 'Error deleting tasks.' });
@@ -184,8 +191,10 @@ router.post('/bulk/status', async (req, res) => {
       // Increment stats and log activity
       await User.findByIdAndUpdate(req.user._id, { $inc: { 'stats.tasksCompleted': ids.length } });
       await logActivity(req.user._id, { tasksCompleted: ids.length });
+      await updateStreak(req.user._id);
     }
     await Task.updateMany({ _id: { $in: ids }, user: req.user._id }, update);
+    clearCache(req.user._id);
     res.json({ success: true, message: 'Tasks updated.' });
   } catch (err) {
     res.status(500).json({ error: 'Error updating tasks.' });
@@ -204,7 +213,7 @@ router.patch('/:id/subtasks/:subtaskId', async (req, res) => {
     subtask.completed = !subtask.completed;
     subtask.completedAt = subtask.completed ? new Date() : null;
     await task.save();
-
+    clearCache(req.user._id);
     res.json({ success: true, task });
   } catch (err) {
     res.status(500).json({ error: 'Error updating subtask.' });
@@ -212,7 +221,7 @@ router.patch('/:id/subtasks/:subtaskId', async (req, res) => {
 });
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
-router.get('/stats/summary', async (req, res) => {
+router.get('/stats/summary', cacheMiddleware(300), async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

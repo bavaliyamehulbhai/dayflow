@@ -9,8 +9,9 @@ import ActivityTimeline from '../components/ActivityTimeline';
 import ProductivityCircle from '../components/ProductivityCircle';
 import SessionManager from '../components/profile/SessionManager';
 import ActivityTags from '../components/ActivityTags';
-import toast from 'react-hot-toast';
-import { format, differenceInDays } from 'date-fns';
+import { useNotifications } from '../context/NotificationContext';
+import { format, subDays, startOfDay, endOfDay, isSameDay, differenceInDays } from 'date-fns';
+import { safeFormat } from '../utils/dateUtils';
 import {
   User, Lock, Timer, BarChart2, Medal, Shield, Zap, Trophy,
   CheckCircle2, Flame, Clock, Brain, Coffee, Trees, Save,
@@ -22,6 +23,7 @@ import {
 import { useZenTheme } from '../hooks/useZenTheme';
 import ConfirmDialog from '../components/ConfirmDialog';
 import SensitivityShield from '../components/layout/SensitivityShield';
+import AuraOrb from '../components/common/AuraOrb';
 
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
@@ -60,29 +62,9 @@ const TIER_CONFIG = {
   platinum: { label: 'Platinum', color: '#e5e4e2', glow: 'rgba(229,228,226,0.45)', gradient: 'linear-gradient(135deg,#e5e4e2,#9fa0a3)' },
 };
 
-function showBadgeToast(badge) {
+function showBadgeToast(badge, addToast) {
   const tier = TIER_CONFIG[badge.tier] || TIER_CONFIG.bronze;
-  toast.custom((t) => (
-    <motion.div
-      initial={{ opacity: 0, y: 60, scale: 0.85 }}
-      animate={{ opacity: t.visible ? 1 : 0, y: t.visible ? 0 : 60, scale: t.visible ? 1 : 0.85 }}
-      style={{
-        background: 'linear-gradient(135deg,#1a1a2e,#0f0f1e)', border: `1.5px solid ${tier.color}66`,
-        borderRadius: 18, padding: 'var(--space-4) var(--space-6)', display: 'flex', alignItems: 'center', gap: 16,
-        boxShadow: `0 16px 48px rgba(0,0,0,0.6),0 0 24px ${tier.glow}`, minWidth: 300, maxWidth: 360, cursor: 'pointer',
-      }}
-      onClick={() => toast.dismiss(t.id)}
-    >
-      <div style={{ fontSize: 44, filter: `drop-shadow(0 0 12px ${tier.color})`, flexShrink: 0 }}>{badge.icon}</div>
-      <div>
-        <div style={{ fontSize: 10, fontWeight: 800, color: tier.color, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
-          🏅 Achievement Unlocked · {tier.label}
-        </div>
-        <div style={{ fontSize: 16, fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{badge.name}</div>
-        <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{badge.description}</div>
-      </div>
-    </motion.div>
-  ), { duration: 5000, position: 'bottom-right' });
+  addToast(`${badge.name}: ${badge.description}`, 'success', 6000, badge.icon);
 }
 
 // ── Animated SVG ring (productivity score) ───────────────────────────────────
@@ -115,6 +97,7 @@ function ScoreRing({ score, size = 120 }) {
 
 export default function ProfilePage() {
   const { user, updateUser, logout } = useAuth();
+  const { addToast } = useNotifications();
   const [accent, setAccent] = useZenTheme();
   const navigate = useNavigate();
   const width = useWindowWidth();
@@ -148,7 +131,7 @@ export default function ProfilePage() {
   const { data: activityResponse } = useQuery({
     queryKey: ['activity12m'],
     queryFn: () => dashboardAPI.getActivity12m().then(r => r.data),
-    initialData: { logs: [], analytics: {} }
+    initialData: { activity: [], analytics: {} }
   });
 
   const { data: securityHistory } = useQuery({
@@ -157,7 +140,7 @@ export default function ProfilePage() {
     initialData: { logs: [] }
   });
 
-  const activityData = activityResponse.logs || [];
+  const activityData = activityResponse.activity || activityResponse.logs || [];
   const analytics = activityResponse.analytics || {};
 
   const activityStatsRaw = useMemo(() => {
@@ -180,10 +163,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     badgesAPI.check().then(r => {
-      (r.data.newBadges || []).forEach(b => showBadgeToast(b));
+      (r.data.newBadges || []).forEach(b => showBadgeToast(b, addToast));
       if ((r.data.newBadges || []).length > 0) refetchBadges();
     }).catch(() => { });
-  }, []);
+  }, [addToast, refetchBadges]);
 
   const checkStrength = (pw) => {
     let s = 0;
@@ -196,14 +179,14 @@ export default function ProfilePage() {
 
   const profileMutation = useMutation({
     mutationFn: (data) => authAPI.updateProfile(data),
-    onSuccess: (r) => { updateUser(r.data.user); toast.success('Profile saved! ✨'); setEditingBio(false); },
-    onError: (e) => toast.error(e.response?.data?.error || 'Update failed')
+    onSuccess: (r) => { updateUser(r.data.user); addToast('Profile saved! ✨', 'success'); setEditingBio(false); },
+    onError: (e) => addToast(e.response?.data?.error || 'Update failed', 'error')
   });
 
   const passwordMutation = useMutation({
     mutationFn: (data) => authAPI.changePassword(data),
-    onSuccess: () => { toast.success('Password updated! 🔐'); setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); setPwStrength(0); },
-    onError: (e) => toast.error(e.response?.data?.error || 'Password change failed')
+    onSuccess: () => { addToast('Password updated! 🔐', 'success'); setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); setPwStrength(0); },
+    onError: (e) => addToast(e.response?.data?.error || 'Password change failed', 'error')
   });
 
   const handleProfileSave = (e) => {
@@ -222,8 +205,8 @@ export default function ProfilePage() {
 
   const handlePasswordChange = (e) => {
     e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirmPassword) return toast.error('Passwords do not match');
-    if (pwStrength < 2) return toast.error('Please use a stronger password');
+    if (pwForm.newPassword !== pwForm.confirmPassword) return addToast('Passwords do not match', 'error');
+    if (pwStrength < 2) return addToast('Please use a stronger password', 'error');
     passwordMutation.mutate({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
   };
 
@@ -236,9 +219,9 @@ export default function ProfilePage() {
       link.setAttribute('download', `dayflow_export_${user._id}.json`);
       document.body.appendChild(link);
       link.click();
-      toast.success('Data exported successfully! 📂');
+      addToast('Data exported successfully! 📂', 'success');
     } catch (err) {
-      toast.error('Export failed');
+      addToast('Export failed', 'error');
     }
   };
 
@@ -251,11 +234,11 @@ export default function ProfilePage() {
       onConfirm: async () => {
         try {
           await authAPI.deleteAccount();
-          toast.success('Account deleted. We will miss you! 👋');
+          addToast('Account deleted. We will miss you! 👋', 'info');
           logout();
           navigate('/login');
         } catch (err) {
-          toast.error('Deletion failed');
+          addToast('Deletion failed', 'error');
         }
       }
     });
@@ -263,8 +246,8 @@ export default function ProfilePage() {
 
   // ── Computed values ────────────────────────────────────────────────────────
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
-  const memberSince = user?.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '—';
-  const memberDays = user?.createdAt ? differenceInDays(new Date(), new Date(user.createdAt)) : 0;
+  const memberSince = user?.createdAt && !isNaN(new Date(user.createdAt).getTime()) ? safeFormat(user.createdAt, 'MMM d, yyyy', '—') : '—';
+  const memberDays = (user?.createdAt && !isNaN(new Date(user.createdAt).getTime())) ? Math.abs(differenceInDays(new Date(), new Date(user.createdAt))) : 0;
   const avatarGrad = AVATAR_GRADIENTS[profileForm.avatarGradient] || AVATAR_GRADIENTS.purple;
 
   const tasksCompleted = user?.stats?.tasksCompleted || 0;
@@ -285,8 +268,8 @@ export default function ProfilePage() {
     (Math.min(tasksCompleted, 100) / 100) * 35 +
     (Math.min(focusMinutes / 60, 50) / 50) * 30 +
     (Math.min(longestStreak, 30) / 30) * 20 +
-    (earnedCount / totalBadges) * 15
-  ));
+    (totalBadges > 0 ? (earnedCount / totalBadges) * 15 : 0)
+  )) || 0;
 
   // Profile completeness
   const profileFields = [
@@ -313,30 +296,84 @@ export default function ProfilePage() {
   }, [user]);
 
   return (
-    <div className="responsive-container pb-20">
-      
+    <div className="responsive-container" style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', paddingBottom: 120 }}>
+      {/* Immersive Background Layer */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
+        <AuraOrb color="rgba(124, 109, 250, 0.12)" size="500px" top="-10%" left="-10%" delay={0} />
+        <AuraOrb color="rgba(110, 250, 204, 0.08)" size="400px" top="30%" left="70%" delay={3} />
+        <AuraOrb color="rgba(250, 109, 138, 0.06)" size="350px" top="80%" left="5%" delay={5} />
+      </div>
+
+      <div className="page-header" style={{ 
+        marginBottom: isMobile ? 32 : 48,
+        paddingTop: isMobile ? 12 : 24,
+        position: 'relative' 
+      }}>
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 16 }}
+        >
+          <div className="auth-logo-icon aura-float" style={{ 
+            width: isMobile ? 48 : 64, 
+            height: isMobile ? 48 : 64, 
+            background: 'var(--grad-premium)',
+            borderRadius: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 12px 30px rgba(124, 109, 250, 0.4)'
+          }}>
+            <User size={isMobile ? 24 : 32} color="white" strokeWidth={2.5} />
+          </div>
+          <div>
+            <div style={{ 
+              fontFamily: 'Syne, sans-serif', 
+              fontSize: isMobile ? '32px' : '48px', 
+              fontWeight: 800, 
+              letterSpacing: '-0.05em', 
+              lineHeight: 1,
+              background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Settings Hub
+            </div>
+            <p style={{ 
+              fontSize: '11px', 
+              fontWeight: 900, 
+              color: 'var(--muted)', 
+              textTransform: 'uppercase', 
+              letterSpacing: 3,
+              marginTop: 4
+            }}>Neural Configuration & Bio-Stats</p>
+          </div>
+        </motion.div>
+      </div>
+
       {/* ─── IDENTITY HERO ─────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-holographic aura-iridescent aura-float"
+        className="glass-holographic aura-iridescent"
         style={{
           marginBottom: 32, 
-          padding: isMobile ? '20px 12px' : '48px 64px',
-          borderRadius: isMobile ? 32 : 40,
+          padding: isMobile ? '32px 16px' : '48px 64px',
+          borderRadius: 32,
           position: 'relative',
           overflow: 'visible',
-          border: 'none'
+          border: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(255,255,255,0.02)',
+          backdropFilter: 'blur(30px)'
         }}
       >
         <div className="aura-pulse" style={{ 
           position: 'absolute', top: '50%', left: '50%', 
           width: '80%', height: '80%', 
           background: 'var(--grad-mesh-vibrant)', 
-          opacity: 0.15, filter: 'blur(80px)', 
+          opacity: 0.1, filter: 'blur(80px)', 
           transform: 'translate(-50%, -50%)', zIndex: -1 
         }} />
-        <div className="btn-glint" style={{ opacity: 0.1 }} />
         
         <div style={{
           display: 'flex',
@@ -352,28 +389,27 @@ export default function ProfilePage() {
             <motion.div
               whileHover={{ scale: 1.05 }}
               style={{
-                width: isMobile ? 84 : 160, 
-                height: isMobile ? 84 : 160, 
-                borderRadius: '50%',
+                width: isMobile ? 100 : 160, 
+                height: isMobile ? 100 : 160, 
+                borderRadius: '32px',
                 background: avatarGrad, 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
                 fontFamily: 'Syne, sans-serif', 
                 fontWeight: 800, 
-                fontSize: isMobile ? '32px' : '64px',
+                fontSize: isMobile ? '40px' : '64px',
                 color: 'white', 
                 boxShadow: `0 20px 60px ${profileForm.avatarGradient === 'purple' ? 'rgba(124,109,250,0.5)' : 'rgba(0,0,0,0.3)'}`,
                 cursor: 'pointer',
-                border: isMobile ? '2px solid rgba(255,255,255,0.1)' : '4px solid rgba(255,255,255,0.1)',
+                border: '4px solid rgba(255,255,255,0.1)',
                 backdropFilter: 'blur(10px)'
               }}
               onClick={() => setShowGradientPicker(v => !v)}
             >
-              <div style={{ position: 'absolute', inset: -8, border: '1.5px solid rgba(255,255,255,0.05)', borderRadius: '50%' }} />
               {initials}
-              <div style={{ position: 'absolute', bottom: 8, right: 8, width: 32, height: 32, borderRadius: '50%', background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                <Edit3 size={14} color="var(--text)" />
+              <div style={{ position: 'absolute', bottom: -10, right: -10, width: 36, height: 36, borderRadius: '12px', background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px rgba(0,0,0,0.3)' }}>
+                <Edit3 size={16} color="var(--text)" />
               </div>
             </motion.div>
 
@@ -724,7 +760,7 @@ export default function ProfilePage() {
                           <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 }}>{log.action.replace('_', ' ')}</span>
                           <span style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 600 }}>IP: {log.ip || '0.0.0.0'}</span>
                         </div>
-                        <div style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 800 }}>{format(new Date(log.createdAt), 'MMM d, HH:mm')}</div>
+                        <div style={{ color: 'var(--muted)', fontSize: 11, fontWeight: 800 }}>{safeFormat(log.createdAt, 'MMM d, HH:mm', 'N/A')}</div>
                       </div>
                     ))
                   )}
@@ -1096,7 +1132,7 @@ export default function ProfilePage() {
                           </div>
                           {badge.earned && badge.earnedAt && (
                             <div style={{ fontSize: 10, color: tc.color, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
-                              ACQUIRED • {format(new Date(badge.earnedAt), 'MMM d')}
+                              ACQUIRED • {safeFormat(badge.earnedAt, 'MMM d', 'N/A')}
                             </div>
                           )}
                         </motion.div>

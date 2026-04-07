@@ -8,7 +8,7 @@ const { BADGE_DEFS, awardBadges } = require('../services/badgeService');
 // Returns the full badge catalogue with earned status for the current user.
 router.get('/', protect, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('badges');
+        const user = await User.findById(req.user._id).select('badges');
         const earnedMap = new Map((user.badges || []).map(b => [b.id, b]));
 
         const catalogue = BADGE_DEFS.map(def => ({
@@ -36,7 +36,7 @@ router.get('/', protect, async (req, res) => {
 // Manually triggers a badge check — e.g. called from frontend after login.
 router.post('/check', protect, async (req, res) => {
     try {
-        const newBadges = await awardBadges(req.user.id);
+        const newBadges = await awardBadges(req.user._id);
         res.json({ newBadges });
     } catch (err) {
         res.status(500).json({ error: 'Badge check failed' });

@@ -84,7 +84,12 @@ const userSchema = new mongoose.Schema({
     pomodoroBreak: { type: Number, default: 5 },
     pomodoroLong: { type: Number, default: 15 },
     weekStart: { type: String, enum: ['sun', 'mon'], default: 'mon' },
-    timezone: { type: String, default: 'UTC' }
+    weeklyGoal: { type: Number, default: 30 },
+    timezone: { type: String, default: 'UTC' },
+    dashboardLayout: {
+      type: [String],
+      default: ['stats', 'heatmap', 'tasks', 'ai-coach', 'productivity', 'schedule', 'habits', 'notes']
+    }
   },
   stats: {
     totalFocusMinutes: { type: Number, default: 0 },
@@ -103,7 +108,21 @@ const userSchema = new mongoose.Schema({
       tier: { type: String, enum: ['bronze', 'silver', 'gold', 'platinum'], default: 'bronze' },
       earnedAt: { type: Date, default: Date.now }
     }
-  ]
+  ],
+  onboardingCompleted: {
+    type: Boolean,
+    default: false
+  },
+  isDemo: {
+    type: Boolean,
+    default: false
+  },
+  googleCalendar: {
+    accessToken: { type: String, select: false },
+    refreshToken: { type: String, select: false },
+    expiryDate: { type: Number, select: false },
+    email: { type: String }
+  }
 }, { timestamps: true });
 
 // Virtual to check if account is locked

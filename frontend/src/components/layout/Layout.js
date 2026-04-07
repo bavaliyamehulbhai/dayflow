@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 import {
   LayoutDashboard,
   CheckCircle2,
@@ -13,12 +13,15 @@ import {
   LogOut,
   User,
   Shield,
-  ShieldOff
+  ShieldOff,
+  Bell,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CommandPalette from './CommandPalette';
 import ShortcutsHelp from './ShortcutsHelp';
 import ShortcutOverlay from './ShortcutOverlay';
+import DemoBanner from './DemoBanner';
 import { useSecurity } from '../../context/SecurityGuard';
 
 const navItems = [
@@ -30,23 +33,22 @@ const navItems = [
   { to: '/notes', icon: FileText, label: 'Notes' },
 ];
 
-// Bottom 6 tabs for mobile
+// Bottom Premium tabs for mobile - Pro-Minimalist (Icon Only)
 const mobileTabItems = [
   { to: '/', icon: LayoutDashboard, label: 'Home', exact: true },
   { to: '/tasks', icon: CheckCircle2, label: 'Tasks' },
-  { to: '/schedule', icon: Calendar, label: 'Schedule' },
+  { id: 'manifest', action: 'command', icon: Plus, label: 'Manifest' },
   { to: '/habits', icon: RefreshCw, label: 'Habits' },
-  { to: '/pomodoro', icon: Timer, label: 'Focus' },
   { to: '/notes', icon: FileText, label: 'Notes' },
 ];
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { addToast } = useNotifications();
   const { isSecureMode, toggleSecureMode } = useSecurity();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Detect device type via window width
   const [isTablet, setIsTablet] = useState(window.innerWidth <= 1024 && window.innerWidth > 768);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -62,11 +64,20 @@ export default function Layout({ children }) {
 
   const handleLogout = () => {
     logout();
-    toast.success('See you soon! 👋');
+    addToast('See you soon! 👋', 'info');
     navigate('/login');
   };
 
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+
+  const triggerCommandPalette = () => {
+    // Dispatch shortcut for Command Palette
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'k',
+      ctrlKey: true,
+      bubbles: true
+    }));
+  };
 
   return (
     <div className="app-layout">
@@ -150,25 +161,96 @@ export default function Layout({ children }) {
       <div className="main-wrapper">
         {/* ─── Mobile Top Header ─────────────────────────────────────────────── */}
         {isMobile && (
-          <header className="mobile-header">
-            <div className="mobile-header-logo">DayFlow</div>
-            <button
-              className="mobile-header-avatar"
-              onClick={() => navigate('/profile')}
-            >
-              {initials}
-            </button>
+          <header className="mobile-header-luxe" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column', // Allow children to stack
+            background: 'rgba(3, 3, 5, 0.75)',
+            backdropFilter: 'blur(30px) saturate(210%) brightness(1.2)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '12px 20px',
+              height: '64px',
+              width: '100%'
+            }}>
+              <div style={{ 
+                fontFamily: 'Syne, sans-serif', 
+                fontWeight: 800, 
+                fontSize: '20px', 
+                letterSpacing: '-0.04em',
+                textTransform: 'uppercase',
+                background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.6) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                filter: 'drop-shadow(0 0 10px rgba(124, 109, 250, 0.2))'
+              }}>
+                {location.pathname === '/' ? 'DAYFLOW' : 
+                 location.pathname.split('/')[1].replace('-', ' ')}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div 
+                  className="haptic-tap"
+                  onClick={() => navigate('/notifications')}
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--muted)'
+                  }}
+                >
+                  <Bell size={20} />
+                </div>
+                <button
+                  className="haptic-tap"
+                  onClick={() => navigate('/profile')}
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '12px',
+                    background: 'var(--grad-premium)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    boxShadow: '0 8px 20px rgba(124, 109, 250, 0.3)',
+                    color: 'white'
+                  }}
+                >
+                  {initials}
+                </button>
+              </div>
+            </div>
           </header>
         )}
 
         {/* ─── Main Content ──────────────────────────────────────────────────── */}
-        <main className="main-content">
+        <main className="main-content" style={{
+          paddingBottom: isMobile ? '120px' : '20px',
+          paddingTop: isMobile ? '64px' : 0 // Constant for fixed navbar only
+        }}>
+          {user?.isDemo && <DemoBanner />}
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 1.02 }}
               transition={{
                 duration: 0.4,
                 ease: [0.16, 1, 0.3, 1]
@@ -181,61 +263,71 @@ export default function Layout({ children }) {
         </main>
       </div>
 
-      {/* ─── Mobile Bottom Tab Bar ─────────────────────────────────────────── */}
+      {/* ─── Mobile Bottom Tab Bar (Elite Holographic Orb) ───────────────── */}
       {
         isMobile && (
-          <nav className="bottom-tab-bar premium-glass-bottom">
-            {mobileTabItems.map(item => {
-              const isAction = !!item.action;
-              const isActive = !isAction && (item.exact
-                ? location.pathname === item.to
-                : location.pathname.startsWith(item.to));
-              
-              if (isAction) {
-                return (
-                  <button 
-                    key={item.id} 
-                    className="bottom-tab central-action"
-                    onClick={() => {
-                      if (item.action === 'command') {
-                        window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'k' }));
-                      }
-                    }}
-                  >
-                    <div className="bottom-tab-icon-wrap action-bubble">
-                      <item.icon size={26} strokeWidth={3} />
-                    </div>
-                    <span className="bottom-tab-label">{item.label}</span>
-                  </button>
-                );
-              }
+          <div className="elite-nav-container">
+            {/* SVG Gooey Filter for Liquid Bridging */}
+            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+              <defs>
+                <filter id="elite-liquid-gooey">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+                  <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+                  <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+                </filter>
+              </defs>
+            </svg>
 
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.exact}
-                  className={({ isActive }) => `bottom-tab ${isActive ? 'active' : ''} haptic-tap`}
-                >
-                  <motion.div
-                    className="bottom-tab-icon"
-                    whileTap={{ scale: 0.9 }}
-                    animate={{
-                      scale: isActive ? 1.15 : 1,
-                      y: isActive ? -4 : 0
-                    }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            <nav className="bottom-tab-bar premium-glass-bottom elite-dock">
+              {mobileTabItems.map((item, index) => {
+                const isAction = !!item.action;
+                const isActive = !isAction && (item.exact
+                  ? location.pathname === item.to
+                  : location.pathname.startsWith(item.to));
+                
+                if (isAction) {
+                  return (
+                    <button 
+                      key={item.id} 
+                      className="bottom-tab action-orb-wrapper haptic-tap"
+                      onClick={() => {
+                        // If on tasks page, trigger create modal intent
+                        if (location.pathname === '/tasks') {
+                          window.dispatchEvent(new CustomEvent('df_open_create_modal'));
+                        } else {
+                          triggerCommandPalette();
+                        }
+                      }}
+                    >
+                      <div className="holographic-orb-container">
+                        <div className="orb-event-horizon" />
+                        <div className="holographic-orb">
+                          <Plus size={32} strokeWidth={3} color="white" />
+                        </div>
+                      </div>
+                    </button>
+                  );
+                }
+
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.exact}
+                    className={({ isActive }) => `bottom-tab ${isActive ? 'active' : ''} haptic-tap`}
                   >
-                    {isActive && <div className="bottom-tab-glow" />}
-                    <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                  </motion.div>
-                  <span className="bottom-tab-label">{item.label}</span>
-                </NavLink>
-              );
-            })}
-          </nav>
+                    <div className="bottom-tab-icon">
+                      {isActive && <motion.div layoutId="active-nav-glow" className="bottom-tab-glow" />}
+                      <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                    </div>
+                  </NavLink>
+                );
+              })}
+            </nav>
+          </div>
         )
       }
+
       <CommandPalette />
       <ShortcutsHelp />
       <ShortcutOverlay />
@@ -243,22 +335,8 @@ export default function Layout({ children }) {
       {/* Mobile Privacy Curtain */}
       <style>{`
         @media (max-width: 768px) {
-          .main-content {
-            padding-bottom: calc(var(--bottom-nav-h, 85px) + 20px) !important;
-          }
-          .mobile-header {
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            background: rgba(3, 3, 5, 0.7);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          }
           .bottom-tab-bar {
-            height: var(--bottom-nav-h, 85px);
-            backdrop-filter: blur(30px) saturate(200%);
-            -webkit-backdrop-filter: blur(30px) saturate(200%);
-            background: rgba(13, 13, 22, 0.85);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            z-index: 1000;
+            z-index: 1000 !important;
           }
         }
         .privacy-curtain {
