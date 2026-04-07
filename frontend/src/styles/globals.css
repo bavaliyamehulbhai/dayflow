@@ -378,24 +378,12 @@
 
 @media (max-width: 640px) {
   .grid-4,
-    min-height: 100svh;
-    height: auto;
-    overflow-y: auto;
+  .grid-3,
+  .grid-2 {
     grid-template-columns: 1fr;
     gap: 16px;
   }
 }
-
-
-  .page-content {
-    min-height: 100%;
-    overflow: visible;
-  }
-
-  .responsive-container,
-  .page-shell {
-    overflow: visible !important;
-  }
 /* ─── Advanced Glassmorphism ────────────────────────────────────── */
 .glass-frost {
   background: rgba(255, 255, 255, 0.03);
@@ -1219,12 +1207,23 @@ a:hover {
   }
 
   .main-content {
-    height: 100dvh;
+    min-height: 100svh;
+    height: auto;
     overflow-y: auto;
     width: 100%;
     max-width: 100%;
     margin-left: 0 !important;
     padding-top: 0; /* Removing gap; DemoBanner handles the offset via sticky: 64px */
+  }
+
+  .page-content {
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .responsive-container,
+  .page-shell {
+    overflow: visible !important;
   }
 }
 
