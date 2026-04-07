@@ -1,49 +1,62 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { SecurityProvider } from './context/SecurityGuard';
-import ErrorBoundary from './components/ErrorBoundary';
-import Layout from './components/layout/Layout';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import TasksPage from './pages/TasksPage';
-import HabitsPage from './pages/HabitsPage';
-import SchedulePage from './pages/SchedulePage';
-import PomodoroPage from './pages/PomodoroPage';
-import NotesPage from './pages/NotesPage';
-import ProfilePage from './pages/ProfilePage';
-import { useZenTheme } from './hooks/useZenTheme';
-import './styles/globals.css';
+import React from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { SecurityProvider } from "./context/SecurityGuard";
+import ErrorBoundary from "./components/ErrorBoundary";
+import Layout from "./components/layout/Layout";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import DashboardPage from "./pages/DashboardPage";
+import TasksPage from "./pages/TasksPage";
+import HabitsPage from "./pages/HabitsPage";
+import SchedulePage from "./pages/SchedulePage";
+import PomodoroPage from "./pages/PomodoroPage";
+import NotesPage from "./pages/NotesPage";
+import NotificationsPage from "./pages/NotificationsPage";
+import ProfilePage from "./pages/ProfilePage";
+import { useZenTheme } from "./hooks/useZenTheme";
+import "./styles/globals.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       staleTime: 30000,
-      refetchOnWindowFocus: false
-    }
-  }
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return (
-    <div className="splash">
-      <div className="splash-logo">DayFlow</div>
-      <div className="splash-tagline">Your productivity, elevated</div>
-      <div className="splash-loader" />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="splash">
+        <div className="splash-logo">DayFlow</div>
+        <div className="splash-tagline">Your productivity, elevated</div>
+        <div className="splash-loader" />
+      </div>
+    );
   if (!user) return <Navigate to="/login" replace />;
   return <Layout>{children}</Layout>;
 };
 
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="splash"><div className="splash-logo">DayFlow</div></div>;
+  if (loading)
+    return (
+      <div className="splash">
+        <div className="splash-logo">DayFlow</div>
+      </div>
+    );
   if (user) return <Navigate to="/" replace />;
   return children;
 };
@@ -54,29 +67,120 @@ const PageWrapper = ({ children }) => (
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -15 }}
     transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-    style={{ height: '100%', width: '100%' }}
+    style={{ height: "100%", width: "100%" }}
   >
     {children}
   </motion.div>
 );
 
-import { NotificationProvider } from './context/NotificationContext';
-import ToastContainer from './components/common/ToastContainer';
+import { NotificationProvider } from "./context/NotificationContext";
+import ToastContainer from "./components/common/ToastContainer";
 
 function AppRoutes() {
   const location = useLocation();
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/login" element={<PublicRoute><PageWrapper><LoginPage /></PageWrapper></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><PageWrapper><RegisterPage /></PageWrapper></PublicRoute>} />
-        <Route path="/" element={<ProtectedRoute><PageWrapper><DashboardPage /></PageWrapper></ProtectedRoute>} />
-        <Route path="/tasks" element={<ProtectedRoute><PageWrapper><TasksPage /></PageWrapper></ProtectedRoute>} />
-        <Route path="/habits" element={<ProtectedRoute><PageWrapper><HabitsPage /></PageWrapper></ProtectedRoute>} />
-        <Route path="/schedule" element={<ProtectedRoute><PageWrapper><SchedulePage /></PageWrapper></ProtectedRoute>} />
-        <Route path="/pomodoro" element={<ProtectedRoute><PageWrapper><PomodoroPage /></PageWrapper></ProtectedRoute>} />
-        <Route path="/notes" element={<ProtectedRoute><PageWrapper><NotesPage /></PageWrapper></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><PageWrapper><ProfilePage /></PageWrapper></ProtectedRoute>} />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <PageWrapper>
+                <LoginPage />
+              </PageWrapper>
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <PageWrapper>
+                <RegisterPage />
+              </PageWrapper>
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <PageWrapper>
+                <DashboardPage />
+              </PageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <PageWrapper>
+                <TasksPage />
+              </PageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/habits"
+          element={
+            <ProtectedRoute>
+              <PageWrapper>
+                <HabitsPage />
+              </PageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/schedule"
+          element={
+            <ProtectedRoute>
+              <PageWrapper>
+                <SchedulePage />
+              </PageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pomodoro"
+          element={
+            <ProtectedRoute>
+              <PageWrapper>
+                <PomodoroPage />
+              </PageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notes"
+          element={
+            <ProtectedRoute>
+              <PageWrapper>
+                <NotesPage />
+              </PageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <PageWrapper>
+                <NotificationsPage />
+              </PageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <PageWrapper>
+                <ProfilePage />
+              </PageWrapper>
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
@@ -92,7 +196,12 @@ export default function App() {
         <NotificationProvider>
           <AuthProvider>
             <SecurityProvider>
-              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <BrowserRouter
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true,
+                }}
+              >
                 <AppRoutes />
                 <ToastContainer />
               </BrowserRouter>

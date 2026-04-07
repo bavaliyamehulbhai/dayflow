@@ -49,8 +49,17 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const saveTimer = useRef(null);
+  const isDraft = note?._isDraft;
+  const canCreate =
+    title.trim() ||
+    content.trim() ||
+    tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean).length > 0;
 
   useEffect(() => {
+    if (isDraft) return undefined;
     if (
       title !== note?.title ||
       content !== note?.content ||
@@ -87,6 +96,10 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
         zIndex: 1000,
         background: "rgba(0,0,0,0.85)",
         backdropFilter: "blur(10px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingLeft: isMobile ? 0 : "var(--sidebar-w)",
       }}
     >
       <motion.div
@@ -107,24 +120,21 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
         exit={isMobile ? { x: "100%" } : { opacity: 0, scale: 0.9, y: 30 }}
         className={`auth-card elite-editor-plate ${isMobile ? "full-screen-immersion" : ""}`}
         style={{
-          maxWidth: isMobile ? 420 : 950,
-          width: isMobile ? "92%" : "95%",
+          maxWidth: isMobile ? 420 : 980,
+          width: isMobile ? "92%" : "90%",
           padding: 0,
           display: "flex",
           flexDirection: "column",
-          height: isMobile ? "78dvh" : "85vh",
-          borderRadius: isMobile ? 24 : 44,
+          gap: 12,
+          height: isMobile ? "78dvh" : "82vh",
+          borderRadius: isMobile ? 24 : 36,
           background: "rgba(12, 12, 22, 1)",
           backdropFilter: "blur(40px)",
           border: isMobile ? `1px solid ${color}33` : `1px solid ${color}44`,
           boxShadow: isMobile
             ? `0 24px 80px rgba(0,0,0,0.7), 0 0 30px ${color}22`
             : `0 30px 100px rgba(0,0,0,0.8), 0 0 40px ${color}11`,
-          position: isMobile ? "relative" : "fixed",
-          bottom: isMobile ? "auto" : 0,
-          top: isMobile ? "auto" : 0,
-          left: isMobile ? "auto" : "50%",
-          transform: isMobile ? "none" : "translate(-50%, -50%)",
+          position: "relative",
           zIndex: 1001,
           overflow: "hidden",
         }}
@@ -143,10 +153,10 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
         <div
           className="liquid-glass-input"
           style={{
-            padding: "0 16px",
+            padding: "0 18px",
             display: "flex",
             alignItems: "center",
-            height: 64,
+            height: 68,
             gap: 12,
           }}
         >
@@ -183,12 +193,53 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="FRAGMENT TITLE..."
           />
+          {isDraft && (
+            <button
+              type="button"
+              className="haptic-tap"
+              onClick={() =>
+                onSave(
+                  {
+                    title,
+                    content,
+                    color,
+                    tags: tags
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter(Boolean),
+                  },
+                  false,
+                )
+              }
+              disabled={!canCreate}
+              style={{
+                height: 40,
+                padding: "0 14px",
+                borderRadius: 12,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 1,
+                textTransform: "uppercase",
+                background: canCreate
+                  ? "var(--grad-premium)"
+                  : "var(--surface2)",
+                color: canCreate ? "white" : "var(--muted)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: canCreate
+                  ? "0 8px 20px rgba(124, 109, 250, 0.35)"
+                  : "none",
+                cursor: canCreate ? "pointer" : "not-allowed",
+              }}
+            >
+              Create
+            </button>
+          )}
         </div>
 
         {/* Main Neural Text Area */}
         <div
           className="liquid-glass-input"
-          style={{ padding: "20px", flex: 1 }}
+          style={{ padding: "22px", flex: 1 }}
         >
           <textarea
             className="no-border aura-scrollbar"
@@ -198,9 +249,9 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
               border: "none",
               outline: "none",
               color: "rgba(255,255,255,0.9)",
-              fontSize: 16,
-              lineHeight: 1.8,
-              minHeight: isMobile ? "35vh" : "45vh",
+              fontSize: isMobile ? 15 : 17,
+              lineHeight: 1.75,
+              minHeight: isMobile ? "35vh" : "44vh",
               resize: "none",
               fontFamily: "Inter",
               fontWeight: 400,
@@ -335,24 +386,44 @@ export default function NotesPage() {
     },
   });
 
+  const openDraft = () =>
+    setModal({
+      title: "",
+      content: "",
+      color: "#7c6dfa",
+      tags: [],
+      _isDraft: true,
+    });
+
   const handleSave = (formData, silent = false, isDeletion = false) => {
-    const id = getSafeId(modal);
+    const noteId = modal?._id;
     if (isDeletion) {
-      if (id) {
+      if (noteId) {
         setConfirmDialog({
           open: true,
           title: "Banish Manifestation?",
           message:
             "Are you sure you want to erase this memory from the neural archive? This cannot be undone.",
           confirmText: "Banish",
-          id: id,
+          id: noteId,
         });
       } else {
         setModal(null);
       }
       return;
     }
-    if (id && formData) updateMutation.mutate({ id, data: formData, silent });
+    if (!formData) return;
+    if (noteId) {
+      updateMutation.mutate({ id: noteId, data: formData, silent });
+      return;
+    }
+    if (silent) return;
+    const hasContent =
+      formData.title?.trim() ||
+      formData.content?.trim() ||
+      (Array.isArray(formData.tags) && formData.tags.length > 0);
+    const isCreating = createMutation.isPending || createMutation.isLoading;
+    if (hasContent && !isCreating) createMutation.mutate(formData);
   };
 
   const notes = (data || [])
@@ -548,7 +619,7 @@ export default function NotesPage() {
 
   return (
     <div
-      className="responsive-container"
+      className="responsive-container page-shell"
       style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}
     >
       <AuraOrb
@@ -631,7 +702,7 @@ export default function NotesPage() {
           </div>
           <MagneticButton
             className="auth-button hide-mobile glow-on-hover"
-            onClick={() => createMutation.mutate({ title: "", content: "" })}
+            onClick={openDraft}
             style={{
               width: "auto",
               padding: "0 32px",
@@ -701,7 +772,7 @@ export default function NotesPage() {
             {notes.length} FRAGMENTS CATALOGED
           </div>
           <button
-            onClick={() => createMutation.mutate({ title: "", content: "" })}
+            onClick={openDraft}
             className="auth-button show-mobile-only haptic-tap"
             style={{
               height: isMobile ? 40 : 44,
@@ -773,7 +844,7 @@ export default function NotesPage() {
                 marginInline: "auto",
                 padding: "0 32px",
               }}
-              onClick={() => createMutation.mutate({ title: "", content: "" })}
+              onClick={openDraft}
             >
               Forge New Fragment
             </MagneticButton>
@@ -802,7 +873,7 @@ export default function NotesPage() {
               initial={{ scale: 0, rotate: -45 }}
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: 45 }}
-              onClick={() => createMutation.mutate({ title: "", content: "" })}
+              onClick={openDraft}
               className="fab-premium haptic-tap"
               style={{
                 position: "fixed",

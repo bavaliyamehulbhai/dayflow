@@ -869,7 +869,7 @@ export default function PomodoroPage() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className={`responsive-container ${running && isMobile && isFocusMode ? "focus-immersion" : ""}`}
+        className={`responsive-container page-shell ${running && isMobile && isFocusMode ? "focus-immersion" : ""}`}
         style={{ position: "relative", zIndex: 1 }}
       >
         <div

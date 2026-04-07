@@ -351,7 +351,7 @@ export default function DashboardPage() {
 
   if (isLoading || !layout.length) {
     return (
-      <div className="responsive-container">
+      <div className="responsive-container page-shell">
         <Skeleton width="300px" height="40px" className="mb-4" />
         <Skeleton height="200px" borderRadius={24} className="mb-8" />
         <div
@@ -386,7 +386,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="responsive-container">
+    <div className="responsive-container page-shell">
       <div
         className="dashboard-header"
         style={{ position: "relative", overflow: "visible", marginBottom: 32 }}

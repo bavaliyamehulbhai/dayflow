@@ -1,34 +1,42 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { body, validationResult } = require('express-validator');
-const Note = require('../models/Note');
-const { protect } = require('../middleware/auth');
-const { sanitizeFields } = require('../middleware/sanitizer');
-const { logActivity } = require('../services/activityService');
-const { cacheMiddleware, clearCache } = require('../middleware/cache');
+const { body, validationResult } = require("express-validator");
+const Note = require("../models/Note");
+const { protect } = require("../middleware/auth");
+const { sanitizeFields } = require("../middleware/sanitizer");
+const { logActivity } = require("../services/activityService");
+const { cacheMiddleware, clearCache } = require("../middleware/cache");
 
 router.use(protect);
 
 // ─── Validation rules ─────────────────────────────────────────────────────────
 const noteValidation = [
-  sanitizeFields(['title', 'content']),
-  body('title').optional().trim().isLength({ max: 200 }).withMessage('Title too long (max 200)'),
-  body('content').optional().trim().isLength({ max: 50000 }).withMessage('Content too long (max 50000)'),
-  body('tags').optional().isArray().withMessage('Tags must be an array'),
-  body('tags.*').optional().trim().isLength({ max: 30 }).withMessage('Tag too long (max 30)')
+  sanitizeFields(["title", "content"]),
+  body("title")
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage("Title too long (max 200)"),
+  body("content")
+    .optional()
+    .trim()
+    .isLength({ max: 50000 })
+    .withMessage("Content too long (max 50000)"),
+  body("tags").optional().isArray().withMessage("Tags must be an array"),
+  body("tags.*")
+    .optional()
+    .trim()
+    .isLength({ max: 30 })
+    .withMessage("Tag too long (max 30)"),
 ];
 
 // GET all notes
-router.get('/', cacheMiddleware(60), async (req, res) => {
+router.get("/", cacheMiddleware(60), async (req, res) => {
   try {
     const { search, tag, archived = false, page = 1, limit = 50 } = req.query;
-    const filter = { user: req.user._id, isArchived: archived === 'true' };
+    const filter = { user: req.user._id, isArchived: archived === "true" };
 
     if (tag) filter.tags = tag;
-    if (search) {
-      // Use text index if search term is available
-      filter.$text = { $search: search };
-    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const notes = await Note.find(filter)
@@ -38,46 +46,56 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
 
     res.json({ success: true, notes });
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching notes.' });
+    res.status(500).json({ error: "Error fetching notes." });
   }
 });
 
 // GET single note
-router.get('/:id', cacheMiddleware(300), async (req, res) => {
+router.get("/:id", cacheMiddleware(300), async (req, res) => {
   try {
     const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
-    if (!note) return res.status(404).json({ error: 'Note not found.' });
+    if (!note) return res.status(404).json({ error: "Note not found." });
     res.json({ success: true, note });
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching note.' });
+    res.status(500).json({ error: "Error fetching note." });
   }
 });
 
 // CREATE note
-router.post('/', noteValidation, async (req, res) => {
+router.post("/", noteValidation, async (req, res) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+    if (!errors.isEmpty())
+      return res.status(400).json({ error: errors.array()[0].msg });
 
     const { title, content, color, tags, linkedTask } = req.body;
-    const note = await Note.create({ title, content, color, tags, linkedTask, user: req.user._id });
+    const note = await Note.create({
+      title,
+      content,
+      color,
+      tags,
+      linkedTask,
+      user: req.user._id,
+    });
 
     // Log activity
     await logActivity(req.user._id, { notesCreated: 1 });
 
     res.status(201).json({ success: true, note });
   } catch (err) {
-    res.status(500).json({ error: 'Error creating note.' });
+    res.status(500).json({ error: "Error creating note." });
   }
 });
 
 // UPDATE note (auto-saves)
-router.put('/:id', noteValidation, async (req, res) => {
+router.put("/:id", noteValidation, async (req, res) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+    if (!errors.isEmpty())
+      return res.status(400).json({ error: errors.array()[0].msg });
 
-    const { title, content, color, tags, linkedTask, isPinned, isArchived } = req.body;
+    const { title, content, color, tags, linkedTask, isPinned, isArchived } =
+      req.body;
     const updates = {};
     if (title !== undefined) updates.title = title;
     if (content !== undefined) updates.content = content;
@@ -90,53 +108,56 @@ router.put('/:id', noteValidation, async (req, res) => {
     const note = await Note.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
       updates,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
-    if (!note) return res.status(404).json({ error: 'Note not found.' });
+    if (!note) return res.status(404).json({ error: "Note not found." });
     clearCache(req.user._id);
     res.json({ success: true, note });
   } catch (err) {
-    res.status(500).json({ error: 'Error updating note.' });
+    res.status(500).json({ error: "Error updating note." });
   }
 });
 
 // DELETE note
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
-    const note = await Note.findOneAndDelete({ _id: req.params.id, user: req.user._id });
-    if (!note) return res.status(404).json({ error: 'Note not found.' });
+    const note = await Note.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user._id,
+    });
+    if (!note) return res.status(404).json({ error: "Note not found." });
     clearCache(req.user._id);
-    res.json({ success: true, message: 'Note deleted.' });
+    res.json({ success: true, message: "Note deleted." });
   } catch (err) {
-    res.status(500).json({ error: 'Error deleting note.' });
+    res.status(500).json({ error: "Error deleting note." });
   }
 });
 
 // TOGGLE pin
-router.patch('/:id/pin', async (req, res) => {
+router.patch("/:id/pin", async (req, res) => {
   try {
     const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
-    if (!note) return res.status(404).json({ error: 'Note not found.' });
+    if (!note) return res.status(404).json({ error: "Note not found." });
     note.isPinned = !note.isPinned;
     await note.save();
     clearCache(req.user._id);
     res.json({ success: true, note });
   } catch (err) {
-    res.status(500).json({ error: 'Error toggling pin.' });
+    res.status(500).json({ error: "Error toggling pin." });
   }
 });
 
 // ARCHIVE note
-router.patch('/:id/archive', async (req, res) => {
+router.patch("/:id/archive", async (req, res) => {
   try {
     const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
-    if (!note) return res.status(404).json({ error: 'Note not found.' });
+    if (!note) return res.status(404).json({ error: "Note not found." });
     note.isArchived = !note.isArchived;
     await note.save();
     clearCache(req.user._id);
     res.json({ success: true, note });
   } catch (err) {
-    res.status(500).json({ error: 'Error archiving note.' });
+    res.status(500).json({ error: "Error archiving note." });
   }
 });
 

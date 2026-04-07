@@ -220,7 +220,10 @@ const TaskItem = React.memo(
               >
                 <motion.button
                   whileTap={{ scale: 0.8 }}
-                  onClick={() => toggleComplete(task)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleComplete(task);
+                  }}
                   style={{
                     width: 32,
                     height: 32,
@@ -747,8 +750,10 @@ export default function TasksPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => tasksAPI.update(id, data),
-    onSuccess: () => {
-      addToast("Objective refined", "success");
+    onSuccess: (res, variables) => {
+      if (!variables?.suppressToast) {
+        addToast("Objective refined", "success");
+      }
       invalidate();
     },
   });
@@ -780,7 +785,12 @@ export default function TasksPage() {
     }
   };
 
+  const toggleInFlight = useRef(new Set());
+
   const toggleComplete = (task) => {
+    const taskId = getSafeId(task);
+    if (toggleInFlight.current.has(taskId)) return;
+
     const newStatus = task.status === "completed" ? "pending" : "completed";
     if (newStatus === "completed") {
       feedback("success");
@@ -788,7 +798,16 @@ export default function TasksPage() {
     } else {
       addToast(`Objective reopened: ${task.title}`, "info");
     }
-    updateMutation.mutate({ id: getSafeId(task), data: { status: newStatus } });
+
+    toggleInFlight.current.add(taskId);
+    updateMutation.mutate(
+      { id: taskId, data: { status: newStatus }, suppressToast: true },
+      {
+        onSettled: () => {
+          toggleInFlight.current.delete(taskId);
+        },
+      },
+    );
   };
 
   const toggleSelect = (id) =>
@@ -831,7 +850,7 @@ export default function TasksPage() {
 
   return (
     <div
-      className="responsive-container"
+      className="responsive-container page-shell"
       style={{
         position: "relative",
         overflow: "hidden",
