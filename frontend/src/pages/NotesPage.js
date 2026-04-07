@@ -891,7 +891,6 @@ export default function NotesPage() {
         .no-border { border: none !important; }
         .aura-scrollbar::-webkit-scrollbar { width: 4px; }
         .aura-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; width: 100% !important; border-radius: 32px 32px 0 0 !important; }
         
         .note-card-elite {
           transition: border-color 0.4s ease, background 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
