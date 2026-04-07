@@ -78,7 +78,7 @@ function Clock() {
       >
         <div
           style={{
-            fontSize: isMobile ? "clamp(4.2rem, 18vw, 5.8rem)" : "10rem",
+            fontSize: isMobile ? "clamp(3.2rem, 14vw, 4.8rem)" : "10rem",
             fontWeight: 900,
             fontFamily: "Syne, sans-serif",
             letterSpacing: "-0.06em",
@@ -125,7 +125,7 @@ function Clock() {
 
       <div
         style={{
-          marginTop: isMobile ? "40px" : "80px",
+          marginTop: isMobile ? "28px" : "80px",
           maxWidth: "800px",
           marginLeft: "auto",
           marginRight: "auto",
@@ -428,7 +428,7 @@ export default function DashboardPage() {
       <Reorder.Group
         axis="y"
         values={layout}
-        onReorder={handleReorder}
+        onReorder={isMobile ? () => {} : handleReorder}
         style={{
           display: "grid",
           gridTemplateColumns: isMobile
@@ -447,6 +447,8 @@ export default function DashboardPage() {
               <Reorder.Item
                 key={safeKey}
                 value={itemId}
+                drag={isMobile ? false : undefined}
+                dragListener={!isMobile}
                 initial={{ opacity: 0, y: 30, scale: 0.95 }}
                 animate={{
                   opacity: 1,
@@ -460,10 +462,14 @@ export default function DashboardPage() {
                 }}
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                 style={{ listStyle: "none" }}
-                whileDrag={{
-                  scale: 1.05,
-                  boxShadow: "0 20px 50px rgba(0,0,0,0.4)",
-                }}
+                whileDrag={
+                  isMobile
+                    ? undefined
+                    : {
+                        scale: 1.05,
+                        boxShadow: "0 20px 50px rgba(0,0,0,0.4)",
+                      }
+                }
               >
                 <div
                   style={{ height: "100%", perspective: "1000px" }}

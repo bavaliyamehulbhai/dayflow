@@ -859,8 +859,8 @@ export default function NotesPage() {
             }}
           >
             <AnimatePresence>
-              {notes.map((n) => (
-                <NoteCard key={n._id} note={n} />
+              {notes.map((n, idx) => (
+                <NoteCard key={getSafeId(n, `note-${idx}`)} note={n} />
               ))}
             </AnimatePresence>
           </div>

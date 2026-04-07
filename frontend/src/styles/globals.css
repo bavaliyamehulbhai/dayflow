@@ -1199,8 +1199,8 @@ a:hover {
 @media (max-width: 768px) {
   .page-content {
     padding: var(--mobile-pad);
-    padding-left: calc(var(--mobile-pad) + env(safe-area-inset-left, 0px));
-    padding-right: calc(var(--mobile-pad) + env(safe-area-inset-right, 0px));
+    padding-left: calc(var(--mobile-pad) + max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
+    padding-right: calc(var(--mobile-pad) + max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
     padding-bottom: calc(85px + env(safe-area-inset-bottom, 20px));
     height: auto;
     overflow-y: visible;

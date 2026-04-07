@@ -663,8 +663,11 @@ const MobileRitualCard = ({
       <motion.div
         drag="x"
         dragConstraints={{ left: -100, right: 100 }}
+        dragDirectionLock
+        dragMomentum={false}
         style={{
           x,
+          touchAction: "pan-y",
           position: "relative",
           zIndex: 1,
           borderRadius: 24,

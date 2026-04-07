@@ -184,11 +184,14 @@ const TaskItem = React.memo(
             drag={isMobile ? "x" : false}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.5}
+            dragDirectionLock
+            dragMomentum={false}
             onDragEnd={handleDragEnd}
             whileTap={{ scale: 0.98 }}
             className={`app-module-entrance premium-card ${selected ? "selected-aura" : ""}`}
             style={{
               x,
+              touchAction: "pan-y",
               zIndex: 1,
               position: "relative",
               padding: 0,
