@@ -35,9 +35,16 @@ const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
   useEffect(() => {
-    const h = () => setW(window.innerWidth);
+    let timeoutId = null;
+    const h = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => setW(window.innerWidth), 150);
+    };
     window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
+    return () => {
+      window.removeEventListener("resize", h);
+      clearTimeout(timeoutId);
+    };
   }, []);
   return w;
 }
@@ -319,7 +326,7 @@ export default function DashboardPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => dashboardAPI.get().then((r) => r.data.dashboard),
-    refetchInterval: 60000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: activityData } = useQuery({
@@ -406,7 +413,7 @@ export default function DashboardPage() {
           delay={2}
           duration={12}
         />
-        <div className="flex-items-center gap-4">
+        <div className="flex-items-center gap-4" style={{ justifyContent: isMobile ? 'center' : 'flex-start' }}>
           <GreetingIcon
             className="text-accent aura-float"
             size={isMobile ? 28 : 44}
@@ -435,6 +442,8 @@ export default function DashboardPage() {
             ? "1fr"
             : "repeat(auto-fill, minmax(420px, 1fr))",
           gap: isMobile ? "32px" : "48px",
+          padding: 0,
+          margin: 0,
           paddingBottom: isMobile ? "120px" : "60px",
           listStyle: "none",
         }}
@@ -442,50 +451,60 @@ export default function DashboardPage() {
         <AnimatePresence mode="popLayout">
           {layout.map((itemId, index) => {
             const safeKey = getSafeId(itemId, `widget-${index}`);
+            const animProps = {
+              initial: { opacity: 0, y: 30, scale: 0.95 },
+              animate: {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: {
+                  duration: 0.6,
+                  delay: index * 0.1,
+                  ease: [0.16, 1, 0.3, 1],
+                },
+              },
+              exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2 } },
+              style: { listStyle: "none" }
+            };
+
+            const childContent = (
+              <div
+                style={{ height: "100%", perspective: "1000px" }}
+                className="app-module-entrance gpu-accel"
+              >
+                <MemoWidget
+                  id={itemId}
+                  data={data}
+                  user={user}
+                  navigate={navigate}
+                  activityData={activityData}
+                  isMobile={isMobile}
+                  selectedLog={selectedLog}
+                  setSelectedLog={setSelectedLog}
+                />
+              </div>
+            );
+
+            if (isMobile) {
+               return (
+                 <motion.li key={safeKey} {...animProps}>
+                   {childContent}
+                 </motion.li>
+               );
+            }
 
             return (
               <Reorder.Item
                 key={safeKey}
                 value={itemId}
-                drag={isMobile ? false : undefined}
-                dragListener={!isMobile}
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                  scale: 1,
-                  transition: {
-                    duration: 0.6,
-                    delay: index * 0.1,
-                    ease: [0.16, 1, 0.3, 1],
-                  },
+                dragListener={true}
+                {...animProps}
+                whileDrag={{
+                  scale: 1.05,
+                  boxShadow: "0 20px 50px rgba(0,0,0,0.4)",
                 }}
-                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                style={{ listStyle: "none" }}
-                whileDrag={
-                  isMobile
-                    ? undefined
-                    : {
-                        scale: 1.05,
-                        boxShadow: "0 20px 50px rgba(0,0,0,0.4)",
-                      }
-                }
               >
-                <div
-                  style={{ height: "100%", perspective: "1000px" }}
-                  className="app-module-entrance gpu-accel"
-                >
-                  <MemoWidget
-                    id={itemId}
-                    data={data}
-                    user={user}
-                    navigate={navigate}
-                    activityData={activityData}
-                    isMobile={isMobile}
-                    selectedLog={selectedLog}
-                    setSelectedLog={setSelectedLog}
-                  />
-                </div>
+                {childContent}
               </Reorder.Item>
             );
           })}

@@ -53,13 +53,20 @@ export default function Layout({ children }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
+    let timeoutId = null;
     const handleResize = () => {
-      const w = window.innerWidth;
-      setIsMobile(w <= 768);
-      setIsTablet(w <= 1024 && w > 768);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        const w = window.innerWidth;
+        setIsMobile(w <= 768);
+        setIsTablet(w <= 1024 && w > 768);
+      }, 150);
     };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -176,14 +183,15 @@ export default function Layout({ children }) {
             flexDirection: 'column', // Allow children to stack
             background: 'rgba(3, 3, 5, 0.9)',
             backdropFilter: 'blur(12px)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+            paddingTop: 'env(safe-area-inset-top, 0px)'
           }}>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '12px 20px',
-              height: '64px',
+              minHeight: '64px',
               width: '100%'
             }}>
               <div style={{ 
@@ -246,7 +254,7 @@ export default function Layout({ children }) {
         {/* ─── Main Content ──────────────────────────────────────────────────── */}
         <main className="main-content" style={{
           paddingBottom: isMobile ? '120px' : '20px',
-          paddingTop: isMobile ? '64px' : 0 // Constant for fixed navbar only
+          paddingTop: isMobile ? 'calc(64px + env(safe-area-inset-top, 0px))' : 0
         }}>
           {user?.isDemo && <DemoBanner />}
           <AnimatePresence mode="wait">
