@@ -82,9 +82,13 @@ export default function Layout({ children }) {
   return (
     <div className="app-layout">
       {/* ─── Global Aura Orbs ────────────────────────────────────────────── */}
-      <div className="aura-orb" style={{ top: '10%', left: '15%', width: 400, height: 400, background: 'var(--aura-color)' }} />
-      <div className="aura-orb" style={{ bottom: '15%', right: '10%', width: 500, height: 500, background: 'var(--aura-color-2)', animationDelay: '-5s' }} />
-      <div className="aura-orb" style={{ top: '50%', left: '50%', width: 300, height: 300, background: 'var(--aura-color-3)', animationDelay: '-10s', filter: 'blur(120px)' }} />
+      {!isMobile && (
+        <>
+          <div className="aura-orb" style={{ top: '10%', left: '15%', width: 400, height: 400, background: 'var(--aura-color)' }} />
+          <div className="aura-orb" style={{ bottom: '15%', right: '10%', width: 500, height: 500, background: 'var(--aura-color-2)', animationDelay: '-5s' }} />
+          <div className="aura-orb" style={{ top: '50%', left: '50%', width: 300, height: 300, background: 'var(--aura-color-3)', animationDelay: '-10s', filter: 'blur(120px)' }} />
+        </>
+      )}
 
       {/* ─── Desktop + Tablet Sidebar ──────────────────────────────────────── */}
       {!isMobile && (
@@ -170,8 +174,8 @@ export default function Layout({ children }) {
             width: '100%',
             display: 'flex',
             flexDirection: 'column', // Allow children to stack
-            background: 'rgba(3, 3, 5, 0.75)',
-            backdropFilter: 'blur(30px) saturate(210%) brightness(1.2)',
+            background: 'rgba(3, 3, 5, 0.9)',
+            backdropFilter: 'blur(12px)',
             borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
           }}>
             <div style={{
@@ -267,16 +271,7 @@ export default function Layout({ children }) {
       {
         isMobile && (
           <div className="elite-nav-container">
-            {/* SVG Gooey Filter for Liquid Bridging */}
-            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-              <defs>
-                <filter id="elite-liquid-gooey">
-                  <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
-                  <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
-                  <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-                </filter>
-              </defs>
-            </svg>
+            {/* SVG Gooey Filter Removed for Performance */}
 
             <nav className="bottom-tab-bar premium-glass-bottom elite-dock">
               {mobileTabItems.map((item, index) => {

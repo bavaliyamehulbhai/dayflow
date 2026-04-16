@@ -25,12 +25,12 @@
   width: 86vw !important;
   max-width: 460px !important;
   background: rgba(13, 13, 22, 0.98);
-  backdrop-filter: blur(50px) saturate(210%);
-  -webkit-backdrop-filter: blur(50px) saturate(210%);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border-radius: 32px !important;
   border: 1px solid rgba(255, 255, 255, 0.14);
   z-index: 2000;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.8),
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6),
               0 0 0 1px rgba(255,255,255,0.05);
   display: flex;
   flex-direction: column;
@@ -61,7 +61,7 @@
 /* ─── Elite Navigation Dock (Holographic Orb + Liquid Glass) ─── */
 .elite-nav-container {
   position: fixed;
-  bottom: 0;
+  bottom: env(safe-area-inset-bottom, 0px);
   left: 0;
   right: 0;
   height: 120px;
@@ -79,8 +79,8 @@
   height: 72px !important;
   margin-bottom: 24px !important;
   background: rgba(13, 13, 22, 0.85) !important;
-  backdrop-filter: blur(40px) saturate(210%) brightness(1.2) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(210%) brightness(1.2) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 36px !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7),
@@ -89,7 +89,7 @@
   justify-content: space-around !important;
   align-items: center !important;
   padding: 0 12px !important;
-  filter: url(#elite-liquid-gooey); /* The Magic Liquid Bridge */
+  /* filter: url(#elite-liquid-gooey); removed for performance */
 }
 
 .elite-dock::before {
@@ -137,8 +137,8 @@
   width: 40px;
   height: 40px;
   background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-  opacity: 0.2;
-  filter: blur(8px);
+  opacity: 0.1;
+  filter: blur(4px);
 }
 
 /* ─── Holographic Orb & Event Horizon ─── */
@@ -189,9 +189,9 @@
   inset: -4px;
   border-radius: 50%;
   background: conic-gradient(from 0deg, transparent, var(--accent), var(--accent2), transparent);
-  animation: orb-rotate 4s linear infinite;
-  opacity: 0.6;
-  filter: blur(8px);
+  animation: orb-rotate 8s linear infinite;
+  opacity: 0.3;
+  filter: blur(4px);
 }
 
 @keyframes orb-rotate {
@@ -232,7 +232,7 @@ body[data-bottom-sheet-active="true"] .elite-nav-container {
   opacity: 0 !important;
   pointer-events: none !important;
   transform: translateY(40px) scale(0.9) !important;
-  filter: blur(20px) !important;
+  filter: blur(8px) !important;
   transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 

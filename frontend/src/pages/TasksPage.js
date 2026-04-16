@@ -36,7 +36,6 @@ import {
   useMotionValue,
   useTransform,
 } from "framer-motion";
-import { FixedSizeList as List } from "react-window";
 import useFeedback from "../hooks/useFeedback";
 import ConfirmDialog from "../components/ConfirmDialog";
 import EmptyState from "../components/EmptyState";
@@ -848,15 +847,11 @@ export default function TasksPage() {
     });
   };
 
-  const listHeight = Math.max(360, windowHeight - (isMobile ? 340 : 380));
-  const listWidth = Math.max(320, windowWidth - (isMobile ? 32 : 320));
-
   return (
     <div
       className="responsive-container page-shell"
       style={{
         position: "relative",
-        overflow: "hidden",
         minHeight: "100vh",
         paddingBottom: 120,
       }}
@@ -1161,35 +1156,24 @@ export default function TasksPage() {
       {isLoading ? (
         <TasksSkeleton />
       ) : (
-        <div className="tasks-list">
+        <div className="tasks-list" style={{ paddingBottom: 20 }}>
           {tasks.length > 0 ? (
-            <List
-              height={listHeight}
-              itemCount={tasks.length}
-              itemSize={isMobile ? 128 : 118}
-              width={listWidth}
-              overscanCount={6}
-            >
-              {({ index, style }) => {
-                const task = tasks[index];
-                if (!task) return null;
-                return (
-                  <div style={{ ...style, paddingBottom: 12 }}>
-                    <TaskItem
-                      key={getSafeId(task, `task-${index}`)}
-                      task={task}
-                      isMobile={isMobile}
-                      selected={selected.includes(getSafeId(task))}
-                      toggleSelect={toggleSelect}
-                      toggleComplete={toggleComplete}
-                      setModal={setModal}
-                      setConfirmState={setConfirmState}
-                      deleteMutation={deleteMutation}
-                    />
-                  </div>
-                );
-              }}
-            </List>
+            <div className="tasks-container">
+              {tasks.map((task, index) => (
+                <div key={getSafeId(task, `task-${index}`)} style={{ paddingBottom: 12 }}>
+                  <TaskItem
+                    task={task}
+                    isMobile={isMobile}
+                    selected={selected.includes(getSafeId(task))}
+                    toggleSelect={toggleSelect}
+                    toggleComplete={toggleComplete}
+                    setModal={setModal}
+                    setConfirmState={setConfirmState}
+                    deleteMutation={deleteMutation}
+                  />
+                </div>
+              ))}
+            </div>
           ) : (
             <EmptyState
               key="tasks-empty"
