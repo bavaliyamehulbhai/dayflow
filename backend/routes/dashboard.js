@@ -15,9 +15,13 @@ router.use(protect);
 // GET complete dashboard summary
 router.get('/', cacheMiddleware(60), async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    const todayStart = new Date(year, now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayEnd = new Date(year, now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
     const [
       user,
@@ -111,10 +115,11 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
 
     const weeklyTasksCompleted = weekData.reduce((acc, day) => acc + (day.tasksCompleted || 0), 0);
     const weeklyGoal = user.preferences?.weeklyGoal || 30;
+    const safeGoal = Math.max(1, weeklyGoal);
     const weeklyProgress = {
       completed: weeklyTasksCompleted,
       goal: weeklyGoal,
-      percentage: Math.min(100, Math.round((weeklyTasksCompleted / weeklyGoal) * 100))
+      percentage: Math.min(100, Math.round((weeklyTasksCompleted / safeGoal) * 100))
     };
 
     res.json({

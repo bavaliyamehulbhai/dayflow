@@ -12,16 +12,18 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SecurityProvider } from "./context/SecurityGuard";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/layout/Layout";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
-import TasksPage from "./pages/TasksPage";
-import HabitsPage from "./pages/HabitsPage";
-import SchedulePage from "./pages/SchedulePage";
-import PomodoroPage from "./pages/PomodoroPage";
-import NotesPage from "./pages/NotesPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import ProfilePage from "./pages/ProfilePage";
+import { lazy, Suspense } from "react";
+
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const TasksPage = lazy(() => import("./pages/TasksPage"));
+const HabitsPage = lazy(() => import("./pages/HabitsPage"));
+const SchedulePage = lazy(() => import("./pages/SchedulePage"));
+const PomodoroPage = lazy(() => import("./pages/PomodoroPage"));
+const NotesPage = lazy(() => import("./pages/NotesPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 import { useZenTheme } from "./hooks/useZenTheme";
 import "./styles/globals.css";
 
@@ -73,14 +75,31 @@ const PageWrapper = ({ children }) => (
   </motion.div>
 );
 
-import { NotificationProvider } from "./context/NotificationContext";
+import { NotificationProvider, useNotifications } from "./context/NotificationContext";
 import ToastContainer from "./components/common/ToastContainer";
+import { useEffect } from "react";
 
 function AppRoutes() {
   const location = useLocation();
+  const { addToast } = useNotifications();
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      addToast("Update available! Please refresh the page.", "info", 10000);
+    };
+    window.addEventListener('sw-update-available', handleUpdate);
+    return () => window.removeEventListener('sw-update-available', handleUpdate);
+  }, [addToast]);
+
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <Suspense fallback={
+      <div className="splash">
+        <div className="splash-logo">DayFlow</div>
+        <div className="splash-loader" />
+      </div>
+    }>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
         <Route
           path="/login"
           element={
@@ -183,7 +202,8 @@ function AppRoutes() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </AnimatePresence>
+      </AnimatePresence>
+    </Suspense>
   );
 }
 

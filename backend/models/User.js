@@ -173,6 +173,14 @@ userSchema.methods.toJSON = function () {
   delete obj.loginAttempts;
   delete obj.lockUntil;
   delete obj.__v;
+  delete obj.twoFactorSecret;
+  delete obj.twoFactorRecoveryCodes;
+  delete obj.verificationToken;
+  if (obj.googleCalendar) {
+    delete obj.googleCalendar.accessToken;
+    delete obj.googleCalendar.refreshToken;
+    delete obj.googleCalendar.expiryDate;
+  }
   return obj;
 };
 

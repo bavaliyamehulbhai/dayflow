@@ -170,9 +170,10 @@ export default function LoginPage() {
 
         {/* Card */}
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
+          key={error ? 'error' : 'normal'}
+          initial={error ? { x: [-10, 10, -10, 10, 0] } : { opacity: 0, scale: 0.95 }}
+          animate={error ? { x: 0 } : { opacity: 1, scale: 1 }}
+          transition={error ? { duration: 0.4 } : { delay: 0.4, duration: 0.8 }}
           className="auth-card aura-iridescent" 
           style={{
             transform: 'translateZ(40px)',

@@ -70,11 +70,11 @@ function Clock() {
       animate={{ opacity: 1, y: 0 }}
       className="hero-module-clock"
       style={{
-        padding: isMobile ? "60px 0 30px" : "90px 0 50px",
+        padding: isMobile ? "40px 0 20px" : "90px 0 50px",
         textAlign: "center",
         position: "relative",
         zIndex: 1,
-        marginBottom: isMobile ? "50px" : "70px",
+        marginBottom: isMobile ? "20px" : "70px",
         background:
           "radial-gradient(circle at 50% 50%, rgba(124, 109, 250, 0.12) 0%, transparent 75%)",
       }}
@@ -137,7 +137,7 @@ function Clock() {
           marginLeft: "auto",
           marginRight: "auto",
           position: "relative",
-          padding: isMobile ? "0 20px" : "0",
+          padding: isMobile ? "0 14px" : "0",
         }}
       >
         <div
@@ -319,7 +319,9 @@ export default function DashboardPage() {
       user?.preferences?.dashboardLayout &&
       user.preferences.dashboardLayout.length > 0
     ) {
-      setLayout(user.preferences.dashboardLayout);
+      const savedLayout = user.preferences.dashboardLayout;
+      const missingLayout = DEFAULT_LAYOUT.filter(id => !savedLayout.includes(id));
+      setLayout([...savedLayout, ...missingLayout]);
     }
   }, [user]);
 
@@ -393,10 +395,10 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="responsive-container page-shell">
+    <div className="responsive-container page-shell" style={{ overflowX: 'hidden' }}>
       <div
         className="dashboard-header"
-        style={{ position: "relative", overflow: "visible", marginBottom: 32 }}
+        style={{ position: "relative", overflow: "hidden", borderRadius: 32, marginBottom: 32 }}
       >
         <AuraOrb
           color="var(--accent)"
@@ -441,10 +443,10 @@ export default function DashboardPage() {
           gridTemplateColumns: isMobile
             ? "1fr"
             : "repeat(auto-fill, minmax(420px, 1fr))",
-          gap: isMobile ? "32px" : "48px",
+          gap: isMobile ? "24px" : "48px",
           padding: 0,
           margin: 0,
-          paddingBottom: isMobile ? "120px" : "60px",
+          paddingBottom: isMobile ? "60px" : "60px",
           listStyle: "none",
         }}
       >
@@ -498,6 +500,7 @@ export default function DashboardPage() {
                 key={safeKey}
                 value={itemId}
                 dragListener={true}
+                className="drag-handle"
                 {...animProps}
                 whileDrag={{
                   scale: 1.05,

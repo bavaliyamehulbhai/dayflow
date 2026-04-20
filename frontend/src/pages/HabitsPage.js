@@ -856,9 +856,37 @@ export default function HabitsPage() {
 
   const completeMutation = useMutation({
     mutationFn: ({ id, date }) => habitsAPI.complete(id, { date }),
+    onMutate: async ({ id, date }) => {
+      await qc.cancelQueries({ queryKey: ["habits"] });
+      const previousState = qc.getQueryData(["habits"]);
+      if (previousState) {
+        qc.setQueryData(["habits"], previousState.map(h => {
+          if ((h._id === id) || (h.id === id)) {
+            const hasDate = h.completions?.some(c => c.date === date);
+            let newCompletions = h.completions || [];
+            if (hasDate) {
+              newCompletions = newCompletions.filter(c => c.date !== date);
+            } else {
+              newCompletions = [...newCompletions, { date }];
+            }
+            return { ...h, completions: newCompletions };
+          }
+          return h;
+        }));
+      }
+      return { previousState };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousState) {
+        qc.setQueryData(["habits"], context.previousState);
+      }
+      addToast(err.response?.data?.error || "Synchronization failed.", "error");
+    },
+    onSettled: () => {
+      invalidate();
+    },
     onSuccess: (res) => {
       feedback("success");
-      invalidate();
 
       const habit = res.data.habit;
       if (
@@ -879,15 +907,15 @@ export default function HabitsPage() {
         addToast(`Ritual synchronized: ${habit?.name || ""}`, "success");
       }
     },
-    onError: (err) =>
-      addToast(err.response?.data?.error || "Synchronization failed.", "error"),
   });
 
-  const habits = (data || []).filter(
-    (h) =>
-      h.name?.toLowerCase().includes(search.toLowerCase()) ||
-      h.description?.toLowerCase().includes(search.toLowerCase()),
-  );
+  const habits = React.useMemo(() => {
+    return (data || []).filter(
+      (h) =>
+        h.name?.toLowerCase().includes(search.toLowerCase()) ||
+        h.description?.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [data, search]);
   const completedTodayCount = habits.filter((h) =>
     h.completions?.some((c) => c.date === today),
   ).length;

@@ -46,6 +46,7 @@ import { exportToCSV, exportToPDF } from "../utils/exportUtils";
 import MobileBottomSheet from "../components/common/MobileBottomSheet";
 import AuraOrb from "../components/common/AuraOrb";
 import { getSafeId } from "../utils/idUtils";
+import { FixedSizeList as List } from "react-window";
 
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 const STATUSES = ["pending", "in-progress", "completed", "cancelled"];
@@ -135,8 +136,7 @@ const TaskItem = React.memo(
       return (
         <motion.div
           ref={ref}
-          layout
-          initial={{ opacity: 0, y: 15 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95 }}
           className="relative overflow-hidden mb-4"
@@ -187,7 +187,7 @@ const TaskItem = React.memo(
             dragMomentum={false}
             onDragEnd={handleDragEnd}
             whileTap={{ scale: 0.98 }}
-            className={`app-module-entrance premium-card ${selected ? "selected-aura" : ""}`}
+            className={`premium-card ${selected ? "selected-aura" : ""}`}
             style={{
               x,
               touchAction: "pan-y",
@@ -338,10 +338,7 @@ const TaskItem = React.memo(
   ),
   (prev, next) => {
     return (
-      prev.task._id === next.task._id &&
-      prev.task.status === next.task.status &&
-      prev.task.title === next.task.title &&
-      prev.task.priority === next.task.priority &&
+      JSON.stringify(prev.task) === JSON.stringify(next.task) &&
       prev.selected === next.selected &&
       prev.isMobile === next.isMobile
     );
@@ -752,11 +749,30 @@ export default function TasksPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => tasksAPI.update(id, data),
+    onMutate: async ({ id, data }) => {
+      await qc.cancelQueries({ queryKey: ["tasks"] });
+      const previousState = qc.getQueryData(["tasks", filters]);
+      if (previousState) {
+        qc.setQueryData(["tasks", filters], {
+          ...previousState,
+          tasks: previousState.tasks.map(t => t._id === id || (t.id && t.id === id) ? { ...t, ...data } : t)
+        });
+      }
+      return { previousState };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousState) {
+        qc.setQueryData(["tasks", filters], context.previousState);
+      }
+      addToast("Failed to update objective", "error");
+    },
+    onSettled: () => {
+      invalidate();
+    },
     onSuccess: (res, variables) => {
       if (!variables?.suppressToast) {
         addToast("Objective refined", "success");
       }
-      invalidate();
     },
   });
 
@@ -1159,20 +1175,32 @@ export default function TasksPage() {
         <div className="tasks-list" style={{ paddingBottom: 20 }}>
           {tasks.length > 0 ? (
             <div className="tasks-container">
-              {tasks.map((task, index) => (
-                <div key={getSafeId(task, `task-${index}`)} style={{ paddingBottom: 12 }}>
-                  <TaskItem
-                    task={task}
-                    isMobile={isMobile}
-                    selected={selected.includes(getSafeId(task))}
-                    toggleSelect={toggleSelect}
-                    toggleComplete={toggleComplete}
-                    setModal={setModal}
-                    setConfirmState={setConfirmState}
-                    deleteMutation={deleteMutation}
-                  />
-                </div>
-              ))}
+              <List
+                height={isMobile ? Math.max(300, windowHeight - 300) : 700}
+                itemCount={tasks.length}
+                itemSize={isMobile ? 110 : 96}
+                width="100%"
+                itemData={tasks}
+                itemKey={(index, data) => getSafeId(data[index]) || index}
+              >
+                {({ index, style }) => {
+                  const task = tasks[index];
+                  return (
+                    <div style={{ ...style, paddingTop: 4 }}>
+                      <TaskItem
+                        task={task}
+                        isMobile={isMobile}
+                        selected={selected.includes(getSafeId(task))}
+                        toggleSelect={toggleSelect}
+                        toggleComplete={toggleComplete}
+                        setModal={setModal}
+                        setConfirmState={setConfirmState}
+                        deleteMutation={deleteMutation}
+                      />
+                    </div>
+                  );
+                }}
+              </List>
             </div>
           ) : (
             <EmptyState

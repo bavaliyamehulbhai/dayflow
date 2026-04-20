@@ -78,125 +78,19 @@ app.use(
   }),
 );
 
-// ─── Privacy: Log Masking ─────────────────────────────────────────────────────
-app.use((req, res, next) => {
-  const maskSensitive = (obj) => {
-    if (!obj || typeof obj !== "object") return obj;
-
-    const sensitiveFields = [
-      "password",
-      "email",
-      "newPassword",
-      "currentPassword",
-      "token",
-      "secret",
-    ];
-
-    // Safety helper to convert Mongoose documents to POJOs
-    const safeToPOJO = (item) => {
-      if (!item || typeof item !== "object") return item;
-      try {
-        // Only call toObject if it's a full Mongoose document (has $__ internal state)
-        if (
-          typeof item.toObject === "function" &&
-          (item.$__ || item.constructor.name === "model")
-        ) {
-          return item.toObject();
-        }
-        if (typeof item.toJSON === "function" && !Array.isArray(item)) {
-          return item.toJSON();
-        }
-      } catch (err) {
-        // Fallback if Mongoose is in a broken state
-      }
-      return item;
+// ─── Privacy: Dev Logging ─────────────────────────────────────────────────────
+// The expensive res.json patch has been removed. Sensitive data scrubbing
+// is now handled natively via Mongoose userSchema.toJSON()
+if (process.env.NODE_ENV === "development") {
+  app.use((req, res, next) => {
+    const oldJson = res.json;
+    res.json = function (data) {
+      console.log(`[OUTGOING] ${req.method} ${req.url}`);
+      return oldJson.call(this, data);
     };
-
-    const maskRecursive = (item) => {
-      const data = safeToPOJO(item);
-      if (!data || typeof data !== "object") return data;
-
-      if (Array.isArray(data)) return data.map(maskRecursive);
-
-      const maskedObj = { ...data };
-      sensitiveFields.forEach((field) => {
-        if (maskedObj[field]) maskedObj[field] = "********";
-      });
-
-      Object.keys(maskedObj).forEach((key) => {
-        if (typeof maskedObj[key] === "object") {
-          maskedObj[key] = maskRecursive(maskedObj[key]);
-        }
-      });
-
-      return maskedObj;
-    };
-
-    return maskRecursive(obj);
-  };
-
-  // ─── Foolproof Mongoose-to-POJO Conversion (v3: The Final Wall) ─────────
-  const toPOJO = (data) => {
-    try {
-      if (data === null || data === undefined) return data;
-      if (typeof data !== "object") return data;
-      if (Array.isArray(data)) return data.map(toPOJO);
-
-      const isMongoose = !!(
-        data.$__ ||
-        (data.constructor && data.constructor.name === "model")
-      );
-
-      const cleanObj = {};
-      let source = data;
-
-      if (isMongoose && typeof data.toObject === "function") {
-        try {
-          source = data.toObject({
-            getters: true,
-            virtuals: true,
-            versionKey: false,
-          });
-        } catch (e) {
-          // Fallback to raw data if toObject fails
-          source = data._doc || data;
-        }
-      }
-
-      const keys = Object.keys(source);
-      for (const key of keys) {
-        if (key.startsWith("$") || key === "__v") continue;
-        const val = source[key];
-        if (typeof val === "function") continue;
-        cleanObj[key] = toPOJO(val);
-      }
-
-      if (data._id && !cleanObj._id) cleanObj._id = data._id.toString();
-      return cleanObj;
-    } catch (err) {
-      console.error("[toPOJO Error]", err);
-      return data; // Return original if all else fails
-    }
-  };
-
-  const oldJson = res.json;
-  res.json = function (data) {
-    // Force everything to a safe POJO before Express or our logger touches it
-    const safeData = toPOJO(data);
-
-    // Only log in development
-    if (process.env.NODE_ENV === "development" && safeData) {
-      console.log(
-        `[OUTGOING] ${req.method} ${req.url} - Data:`,
-        JSON.stringify(maskSensitive(safeData)),
-      );
-    }
-
-    // Pass the safe POJO to the original Express res.json
-    return oldJson.call(this, safeData);
-  };
-  next();
-});
+    next();
+  });
+}
 
 // CORS: open in dev, whitelist in production
 // ─── CORS Configuration ───────────────────────────────────────────────────────
@@ -344,9 +238,10 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// ─── Database Connection (with connection pool) ───────────────────────────────
+// ─── Database Connection (with dynamic connection pool) ───────────────────────────────
+const numWorkers = os.cpus().length || 1;
 const mongoOpts = {
-  maxPoolSize: 20, // Up to 20 parallel connections
+  maxPoolSize: Math.max(2, Math.floor(100 / numWorkers)), // Dynamically bound to avoid Free Tier > 500 limits across cluster
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
 };
@@ -416,10 +311,10 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Master / Worker Clustering ───────────────────────────────────────────────
-if (cluster.isMaster) {
+if (cluster.isPrimary) {
   const numCPUs = os.cpus().length || 1;
   console.log(
-    `🛡️ Master ${process.pid} is running. Spawning ${numCPUs} workers...`,
+    `🛡️ Primary ${process.pid} is running. Spawning ${numCPUs} workers...`,
   );
 
   // Fork workers

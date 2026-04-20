@@ -125,8 +125,8 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
           padding: 0,
           display: "flex",
           flexDirection: "column",
-          gap: 12,
-          height: isMobile ? "78dvh" : "82vh",
+          gap: 0,
+          height: isMobile ? "90dvh" : "82vh",
           borderRadius: isMobile ? 24 : 36,
           background: "rgba(12, 12, 22, 1)",
           backdropFilter: "blur(40px)",
@@ -139,130 +139,157 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
           overflow: "hidden",
         }}
       >
-        <div
+        {/* Close button always top right */}
+        <button
+          type="button"
+          className="modal-close haptic-tap"
+          onClick={onClose}
           style={{
             position: "absolute",
-            inset: "-20px",
-            background: `radial-gradient(circle at 50% 30%, ${color}11 0%, transparent 70%)`,
-            filter: "blur(40px)",
-            zIndex: -1,
-            pointerEvents: "none",
+            top: 14,
+            right: 14,
+            zIndex: 10,
+            background: "rgba(255,255,255,0.04)",
+            borderRadius: 12,
+            padding: 8,
+            border: "none",
           }}
-        />
-
+        >
+          <Zap size={22} />
+        </button>
+        {/* Scrollable content except color bar */}
         <div
-          className="liquid-glass-input"
           style={{
-            padding: "0 18px",
+            flex: 1,
+            overflowY: "auto",
             display: "flex",
-            alignItems: "center",
-            height: 68,
-            gap: 12,
+            flexDirection: "column",
           }}
         >
           <div
             style={{
-              padding: "6px",
-              background: `${color}22`,
-              borderRadius: 8,
+              position: "absolute",
+              inset: "-20px",
+              background: `radial-gradient(circle at 50% 30%, ${color}11 0%, transparent 70%)`,
+              filter: "blur(40px)",
+              zIndex: -1,
+              pointerEvents: "none",
+            }}
+          />
+
+          <div
+            className="liquid-glass-input"
+            style={{
+              padding: "0 18px",
               display: "flex",
-              flexShrink: 0,
+              alignItems: "center",
+              height: 68,
+              gap: 12,
             }}
           >
-            <Zap size={14} style={{ color: color }} />
-          </div>
-          <input
-            className="no-border"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              background: "none",
-              border: "none",
-              fontFamily: "Syne",
-              fontSize: "clamp(15px, 4vw, 22px)",
-              fontWeight: 900,
-              color: "white",
-              outline: "none",
-              letterSpacing: "0.02em",
-              textTransform: "uppercase",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="FRAGMENT TITLE..."
-          />
-          {isDraft && (
-            <button
-              type="button"
-              className="haptic-tap"
-              onClick={() =>
-                onSave(
-                  {
-                    title,
-                    content,
-                    color,
-                    tags: tags
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter(Boolean),
-                  },
-                  false,
-                )
-              }
-              disabled={!canCreate}
+            <div
               style={{
-                height: 40,
-                padding: "0 14px",
-                borderRadius: 12,
-                fontSize: 11,
-                fontWeight: 900,
-                letterSpacing: 1,
-                textTransform: "uppercase",
-                background: canCreate
-                  ? "var(--grad-premium)"
-                  : "var(--surface2)",
-                color: canCreate ? "white" : "var(--muted)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: canCreate
-                  ? "0 8px 20px rgba(124, 109, 250, 0.35)"
-                  : "none",
-                cursor: canCreate ? "pointer" : "not-allowed",
+                padding: "6px",
+                background: `${color}22`,
+                borderRadius: 8,
+                display: "flex",
+                flexShrink: 0,
               }}
             >
-              Create
-            </button>
-          )}
-        </div>
+              <Zap size={14} style={{ color: color }} />
+            </div>
+            <input
+              className="no-border"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "none",
+                border: "none",
+                fontFamily: "Syne",
+                fontSize: "clamp(15px, 4vw, 22px)",
+                fontWeight: 900,
+                color: "white",
+                outline: "none",
+                letterSpacing: "0.02em",
+                textTransform: "uppercase",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="FRAGMENT TITLE..."
+            />
+            {isDraft && (
+              <button
+                type="button"
+                className="haptic-tap"
+                onClick={() =>
+                  onSave(
+                    {
+                      title,
+                      content,
+                      color,
+                      tags: tags
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter(Boolean),
+                    },
+                    false,
+                  )
+                }
+                disabled={!canCreate}
+                style={{
+                  height: 40,
+                  padding: "0 14px",
+                  borderRadius: 12,
+                  fontSize: 11,
+                  fontWeight: 900,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  background: canCreate
+                    ? "var(--grad-premium)"
+                    : "var(--surface2)",
+                  color: canCreate ? "white" : "var(--muted)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  boxShadow: canCreate
+                    ? "0 8px 20px rgba(124, 109, 250, 0.35)"
+                    : "none",
+                  cursor: canCreate ? "pointer" : "not-allowed",
+                }}
+              >
+                Create
+              </button>
+            )}
+          </div>
 
-        {/* Main Neural Text Area */}
-        <div
-          className="liquid-glass-input"
-          style={{ padding: "22px", flex: 1 }}
-        >
-          <textarea
-            className="no-border aura-scrollbar"
-            style={{
-              width: "100%",
-              background: "none",
-              border: "none",
-              outline: "none",
-              color: "rgba(255,255,255,0.9)",
-              fontSize: isMobile ? 15 : 17,
-              lineHeight: 1.75,
-              minHeight: isMobile ? "35vh" : "44vh",
-              resize: "none",
-              fontFamily: "Inter",
-              fontWeight: 400,
-            }}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Capture the stream of consciousness..."
-          />
+          {/* Main Neural Text Area */}
+          <div
+            className="liquid-glass-input"
+            style={{ padding: "22px", flex: 1 }}
+          >
+            <textarea
+              className="no-border aura-scrollbar"
+              style={{
+                width: "100%",
+                background: "none",
+                border: "none",
+                outline: "none",
+                color: "rgba(255,255,255,0.9)",
+                fontSize: isMobile ? 15 : 17,
+                lineHeight: 1.75,
+                minHeight: isMobile ? "35vh" : "44vh",
+                resize: "none",
+                fontFamily: "Inter",
+                fontWeight: 400,
+              }}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Capture the stream of consciousness..."
+            />
+          </div>
         </div>
-
-        {/* Elite Status Bar */}
+        {/* Elite Status Bar - sticky/fixed at bottom on mobile */}
         <div
           style={{
             marginTop: 10,
@@ -273,6 +300,12 @@ function NoteEditor({ note, onClose, onSave, isMobile }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            position: isMobile ? "sticky" : "static",
+            bottom: isMobile ? 0 : "auto",
+            zIndex: 5,
+            width: "100%",
+            boxSizing: "border-box",
+            backgroundClip: "padding-box",
           }}
         >
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
@@ -370,9 +403,22 @@ export default function NotesPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => notesAPI.update(id, data),
+    onMutate: async ({ id, data: newData }) => {
+      await qc.cancelQueries(["notes"]);
+      const previous = qc.getQueryData(["notes"]);
+      qc.setQueryData(["notes"], (old) =>
+        (old || []).map((n) => (n._id === id ? { ...n, ...newData } : n)),
+      );
+      return { previous };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previous) qc.setQueryData(["notes"], context.previous);
+    },
     onSuccess: (r, { silent }) => {
-      if (!silent) addToast("Neural archive updated", "success");
-      invalidate();
+      if (!silent) {
+        addToast("Neural archive updated", "success");
+        invalidate();
+      }
     },
   });
 
@@ -426,17 +472,19 @@ export default function NotesPage() {
     if (hasContent && !isCreating) createMutation.mutate(formData);
   };
 
-  const notes = (data || [])
-    .filter(
-      (n) =>
-        n.title?.toLowerCase().includes(search.toLowerCase()) ||
-        n.content?.toLowerCase().includes(search.toLowerCase()),
-    )
-    .sort(
-      (a, b) =>
-        (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0) ||
-        new Date(b.updatedAt) - new Date(a.updatedAt),
-    );
+  const notes = React.useMemo(() => {
+    return (data || [])
+      .filter(
+        (n) =>
+          n.title?.toLowerCase().includes(search.toLowerCase()) ||
+          n.content?.toLowerCase().includes(search.toLowerCase()),
+      )
+      .sort(
+        (a, b) =>
+          (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0) ||
+          new Date(b.updatedAt) - new Date(a.updatedAt),
+      );
+  }, [data, search]);
 
   const NoteCard = React.memo(({ note }) => (
     <motion.div

@@ -1,15 +1,19 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { body, validationResult } = require('express-validator');
-const User = require('../models/User');
-const Session = require('../models/Session');
-const { protect, generateToken, generateRefreshToken } = require('../middleware/auth');
-const logSecurityEvent = require('../utils/logger');
-const sendEmail = require('../utils/sendEmail');
-const speakeasy = require('speakeasy');
-const qrcode = require('qrcode');
-const crypto = require('crypto');
-const { seedDemoData } = require('../utils/demoSeeder');
+const { body, validationResult } = require("express-validator");
+const User = require("../models/User");
+const Session = require("../models/Session");
+const {
+  protect,
+  generateToken,
+  generateRefreshToken,
+} = require("../middleware/auth");
+const logSecurityEvent = require("../utils/logger");
+const sendEmail = require("../utils/sendEmail");
+const speakeasy = require("speakeasy");
+const qrcode = require("qrcode");
+const crypto = require("crypto");
+const { seedDemoData } = require("../utils/demoSeeder");
 
 // ─── Helper: Send token response & Track Session ──────────────────────────────
 const sendTokenResponse = async (user, statusCode, res, req) => {
@@ -19,47 +23,54 @@ const sendTokenResponse = async (user, statusCode, res, req) => {
   const cookieOptions = {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
   };
 
   // Track session in DB
-  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-  const userAgent = req.headers['user-agent'] || 'unknown';
+  const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
+  const userAgent = req.headers["user-agent"] || "unknown";
 
   await Session.create({
     user: user._id,
     refreshToken,
     ip,
     userAgent,
-    expiresAt: cookieOptions.expires
+    expiresAt: cookieOptions.expires,
   });
 
   res
     .status(statusCode)
-    .cookie('refreshToken', refreshToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("accessToken", token, cookieOptions)
     .json({
       success: true,
-      token,
-      user: user.toJSON()
+      user: user.toJSON(),
     });
 };
 
 // ─── Password strength validator ──────────────────────────────────────────────
-const passwordStrengthValidator = body('password')
+const passwordStrengthValidator = body("password")
   .isLength({ min: 8 })
-  .withMessage('Password must be at least 8 characters')
+  .withMessage("Password must be at least 8 characters")
   .matches(/[A-Z]/)
-  .withMessage('Password must contain at least one uppercase letter')
+  .withMessage("Password must contain at least one uppercase letter")
   .matches(/[0-9]/)
-  .withMessage('Password must contain at least one number');
+  .withMessage("Password must contain at least one number");
 
 // ─── Register ─────────────────────────────────────────────────────────────────
-router.post('/register',
+router.post(
+  "/register",
   [
-    body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters'),
-    body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
-    passwordStrengthValidator
+    body("name")
+      .trim()
+      .isLength({ min: 2, max: 50 })
+      .withMessage("Name must be 2-50 characters"),
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Valid email required"),
+    passwordStrengthValidator,
   ],
   async (req, res) => {
     try {
@@ -72,45 +83,49 @@ router.post('/register',
 
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-        return res.status(400).json({ error: 'Email already registered.' });
+        return res.status(400).json({ error: "Email already registered." });
       }
 
       // Create user
       const user = await User.create({ name, email, password });
 
       // Generate verification token
-      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const verificationToken = crypto.randomBytes(32).toString("hex");
       user.verificationToken = verificationToken;
       user.verificationTokenExpire = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
       await user.save();
 
       // Send verification email
-      const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email/${verificationToken}`;
+      const verifyUrl = `${req.protocol}://${req.get("host")}/api/auth/verify-email/${verificationToken}`;
       const message = `Welcome to DayFlow! Please verify your email by clicking: ${verifyUrl}`;
 
       try {
         await sendEmail({
           email: user.email,
-          subject: 'DayFlow Email Verification',
-          message
+          subject: "DayFlow Email Verification",
+          message,
         });
       } catch (err) {
-        console.error('Error sending verification email:', err);
+        console.error("Error sending verification email:", err);
       }
 
       await sendTokenResponse(user, 201, res, req);
     } catch (err) {
-      console.error('Register error:', err);
-      res.status(500).json({ error: 'Server error during registration.' });
+      console.error("Register error:", err);
+      res.status(500).json({ error: "Server error during registration." });
     }
-  }
+  },
 );
 
 // ─── Login ────────────────────────────────────────────────────────────────────
-router.post('/login',
+router.post(
+  "/login",
   [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
-    body('password').exists().withMessage('Password is required')
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Valid email required"),
+    body("password").exists().withMessage("Password is required"),
   ],
   async (req, res) => {
     try {
@@ -120,22 +135,26 @@ router.post('/login',
       }
 
       const { email, password } = req.body;
-      const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+      const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
 
       // Find user with security fields
-      const user = await User.findOne({ email }).select('+password +loginAttempts +lockUntil');
+      const user = await User.findOne({ email }).select(
+        "+password +loginAttempts +lockUntil",
+      );
       if (!user) {
         // Don't reveal if email exists — same message
-        return res.status(401).json({ error: 'Invalid email or password.' });
+        return res.status(401).json({ error: "Invalid email or password." });
       }
 
       // Check if account is locked
       if (user.isLocked) {
         const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
-        console.warn(`[SECURITY] Locked account login attempt: ${email} from ${ip}`);
+        console.warn(
+          `[SECURITY] Locked account login attempt: ${email} from ${ip}`,
+        );
         return res.status(423).json({
-          error: `Account temporarily locked due to too many failed attempts. Try again in ${minutesLeft} minute${minutesLeft > 1 ? 's' : ''}.`,
-          lockedUntil: user.lockUntil
+          error: `Account temporarily locked due to too many failed attempts. Try again in ${minutesLeft} minute${minutesLeft > 1 ? "s" : ""}.`,
+          lockedUntil: user.lockUntil,
         });
       }
 
@@ -143,15 +162,28 @@ router.post('/login',
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
         await user.incLoginAttempts();
-        await logSecurityEvent({ userId: user._id, action: 'LOGIN_FAILED', status: 'failure', req, details: { email } });
+        await logSecurityEvent({
+          userId: user._id,
+          action: "LOGIN_FAILED",
+          status: "failure",
+          req,
+          details: { email },
+        });
 
         const attemptsLeft = 5 - (user.loginAttempts + 1);
-        console.warn(`[SECURITY] Failed login: ${email} from ${ip} (attempts: ${user.loginAttempts + 1})`);
+        console.warn(
+          `[SECURITY] Failed login: ${email} from ${ip} (attempts: ${user.loginAttempts + 1})`,
+        );
         if (attemptsLeft <= 0) {
-          return res.status(423).json({ error: 'Account locked for 15 minutes due to too many failed attempts.' });
+          return res
+            .status(423)
+            .json({
+              error:
+                "Account locked for 15 minutes due to too many failed attempts.",
+            });
         }
         return res.status(401).json({
-          error: `Invalid email or password. ${attemptsLeft} attempt${attemptsLeft !== 1 ? 's' : ''} remaining before lockout.`
+          error: `Invalid email or password. ${attemptsLeft} attempt${attemptsLeft !== 1 ? "s" : ""} remaining before lockout.`,
         });
       }
 
@@ -162,29 +194,33 @@ router.post('/login',
         return res.json({
           success: true,
           twoFactorRequired: true,
-          userId: user._id // Used for subsequent 2FA verification
+          userId: user._id, // Used for subsequent 2FA verification
         });
       }
 
       // Success — reset attempts and record login
       await User.findByIdAndUpdate(user._id, {
         $set: { loginAttempts: 0, lastLoginAt: new Date(), lastLoginIp: ip },
-        $unset: { lockUntil: 1 }
+        $unset: { lockUntil: 1 },
       });
 
-      await logSecurityEvent({ userId: user._id, action: 'LOGIN_SUCCESS', req });
+      await logSecurityEvent({
+        userId: user._id,
+        action: "LOGIN_SUCCESS",
+        req,
+      });
 
       // Suspicious Login Alert: Check if IP or UA is new
       if (user.lastLoginIp && user.lastLoginIp !== ip) {
         await sendEmail({
           email: user.email,
-          subject: 'DayFlow: New Login Detected',
-          message: `A new login was detected for your account from IP: ${ip}. If this wasn't you, please change your password immediately.`
+          subject: "DayFlow: New Login Detected",
+          message: `A new login was detected for your account from IP: ${ip}. If this wasn't you, please change your password immediately.`,
         });
       }
 
       // ─── Demo Mode: Seed Data on Login ──────────────────────────────────────
-      if (user.isDemo || user.email === 'demo@dayflow.app') {
+      if (user.isDemo || user.email === "demo@dayflow.app") {
         if (!user.isDemo) {
           user.isDemo = true;
           await user.save();
@@ -192,28 +228,30 @@ router.post('/login',
         try {
           await seedDemoData(user._id);
         } catch (err) {
-          console.error('[AUTH] Demo seeding failed during login:', err);
+          console.error("[AUTH] Demo seeding failed during login:", err);
         }
       }
 
       await sendTokenResponse(user, 200, res, req);
     } catch (err) {
-      console.error('Login error:', err);
-      res.status(500).json({ error: 'Server error during login.' });
+      console.error("Login error:", err);
+      res.status(500).json({ error: "Server error during login." });
     }
-  }
+  },
 );
 
 // ─── Verify Email ─────────────────────────────────────────────────────────────
-router.get('/verify-email/:token', async (req, res) => {
+router.get("/verify-email/:token", async (req, res) => {
   try {
     const user = await User.findOne({
       verificationToken: req.params.token,
-      verificationTokenExpire: { $gt: Date.now() }
+      verificationTokenExpire: { $gt: Date.now() },
     });
 
     if (!user) {
-      return res.status(400).json({ error: 'Invalid or expired verification token.' });
+      return res
+        .status(400)
+        .json({ error: "Invalid or expired verification token." });
     }
 
     user.isVerified = true;
@@ -221,90 +259,103 @@ router.get('/verify-email/:token', async (req, res) => {
     user.verificationTokenExpire = undefined;
     await user.save();
 
-    res.json({ success: true, message: 'Email verified successfully! You now have full access.' });
+    res.json({
+      success: true,
+      message: "Email verified successfully! You now have full access.",
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Error verifying email.' });
+    res.status(500).json({ error: "Error verifying email." });
   }
 });
 
 // ─── List Active Sessions ─────────────────────────────────────────────────────
-router.get('/sessions', protect, async (req, res) => {
+router.get("/sessions", protect, async (req, res) => {
   try {
     const sessions = await Session.find({
       user: req.user._id,
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     }).sort({ lastActive: -1 });
     res.json({ success: true, sessions });
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching sessions.' });
+    res.status(500).json({ error: "Error fetching sessions." });
   }
 });
 
 // ─── Revoke All Other Sessions ────────────────────────────────────────────────
-router.delete('/sessions/revoke/all', protect, async (req, res) => {
+router.delete("/sessions/revoke/all", protect, async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
-    
+
     // Delete all sessions for this user EXCEPT the current one
     const result = await Session.deleteMany({
       user: req.user._id,
-      refreshToken: { $ne: refreshToken }
+      refreshToken: { $ne: refreshToken },
     });
 
-    await logSecurityEvent({ 
-      userId: req.user._id, 
-      action: 'ALL_SESSIONS_REVOKED', 
+    await logSecurityEvent({
+      userId: req.user._id,
+      action: "ALL_SESSIONS_REVOKED",
       req,
-      details: { count: result.deletedCount }
+      details: { count: result.deletedCount },
     });
 
-    res.json({ success: true, message: `${result.deletedCount} sessions revoked successfully.` });
+    res.json({
+      success: true,
+      message: `${result.deletedCount} sessions revoked successfully.`,
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Error revoking all sessions.' });
+    res.status(500).json({ error: "Error revoking all sessions." });
   }
 });
 
 // ── Revoke Session ───────────────────────────────────────────────────────────
-router.delete('/sessions/:id', protect, async (req, res) => {
+router.delete("/sessions/:id", protect, async (req, res) => {
   try {
-    const session = await Session.findOne({ _id: req.params.id, user: req.user._id });
+    const session = await Session.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+    });
     if (!session) {
-      return res.status(404).json({ error: 'Session not found.' });
+      return res.status(404).json({ error: "Session not found." });
     }
 
     // Blacklist the refresh token
-    const decoded = require('jsonwebtoken').decode(session.refreshToken);
+    const decoded = require("jsonwebtoken").decode(session.refreshToken);
     if (decoded) {
-      await require('../models/Blacklist').create({
+      await require("../models/Blacklist").create({
         token: session.refreshToken,
-        expiresAt: new Date(decoded.exp * 1000)
+        expiresAt: new Date(decoded.exp * 1000),
       });
     }
 
     await session.deleteOne();
-    await logSecurityEvent({ userId: req.user._id, action: 'SESSION_REVOKED', req });
-    res.json({ success: true, message: 'Session revoked successfully.' });
+    await logSecurityEvent({
+      userId: req.user._id,
+      action: "SESSION_REVOKED",
+      req,
+    });
+    res.json({ success: true, message: "Session revoked successfully." });
   } catch (err) {
-    res.status(500).json({ error: 'Error revoking session.' });
+    res.status(500).json({ error: "Error revoking session." });
   }
 });
 
 // ─── 2FA Setup ────────────────────────────────────────────────────────────────
-router.post('/2fa/setup', protect, async (req, res) => {
+router.post("/2fa/setup", protect, async (req, res) => {
   try {
     if (req.user.twoFactorEnabled) {
-      return res.status(400).json({ error: '2FA is already enabled.' });
+      return res.status(400).json({ error: "2FA is already enabled." });
     }
 
     const secret = speakeasy.generateSecret({
       name: `DayFlow:${req.user.email}`,
-      issuer: 'DayFlow'
+      issuer: "DayFlow",
     });
 
     // We store the secret temporarily in the user object (select: false fields)
     // but don't enable it until verified
     await User.findByIdAndUpdate(req.user._id, {
-      twoFactorSecret: secret.base32
+      twoFactorSecret: secret.base32,
     });
 
     const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
@@ -312,75 +363,75 @@ router.post('/2fa/setup', protect, async (req, res) => {
     res.json({
       success: true,
       qrCode: qrCodeUrl,
-      secret: secret.base32 // For manual entry
+      secret: secret.base32, // For manual entry
     });
   } catch (err) {
-    res.status(500).json({ error: 'Error setting up 2FA.' });
+    res.status(500).json({ error: "Error setting up 2FA." });
   }
 });
 
 // ─── 2FA Verify & Enable ──────────────────────────────────────────────────────
-router.post('/2fa/verify', protect, async (req, res) => {
+router.post("/2fa/verify", protect, async (req, res) => {
   try {
     const { token } = req.body;
-    const user = await User.findById(req.user._id).select('+twoFactorSecret');
+    const user = await User.findById(req.user._id).select("+twoFactorSecret");
 
     if (!user.twoFactorSecret) {
-      return res.status(400).json({ error: '2FA setup not initiated.' });
+      return res.status(400).json({ error: "2FA setup not initiated." });
     }
 
     const verified = speakeasy.totp.verify({
       secret: user.twoFactorSecret,
-      encoding: 'base32',
-      token
+      encoding: "base32",
+      token,
     });
 
     if (!verified) {
-      return res.status(400).json({ error: 'Invalid verification code.' });
+      return res.status(400).json({ error: "Invalid verification code." });
     }
 
     // Generate recovery codes
     const recoveryCodes = Array.from({ length: 8 }, () =>
-      require('crypto').randomBytes(4).toString('hex').toUpperCase()
+      require("crypto").randomBytes(4).toString("hex").toUpperCase(),
     );
 
     user.twoFactorEnabled = true;
     user.twoFactorRecoveryCodes = recoveryCodes;
     await user.save();
 
-    await logSecurityEvent({ userId: user._id, action: '2FA_ENABLE', req });
+    await logSecurityEvent({ userId: user._id, action: "2FA_ENABLE", req });
 
     res.json({
       success: true,
-      message: '2FA enabled successfully.',
-      recoveryCodes
+      message: "2FA enabled successfully.",
+      recoveryCodes,
     });
   } catch (err) {
-    res.status(500).json({ error: 'Error verifying 2FA.' });
+    res.status(500).json({ error: "Error verifying 2FA." });
   }
 });
 
 // ─── 2FA Login ────────────────────────────────────────────────────────────────
-router.post('/2fa/login', async (req, res) => {
+router.post("/2fa/login", async (req, res) => {
   try {
     const { userId, token } = req.body;
-    const user = await User.findById(userId).select('+twoFactorSecret');
+    const user = await User.findById(userId).select("+twoFactorSecret");
 
     if (!user || !user.twoFactorEnabled) {
-      return res.status(401).json({ error: 'Invalid request.' });
+      return res.status(401).json({ error: "Invalid request." });
     }
 
     const verified = speakeasy.totp.verify({
       secret: user.twoFactorSecret,
-      encoding: 'base32',
-      token
+      encoding: "base32",
+      token,
     });
 
     if (!verified) {
       // Check recovery codes
       const recoveryIndex = user.twoFactorRecoveryCodes.indexOf(token);
       if (recoveryIndex === -1) {
-        return res.status(401).json({ error: 'Invalid code.' });
+        return res.status(401).json({ error: "Invalid code." });
       }
       // Use recovery code — remove it after use
       user.twoFactorRecoveryCodes.splice(recoveryIndex, 1);
@@ -389,59 +440,70 @@ router.post('/2fa/login', async (req, res) => {
 
     // Success — mark login
     await User.findByIdAndUpdate(user._id, {
-      $set: { loginAttempts: 0, lastLoginAt: new Date(), lastLoginIp: req.ip }
+      $set: { loginAttempts: 0, lastLoginAt: new Date(), lastLoginIp: req.ip },
     });
 
-    await logSecurityEvent({ userId: user._id, action: 'LOGIN_SUCCESS', req, details: { method: '2FA' } });
+    await logSecurityEvent({
+      userId: user._id,
+      action: "LOGIN_SUCCESS",
+      req,
+      details: { method: "2FA" },
+    });
     await sendTokenResponse(user, 200, res, req);
   } catch (err) {
-    res.status(500).json({ error: 'Error during 2FA login.' });
+    res.status(500).json({ error: "Error during 2FA login." });
   }
 });
 
 // ─── Refresh Token ────────────────────────────────────────────────────────────
-router.post('/refresh', async (req, res) => {
+router.post("/refresh", async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
-      return res.status(401).json({ error: 'No refresh token provided.' });
+      return res.status(401).json({ error: "No refresh token provided." });
     }
 
     // Verify refresh token
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET, { issuer: 'dayflow-api' });
+    const jwt = require("jsonwebtoken");
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET, {
+      issuer: "dayflow-api",
+    });
 
     // Check if blacklisted (optional for refresh tokens, but good for forced logouts)
-    const isBlacklisted = await require('../models/Blacklist').findOne({ token: refreshToken });
+    const isBlacklisted = await require("../models/Blacklist").findOne({
+      token: refreshToken,
+    });
     if (isBlacklisted) {
-      return res.status(401).json({ error: 'Session invalidated.' });
+      return res.status(401).json({ error: "Session invalidated." });
     }
 
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res.status(401).json({ error: 'User not found.' });
+      return res.status(401).json({ error: "User not found." });
     }
 
     // Refresh Token Rotation: Delete old session and issue new tokens
     await Session.deleteOne({ refreshToken });
     await sendTokenResponse(user, 200, res, req);
   } catch (err) {
-    res.status(401).json({ error: 'Invalid refresh token.' });
+    res.status(401).json({ error: "Invalid refresh token." });
   }
 });
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
-router.post('/logout', protect, async (req, res) => {
+router.post("/logout", protect, async (req, res) => {
   try {
-    const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : req.cookies.accessToken;
+    const token = req.headers.authorization
+      ? req.headers.authorization.split(" ")[1]
+      : req.cookies.accessToken;
     if (token) {
-      const decoded = require('jsonwebtoken').decode(token);
+      const decoded = require("jsonwebtoken").decode(token);
       if (decoded) {
         // Blacklist token until its natural expiry
-        await require('../models/Blacklist').create({
+        await require("../models/Blacklist").create({
           token,
-          expiresAt: new Date(decoded.exp * 1000)
+          expiresAt: new Date(decoded.exp * 1000),
         });
       }
     }
@@ -449,98 +511,111 @@ router.post('/logout', protect, async (req, res) => {
     // Clear cookies
     const clearCookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
     };
-    res.clearCookie('accessToken', clearCookieOptions);
-    res.clearCookie('refreshToken', clearCookieOptions);
+    res.clearCookie("accessToken", clearCookieOptions);
+    res.clearCookie("refreshToken", clearCookieOptions);
 
-    res.json({ success: true, message: 'Logged out successfully.' });
+    res.json({ success: true, message: "Logged out successfully." });
   } catch (err) {
-    res.status(500).json({ error: 'Error during logout.' });
+    res.status(500).json({ error: "Error during logout." });
   }
 });
 
-
 // ─── Get Me ───────────────────────────────────────────────────────────────────
-router.get('/me', protect, async (req, res) => {
+router.get("/me", protect, async (req, res) => {
   try {
+    console.log("[DEBUG /auth/me] cookies:", req.cookies);
+    console.log("[DEBUG /auth/me] user:", req.user?._id);
     const user = await User.findById(req.user._id);
     res.json({ success: true, user });
   } catch (err) {
-    res.status(500).json({ error: 'Server error.' });
+    console.error("[DEBUG /auth/me] error:", err);
+    res.status(500).json({ error: "Server error." });
   }
 });
 
 // ─── Update Profile ───────────────────────────────────────────────────────────
-router.put('/profile', protect, async (req, res) => {
+router.put("/profile", protect, async (req, res) => {
   try {
     const { name, preferences, bio, avatarGradient } = req.body;
     const updates = {};
     if (name) updates.name = name.trim();
     if (bio !== undefined) updates.bio = bio.trim().slice(0, 250);
     if (avatarGradient) updates.avatarGradient = avatarGradient;
-    if (preferences) updates.preferences = { ...req.user.preferences, ...preferences };
+    if (preferences)
+      updates.preferences = { ...req.user.preferences, ...preferences };
 
-    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true, runValidators: true });
+    const user = await User.findByIdAndUpdate(req.user._id, updates, {
+      new: true,
+      runValidators: true,
+    });
 
     // Log the event based on what changed
-    let action = 'PROFILE_UPDATE';
+    let action = "PROFILE_UPDATE";
     if (preferences && !name && !bio && !avatarGradient) {
-      action = 'SETTINGS_CHANGE';
+      action = "SETTINGS_CHANGE";
     } else if (avatarGradient && !name && !bio && !preferences) {
-      action = 'AVATAR_UPDATE';
+      action = "AVATAR_UPDATE";
     }
     await logSecurityEvent({ userId: req.user._id, action, req });
 
     res.json({ success: true, user });
   } catch (err) {
-    res.status(500).json({ error: 'Server error updating profile.' });
+    res.status(500).json({ error: "Server error updating profile." });
   }
 });
 
 // ─── Mark Onboarding as Completed ───────────────────────────────────────────
-router.put('/onboarding', protect, async (req, res) => {
+router.put("/onboarding", protect, async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
-      req.user._id, 
-      { onboardingCompleted: true }, 
-      { new: true }
+      req.user._id,
+      { onboardingCompleted: true },
+      { new: true },
     );
     res.json({ success: true, user });
   } catch (err) {
-    res.status(500).json({ error: 'Server error marking onboarding as completed.' });
+    res
+      .status(500)
+      .json({ error: "Server error marking onboarding as completed." });
   }
 });
 
 // ─── Update Dashboard Layout ──────────────────────────────────────────────────
-router.put('/preferences/layout', protect, async (req, res) => {
+router.put("/preferences/layout", protect, async (req, res) => {
   try {
     const { layout } = req.body;
     if (!Array.isArray(layout)) {
-      return res.status(400).json({ error: 'Invalid layout format.' });
+      return res.status(400).json({ error: "Invalid layout format." });
     }
-    
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { 'preferences.dashboardLayout': layout },
-      { new: true }
+      { "preferences.dashboardLayout": layout },
+      { new: true },
     );
-    
+
     res.json({ success: true, user });
   } catch (err) {
-    res.status(500).json({ error: 'Server error updating dashboard layout.' });
+    res.status(500).json({ error: "Server error updating dashboard layout." });
   }
 });
 
 // ─── Change Password ──────────────────────────────────────────────────────────
-router.put('/password', protect,
+router.put(
+  "/password",
+  protect,
   [
-    body('currentPassword').exists().withMessage('Current password required'),
-    body('newPassword')
-      .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
-      .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
-      .matches(/[0-9]/).withMessage('Password must contain at least one number')
+    body("currentPassword").exists().withMessage("Current password required"),
+    body("newPassword")
+      .isLength({ min: 8 })
+      .withMessage("Password must be at least 8 characters")
+      .matches(/[A-Z]/)
+      .withMessage("Password must contain at least one uppercase letter")
+      .matches(/[0-9]/)
+      .withMessage("Password must contain at least one number"),
   ],
   async (req, res) => {
     try {
@@ -549,119 +624,156 @@ router.put('/password', protect,
         return res.status(400).json({ error: errors.array()[0].msg });
       }
 
-      const user = await User.findById(req.user._id).select('+password');
+      const user = await User.findById(req.user._id).select("+password");
       const isMatch = await user.comparePassword(req.body.currentPassword);
       if (!isMatch) {
-        return res.status(400).json({ error: 'Current password is incorrect.' });
+        return res
+          .status(400)
+          .json({ error: "Current password is incorrect." });
       }
 
       user.password = req.body.newPassword;
       await user.save();
 
       // Invalidate current session after password change
-      const token = req.headers.authorization.split(' ')[1];
-      const decoded = require('jsonwebtoken').decode(token);
-      await require('../models/Blacklist').create({
+      const token = req.headers.authorization.split(" ")[1];
+      const decoded = require("jsonwebtoken").decode(token);
+      await require("../models/Blacklist").create({
         token,
-        expiresAt: new Date(decoded.exp * 1000)
+        expiresAt: new Date(decoded.exp * 1000),
       });
 
-      await logSecurityEvent({ userId: req.user._id, action: 'PASSWORD_CHANGE', req });
+      await logSecurityEvent({
+        userId: req.user._id,
+        action: "PASSWORD_CHANGE",
+        req,
+      });
 
-      res.json({ success: true, message: 'Password updated successfully. Please login again.' });
+      res.json({
+        success: true,
+        message: "Password updated successfully. Please login again.",
+      });
     } catch (err) {
-      res.status(500).json({ error: 'Server error updating password.' });
+      res.status(500).json({ error: "Server error updating password." });
     }
-  }
+  },
 );
 
 // ─── Security History ─────────────────────────────────────────────────────────
-router.get('/security-history', protect, async (req, res) => {
+router.get("/security-history", protect, async (req, res) => {
   try {
-    const logs = await require('../models/AuditLog')
+    const logs = await require("../models/AuditLog")
       .find({ user: req.user._id })
       .sort({ createdAt: -1 })
       .limit(50);
     res.json({ success: true, logs });
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching security logs.' });
+    res.status(500).json({ error: "Error fetching security logs." });
   }
 });
 
 // ─── Data Export (GDPR Portability) ───────────────────────────────────────────
-router.get('/export', protect, async (req, res) => {
+router.get("/export", protect, async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Fetch all user data
-    const [tasks, notes, habits, schedules, pomodoros, logs] = await Promise.all([
-      require('../models/Task').find({ user: userId }),
-      require('../models/Note').find({ user: userId }),
-      require('../models/Habit').find({ user: userId }),
-      require('../models/Schedule').find({ user: userId }),
-      require('../models/Pomodoro').find({ user: userId }),
-      require('../models/AuditLog').find({ user: userId })
-    ]);
-
-    const exportData = {
-      profile: req.user.toJSON(),
-      tasks,
-      notes,
-      habits,
-      schedules,
-      pomodoros,
-      securityLogs: logs,
-      exportedAt: new Date().toISOString()
-    };
-
-    await logSecurityEvent({ 
-      userId, 
-      action: 'DATA_EXPORT', 
+    await logSecurityEvent({
+      userId,
+      action: "DATA_EXPORT",
       req,
-      details: { 
-        resources: ['tasks', 'notes', 'habits', 'schedules', 'pomodoros', 'auditLogs'],
-        format: 'json'
-      }
+      details: {
+        resources: [
+          "tasks",
+          "notes",
+          "habits",
+          "schedules",
+          "pomodoros",
+          "auditLogs",
+        ],
+        format: "json",
+      },
     });
 
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename=dayflow_export_${userId}.json`);
-    res.json(exportData);
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=dayflow_export_${userId}.json`,
+    );
+
+    // Start streaming JSON response
+    res.write(
+      '{"profile":' +
+        JSON.stringify(req.user.toJSON()) +
+        ',"exportedAt":"' +
+        new Date().toISOString() +
+        '"',
+    );
+
+    const streamCollection = async (modelName, keyName) => {
+      res.write(`,"${keyName}":[`);
+      const cursor = require(`../models/${modelName}`)
+        .find({ user: userId })
+        .cursor();
+      let first = true;
+      for await (const doc of cursor) {
+        if (!first) res.write(",");
+        res.write(JSON.stringify(doc));
+        first = false;
+      }
+      res.write("]");
+    };
+
+    await streamCollection("Task", "tasks");
+    await streamCollection("Note", "notes");
+    await streamCollection("Habit", "habits");
+    await streamCollection("Schedule", "schedules");
+    await streamCollection("Pomodoro", "pomodoros");
+    await streamCollection("AuditLog", "securityLogs");
+
+    res.write("}");
+    res.end();
   } catch (err) {
-    console.error('Export error:', err);
-    res.status(500).json({ error: 'Error exporting your data.' });
+    console.error("Export error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Error exporting your data." });
+    } else {
+      res.end(); // If stream already started, just end it
+    }
   }
 });
 
 // ─── Account Management (GDPR Deletion) ───────────────────────────────────────
-router.delete('/account', protect, async (req, res) => {
+router.delete("/account", protect, async (req, res) => {
   try {
     const userId = req.user._id;
 
     // Delete all user related data
     await Promise.all([
-      require('../models/Task').deleteMany({ user: userId }),
-      require('../models/Note').deleteMany({ user: userId }),
-      require('../models/Habit').deleteMany({ user: userId }),
-      require('../models/Schedule').deleteMany({ user: userId }),
-      require('../models/Pomodoro').deleteMany({ user: userId }),
-      require('../models/AuditLog').deleteMany({ user: userId }),
-      require('../models/Session').deleteMany({ user: userId }),
-      require('../models/User').findByIdAndDelete(userId)
+      require("../models/Task").deleteMany({ user: userId }),
+      require("../models/Note").deleteMany({ user: userId }),
+      require("../models/Habit").deleteMany({ user: userId }),
+      require("../models/Schedule").deleteMany({ user: userId }),
+      require("../models/Pomodoro").deleteMany({ user: userId }),
+      require("../models/AuditLog").deleteMany({ user: userId }),
+      require("../models/Session").deleteMany({ user: userId }),
+      require("../models/User").findByIdAndDelete(userId),
     ]);
 
-    await logSecurityEvent({ 
-      userId, 
-      action: 'ACCOUNT_DELETION', 
-      status: 'success',
+    await logSecurityEvent({
+      userId,
+      action: "ACCOUNT_DELETION",
+      status: "success",
       req,
-      details: { reason: 'user_initiated' }
+      details: { reason: "user_initiated" },
     });
 
-    res.json({ success: true, message: 'Account and all data deleted permanentely.' });
+    res.json({
+      success: true,
+      message: "Account and all data deleted permanentely.",
+    });
   } catch (err) {
-    console.error('Account deletion error:', err);
-    res.status(500).json({ error: 'Error deleting account.' });
+    console.error("Account deletion error:", err);
+    res.status(500).json({ error: "Error deleting account." });
   }
 });
 

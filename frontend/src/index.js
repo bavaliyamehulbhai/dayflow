@@ -9,7 +9,19 @@ root.render(<React.StrictMode><App /></React.StrictMode>);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('🚀 Service Worker: Registered', reg))
+      .then(reg => {
+        console.log('🚀 Service Worker: Registered', reg);
+        reg.onupdatefound = () => {
+          const installingWorker = reg.installing;
+          if (installingWorker == null) return;
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('🔄 New update available');
+                window.dispatchEvent(new CustomEvent('sw-update-available'));
+            }
+          };
+        };
+      })
       .catch(err => console.error('❌ Service Worker: Error', err));
   });
 }

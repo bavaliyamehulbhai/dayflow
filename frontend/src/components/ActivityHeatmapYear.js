@@ -331,8 +331,8 @@ const ActivityHeatmapYear = React.memo(
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateRows: `repeat(7, ${isMobile ? "14px" : "12px"})`,
-                    gap: isMobile ? 5 : 4,
+                    gridTemplateRows: `repeat(7, ${isMobile ? "12px" : "12px"})`,
+                    gap: isMobile ? 4 : 4,
                     gridAutoFlow: "column",
                   }}
                 >
@@ -341,8 +341,8 @@ const ActivityHeatmapYear = React.memo(
                     <div
                       key={`offset-${i}`}
                       style={{
-                        width: isMobile ? 14 : 12,
-                        height: isMobile ? 14 : 12,
+                        width: isMobile ? 12 : 12,
+                        height: isMobile ? 12 : 12,
                         visibility: "hidden",
                       }}
                     />
@@ -390,8 +390,8 @@ const ActivityHeatmapYear = React.memo(
                             isToday ? { repeat: Infinity, duration: 2 } : false
                           }
                           style={{
-                            width: isMobile ? 14 : 12,
-                            height: isMobile ? 14 : 12,
+                            width: isMobile ? 12 : 12,
+                            height: isMobile ? 12 : 12,
                             borderRadius: 3,
                             background: intensityColors[intensity],
                             opacity: isFuture ? 0.1 : 1,

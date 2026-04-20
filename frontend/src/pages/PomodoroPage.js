@@ -192,8 +192,9 @@ export default function PomodoroPage() {
   // Sync to local storage
   useEffect(() => {
     const now = Date.now();
+    // Throttle writes: Only every 10 seconds OR state transition
     const shouldPersist =
-      !running || timeLeft % 5 === 0 || now - persistRef.current > 5000;
+      !running || timeLeft % 10 === 0 || now - persistRef.current > 10000;
     if (!shouldPersist) return;
 
     localStorage.setItem("df_pomo_mode", mode);
@@ -207,6 +208,20 @@ export default function PomodoroPage() {
     else localStorage.removeItem("df_pomo_startedAt");
     persistRef.current = now;
   }, [mode, timeLeft, running, sessions, currentPomoId, startedAt]);
+
+  // Audio Cleanup on Unmount
+  useEffect(() => {
+    return () => {
+      if (rainRef.current) {
+        try {
+          rainRef.current.source.stop();
+        } catch {}
+      }
+      if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+        audioCtxRef.current.close();
+      }
+    };
+  }, []);
 
   const { data: statsData } = useQuery({
     queryKey: ["pomo-stats"],

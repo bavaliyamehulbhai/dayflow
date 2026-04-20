@@ -9,7 +9,7 @@ import MagneticButton from '../common/MagneticButton';
 const HeatmapWidget = ({ activityData, isMobile, navigate, selectedLog, setSelectedLog }) => {
   return (
     <WidgetWrapper title="Consistency Tracker" icon={Activity}>
-      <div style={{ marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
+      <div style={{ marginBottom: isMobile ? 12 : 24, overflowX: 'auto', paddingBottom: 8 }}>
         <ActivityHeatmapYear 
           data={Array.isArray(activityData) ? activityData : []} 
           isMobile={isMobile} 

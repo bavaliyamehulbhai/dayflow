@@ -58,10 +58,19 @@ export default function Layout({ children }) {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         const w = window.innerWidth;
-        setIsMobile(w <= 768);
-        setIsTablet(w <= 1024 && w > 768);
+        const mobile = w <= 768;
+        const tablet = w <= 1024 && w > 768;
+        setIsMobile(mobile);
+        setIsTablet(tablet);
+        
+        // Dynamic Token Support
+        const root = document.documentElement;
+        if (mobile) root.style.setProperty('--sidebar-w', '0px');
+        else if (tablet) root.style.setProperty('--sidebar-w', '68px');
+        else root.style.setProperty('--sidebar-w', '260px');
       }, 150);
     };
+    handleResize(); // Initial call
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -90,11 +99,11 @@ export default function Layout({ children }) {
     <div className="app-layout">
       {/* ─── Global Aura Orbs ────────────────────────────────────────────── */}
       {!isMobile && (
-        <>
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: -1 }}>
           <div className="aura-orb" style={{ top: '10%', left: '15%', width: 400, height: 400, background: 'var(--aura-color)' }} />
           <div className="aura-orb" style={{ bottom: '15%', right: '10%', width: 500, height: 500, background: 'var(--aura-color-2)', animationDelay: '-5s' }} />
           <div className="aura-orb" style={{ top: '50%', left: '50%', width: 300, height: 300, background: 'var(--aura-color-3)', animationDelay: '-10s', filter: 'blur(120px)' }} />
-        </>
+        </div>
       )}
 
       {/* ─── Desktop + Tablet Sidebar ──────────────────────────────────────── */}
@@ -253,7 +262,7 @@ export default function Layout({ children }) {
 
         {/* ─── Main Content ──────────────────────────────────────────────────── */}
         <main className="main-content" style={{
-          paddingBottom: isMobile ? '120px' : '20px',
+          paddingBottom: isMobile ? '160px' : '20px',
           paddingTop: isMobile ? 'calc(64px + env(safe-area-inset-top, 0px))' : 0
         }}>
           {user?.isDemo && <DemoBanner />}

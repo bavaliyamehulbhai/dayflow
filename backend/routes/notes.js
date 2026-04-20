@@ -80,6 +80,7 @@ router.post("/", noteValidation, async (req, res) => {
 
     // Log activity
     await logActivity(req.user._id, { notesCreated: 1 });
+    clearCache(req.user._id);
 
     res.status(201).json({ success: true, note });
   } catch (err) {

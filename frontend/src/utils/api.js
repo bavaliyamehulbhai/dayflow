@@ -5,26 +5,26 @@ const CLIENT_VERSION = '1.0.0';
 
 const api = axios.create({
   baseURL: API_BASE,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     'X-Client-Version': CLIENT_VERSION,
   }
 });
 
-// Attach token to every request
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('dayflow_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// Global 401/423 handler — uses custom event so AuthContext can react cleanly
+// Global 401 handler — uses custom event so AuthContext can react cleanly
 api.interceptors.response.use(
   response => response,
   error => {
     const status = error.response?.status;
-    if (status === 401) {
-      localStorage.removeItem('dayflow_token');
+    const url = error.config?.url;
+    
+    // Don't trigger unauthorized flow for logout/login/register requests to avoid infinite loops
+    const isAuthAction = url?.includes('/auth/logout') || 
+                         url?.includes('/auth/login') || 
+                         url?.includes('/auth/register');
+
+    if (status === 401 && !isAuthAction) {
       // Dispatch event so AuthContext can clear user state without hard reload
       window.dispatchEvent(new CustomEvent('dayflow:unauthorized'));
     }
@@ -38,6 +38,7 @@ export default api;
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
+  logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
   completeOnboarding: () => api.put('/auth/onboarding'),

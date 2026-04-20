@@ -112,16 +112,24 @@ router.post('/:id/complete',
       const habit = await Habit.findOne({ _id: id, user: req.user._id });
       if (!habit) return res.status(404).json({ error: 'Habit not found.' });
 
-      const existing = habit.completions.find(c => c.date === date);
+      const idx = habit.completions.findIndex(c => c.date === date);
 
-      if (existing) {
-        // Remove completion (toggle off)
-        habit.completions = habit.completions.filter(c => c.date !== date);
+      // Standardized Today calculation (Local Server Time)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+
+      if (idx > -1) {
+        // Remove completion
+        habit.completions.splice(idx, 1);
+        // Log negative activity
+        await logActivity(req.user._id, { habitsCompleted: -1 });
       } else {
         // Add completion
         habit.completions.push({ date, count, note });
         // Log as daily activity if completing for today
-        const todayStr = new Date().toISOString().split('T')[0];
         if (date === todayStr) {
           await logActivity(req.user._id, { habitsCompleted: 1 });
           await updateStreak(req.user._id);
@@ -129,18 +137,28 @@ router.post('/:id/complete',
       }
 
       // Recalculate streak: Walk backwards from the most recent completion
-      const completedDates = habit.completions.map(c => c.date).sort();
+      // Optimization: Only scan if completions exist
+      const completedDates = [...new Set(habit.completions.map(c => c.date))].sort();
       const lastCompleted = completedDates[completedDates.length - 1];
       
       let streak = 0;
       if (lastCompleted) {
-        // Use a more robust date decrement approach to avoid T-drift
         let current = lastCompleted;
-        while (completedDates.includes(current)) {
-          streak++;
-          let d = new Date(current + 'T12:00:00Z'); // Fixed noon anchor
-          d.setUTCDate(d.getUTCDate() - 1);
-          current = d.toISOString().split('T')[0];
+        // Check if last completion is today or yesterday to maintain streak
+        const yesterday = new Date(); 
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yestStr = yesterday.toISOString().split('T')[0];
+
+        // Only calculate if the last completion is recent enough to sustain a streak
+        if (lastCompleted === todayStr || lastCompleted === yestStr) {
+          while (completedDates.includes(current)) {
+            streak++;
+            let d = new Date(current + 'T12:00:00Z'); 
+            d.setUTCDate(d.getUTCDate() - 1);
+            current = d.toISOString().split('T')[0];
+            // Safety break for extremely large data
+            if (streak > 1000) break; 
+          }
         }
       }
 

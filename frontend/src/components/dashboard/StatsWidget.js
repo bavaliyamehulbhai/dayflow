@@ -7,19 +7,27 @@ import WidgetWrapper from './WidgetWrapper';
 const AnimatedStat = React.memo(({ value, label, color, icon: Icon, onClick }) => {
   const animated = useCountUp(typeof value === 'number' ? value : 0);
   const display = typeof value === 'string' ? value : animated;
+  const isMobile = window.innerWidth <= 768;
   return (
     <div 
       className="stat-card-premium gpu-accel haptic-tap" 
       onClick={onClick}
-      style={{ cursor: onClick ? 'pointer' : 'default', background: 'var(--surface2)', borderRadius: 16, padding: '16px', position: 'relative', overflow: 'hidden' }}
+      style={{ 
+        cursor: onClick ? 'pointer' : 'default', 
+        background: 'var(--surface2)', 
+        borderRadius: 16, 
+        padding: isMobile ? '12px' : '16px', 
+        position: 'relative', 
+        overflow: 'hidden' 
+      }}
     >
       <div className="stat-card-glow" style={{ position: 'absolute', inset: 0, opacity: 0.1, background: `radial-gradient(circle at 50% 50%, ${color}, transparent 70%)` }} />
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ color, opacity: 0.9, marginBottom: 4 }}><Icon size={20} /></div>
+        <div style={{ color, opacity: 0.9, marginBottom: 4 }}><Icon size={isMobile ? 18 : 20} /></div>
         <SensitivityShield>
-          <div style={{ fontSize: 24, fontWeight: 900, color, letterSpacing: '-0.02em', fontFamily: 'Syne, sans-serif' }}>{display}</div>
+          <div style={{ fontSize: isMobile ? 21 : 24, fontWeight: 900, color, letterSpacing: '-0.02em', fontFamily: 'Syne, sans-serif' }}>{display}</div>
         </SensitivityShield>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
+        <div style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
       </div>
     </div>
   );

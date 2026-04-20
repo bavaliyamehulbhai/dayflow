@@ -488,12 +488,14 @@ export default function SchedulePage() {
   };
 
   const prevDay = () => {
-    const d = safeNewDate(currentDate + "T00:00:00") || new Date();
-    setCurrentDate(safeFormat(subDays(d, 1), "yyyy-MM-dd"));
+    const d = new Date(currentDate + "T12:00:00");
+    d.setDate(d.getDate() - 1);
+    setCurrentDate(d.toISOString().split("T")[0]);
   };
   const nextDay = () => {
-    const d = safeNewDate(currentDate + "T00:00:00") || new Date();
-    setCurrentDate(safeFormat(addDays(d, 1), "yyyy-MM-dd"));
+    const d = new Date(currentDate + "T12:00:00");
+    d.setDate(d.getDate() + 1);
+    setCurrentDate(d.toISOString().split("T")[0]);
   };
 
   const hours = Array.from({ length: 18 }, (_, i) => i + 6);
@@ -658,7 +660,7 @@ export default function SchedulePage() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                {safeFormat(currentDate + "T00:00:00", "EEEE")}
+                {safeFormat(new Date(currentDate + "T12:00:00"), "EEEE")}
               </div>
               <div
                 style={{
@@ -670,7 +672,7 @@ export default function SchedulePage() {
                   textTransform: "uppercase",
                 }}
               >
-                {safeFormat(currentDate + "T00:00:00", "MMMM d, yyyy")}
+                {safeFormat(new Date(currentDate + "T12:00:00"), "MMMM d, yyyy")}
               </div>
             </div>
             <motion.button
