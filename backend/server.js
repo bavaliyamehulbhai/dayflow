@@ -24,6 +24,9 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 
+// Trust proxy for rate limiting (essential for Render/CRA proxies)
+app.set("trust proxy", 1);
+
 // ─── Query Sanitizer (Deep NoSQL Defense) ────────────────────────────────────
 app.use(querySanitizer);
 
@@ -97,6 +100,7 @@ if (process.env.NODE_ENV === "development") {
 const allowedOrigins = [
   "https://dayflow-inky.vercel.app",
   "http://localhost:3000",
+  "http://localhost:5000",
   "http://localhost:5173",
   ...(process.env.CLIENT_URLS
     ? process.env.CLIENT_URLS.split(",").map((o) => o.trim())
@@ -155,9 +159,13 @@ const speedLimiter = slowDown({
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many requests. Please try again later." },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skip: (req) => !process.env.NODE_ENV || process.env.NODE_ENV === 'development',
+  message: { 
+    error: "Too many requests. Please try again later.",
+    code: "RATE_LIMIT_EXCEEDED"
+  },
 });
 
 // Stricter limiter for auth endpoints — 10 req / 15 min per IP
@@ -167,7 +175,8 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Too many security-sensitive attempts. Please try again later.",
+    error: "Too many security-sensitive attempts. Please try again later. Safety lockout active.",
+    code: "AUTH_RATE_LIMIT_EXCEEDED"
   },
 });
 
@@ -175,7 +184,12 @@ const authLimiter = rateLimit({
 const exportLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  message: { error: "Data export limit reached. Please try again in an hour." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { 
+    error: "Data export limit reached. Please try again in an hour.",
+    code: "EXPORT_LIMIT_EXCEEDED"
+  },
 });
 
 app.use("/api/", speedLimiter);
@@ -217,13 +231,14 @@ app.use((req, res, next) => {
     origin && origin.includes("dayflow") && origin.endsWith(".vercel.app");
   const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === "development";
   const isLocalDevOrigin =
-    origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(origin);
 
   // Use the same allowedOrigins list for CSRF protection
   if (
     req.method !== "GET" &&
     origin &&
     !allowedOrigins.includes(origin) &&
+    !allowedOrigins.includes(origin.replace(/\/$/, "")) &&
     !isVercelPreview &&
     !(isDev && isLocalDevOrigin)
   ) {
@@ -239,20 +254,26 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // ─── Database Connection (with dynamic connection pool) ───────────────────────────────
-const numWorkers = os.cpus().length || 1;
-const mongoOpts = {
-  maxPoolSize: Math.max(2, Math.floor(100 / numWorkers)), // Dynamically bound to avoid Free Tier > 500 limits across cluster
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-};
+// ─── Database Connection Helper ───────────────────────────────────────────────────
+const connectDB = async (numWorkers) => {
+  const mongoOpts = {
+    maxPoolSize: Math.max(2, Math.floor(100 / numWorkers)), // Dynamically bound to avoid Free Tier limits
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+  };
 
-mongoose
-  .connect(
-    process.env.MONGODB_URI || "mongodb://localhost:27017/dayflow",
-    mongoOpts,
-  )
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  try {
+    await mongoose.connect(
+      process.env.MONGODB_URI || "mongodb://localhost:27017/dayflow",
+      mongoOpts,
+    );
+    console.log("✅ MongoDB connected");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err);
+    // In production, we might want to exit if DB fails
+    if (process.env.NODE_ENV === "production") process.exit(1);
+  }
+};
 
 // Graceful connection error handling
 mongoose.connection.on("error", (err) => {
@@ -311,14 +332,33 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Master / Worker Clustering ───────────────────────────────────────────────
-if (cluster.isPrimary) {
-  const numCPUs = os.cpus().length || 1;
+// On Render Free tier, we MUST limit workers because of 512MB RAM limit.
+// Render sets WEB_CONCURRENCY=1 by default.
+const getWorkerCount = () => {
+  // Always respect WEB_CONCURRENCY if explicitly set (e.g. by Render)
+  if (process.env.WEB_CONCURRENCY) return parseInt(process.env.WEB_CONCURRENCY);
+  
+  // For production environments not setting WEB_CONCURRENCY, default to 1 for safety
+  if (process.env.NODE_ENV === "production") return 1;
+  
+  // For local development, use 1 worker to ensure stability on Windows and save RAM
+  // Only use multiple workers if you are specifically testing clustering logic.
+  return 1; 
+};
+
+const numWorkers = getWorkerCount();
+
+console.log(`[STARTUP] Environment: ${process.env.NODE_ENV || "development"}`);
+console.log(`[STARTUP] Configured Workers: ${numWorkers}`);
+console.log(`[STARTUP] Trust Proxy: ${app.get("trust proxy")}`);
+
+if (cluster.isPrimary && numWorkers > 1) {
   console.log(
-    `🛡️ Primary ${process.pid} is running. Spawning ${numCPUs} workers...`,
+    `🛡️ Primary ${process.pid} is running. Spawning ${numWorkers} workers...`,
   );
 
   // Fork workers
-  for (let i = 0; i < numCPUs; i++) {
+  for (let i = 0; i < numWorkers; i++) {
     cluster.fork();
   }
 
@@ -329,7 +369,10 @@ if (cluster.isPrimary) {
     cluster.fork();
   });
 } else {
-  // ─── Start Server (Worker Process) ──────────────────────────────────────────
+  // ─── Start Server (Worker Process or Single Process) ─────────────────────────
+  // Connect to database ONLY in the process that will handle requests
+  connectDB(numWorkers);
+
   const PORT = process.env.PORT || 5000;
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 DayFlow Worker ${process.pid} running on port ${PORT}`);

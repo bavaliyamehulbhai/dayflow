@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : `${window.location.protocol}//${window.location.hostname}:5000/api`);
+const API_BASE = process.env.REACT_APP_API_URL || '/api';
 const CLIENT_VERSION = '1.0.0';
 
 const api = axios.create({

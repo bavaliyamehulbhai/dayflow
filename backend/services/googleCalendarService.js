@@ -1,16 +1,22 @@
 const { google } = require('googleapis');
 const User = require('../models/User');
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/google/callback'
-);
+const oauth2Client = 
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/google/callback'
+      )
+    : null;
 
 /**
  * Get the Google Auth URL
  */
 const getAuthUrl = () => {
+  if (!oauth2Client) {
+    throw new Error('Google Calendar is not configured on the server. Missing API keys.');
+  }
   const scopes = [
     'https://www.googleapis.com/auth/calendar.readonly',
     'https://www.googleapis.com/auth/userinfo.email'
@@ -27,6 +33,7 @@ const getAuthUrl = () => {
  * Handle the callback and store tokens
  */
 const handleCallback = async (code, userId) => {
+  if (!oauth2Client) throw new Error('Google Calendar not configured');
   const { tokens } = await oauth2Client.getToken(code);
   
   // Get user info to store the email
@@ -53,6 +60,7 @@ const handleCallback = async (code, userId) => {
  * Refresh the access token if expired
  */
 const refreshAccessToken = async (user) => {
+  if (!oauth2Client) throw new Error('Google Calendar not configured');
   if (!user.googleCalendar || !user.googleCalendar.refreshToken) {
     throw new Error('Google Calendar not connected');
   }
@@ -82,6 +90,7 @@ const refreshAccessToken = async (user) => {
  * Fetch calendar events
  */
 const getCalendarEvents = async (user) => {
+  if (!oauth2Client) throw new Error('Google Calendar not configured');
   let accessToken = user.googleCalendar.accessToken;
   
   // Check if token is expired (with 1 min buffer)

@@ -764,7 +764,7 @@ export default function TasksPage() {
       if (context?.previousState) {
         qc.setQueryData(["tasks", filters], context.previousState);
       }
-      addToast("Failed to update objective", "error");
+      addToast(err.response?.data?.error || "Failed to update objective", "error");
     },
     onSettled: () => {
       invalidate();
