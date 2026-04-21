@@ -151,7 +151,19 @@
   gap: 1px !important;
 }
 
-@import './mobile_ux.css';
+/* --- Performance & Hardware Acceleration --- */
+.gpu-accel {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+.no-select {
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 @import './mobile_ux.css';
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
 

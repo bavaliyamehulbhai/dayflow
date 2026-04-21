@@ -361,34 +361,29 @@ const ActivityHeatmapYear = React.memo(
                       log.score >= maxScore * 0.95 &&
                       maxScore > 0;
 
+                    const TileComponent = isMobile ? 'div' : motion.div;
+                    const tileProps = isMobile ? {} : {
+                      whileHover: { scale: 1.3, zIndex: 10 },
+                      initial: isToday ? { boxShadow: "0 0 0px var(--accent)" } : false,
+                      animate: isToday ? {
+                        boxShadow: [
+                          "0 0 0px var(--accent)",
+                          "0 0 10px var(--accent)",
+                          "0 0 0px var(--accent)",
+                        ],
+                      } : false,
+                      transition: isToday ? { repeat: Infinity, duration: 2 } : false,
+                    };
+
                     return (
                       <div key={dateStr} style={{ position: "relative" }}>
-                        <motion.div
-                          whileHover={{ scale: 1.3, zIndex: 10 }}
+                        <TileComponent
+                          {...tileProps}
                           onClick={() => !isFuture && handleSelect(day, log)}
                           onMouseEnter={() =>
-                            setHoveredDay({ date: day, log, id: dateStr })
+                            !isMobile && setHoveredDay({ date: day, log, id: dateStr })
                           }
-                          onMouseLeave={() => setHoveredDay(null)}
-                          initial={
-                            isToday
-                              ? { boxShadow: "0 0 0px var(--accent)" }
-                              : false
-                          }
-                          animate={
-                            isToday
-                              ? {
-                                  boxShadow: [
-                                    "0 0 0px var(--accent)",
-                                    "0 0 10px var(--accent)",
-                                    "0 0 0px var(--accent)",
-                                  ],
-                                }
-                              : false
-                          }
-                          transition={
-                            isToday ? { repeat: Infinity, duration: 2 } : false
-                          }
+                          onMouseLeave={() => !isMobile && setHoveredDay(null)}
                           style={{
                             width: isMobile ? 12 : 12,
                             height: isMobile ? 12 : 12,
@@ -405,6 +400,9 @@ const ActivityHeatmapYear = React.memo(
                             boxShadow: isSelected
                               ? "0 0 15px rgba(255,255,255,0.4)"
                               : "none",
+                            // Add hardware acceleration
+                            transform: isMobile ? 'translateZ(0)' : undefined,
+                            willChange: isSelected || isToday ? 'transform' : 'auto'
                           }}
                         >
                           {isRecord && (
@@ -420,7 +418,7 @@ const ActivityHeatmapYear = React.memo(
                               ✨
                             </div>
                           )}
-                        </motion.div>
+                        </TileComponent>
 
                         <AnimatePresence>
                           {hoveredDay && hoveredDay.id === dateStr && (

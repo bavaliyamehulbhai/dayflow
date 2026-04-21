@@ -50,7 +50,7 @@ function useWindowWidth() {
 }
 
 // ─── Clock Component (Header) ──────────────────────────────────────────────────
-function Clock() {
+const Clock = React.memo(() => {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
@@ -68,7 +68,7 @@ function Clock() {
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      className="hero-module-clock"
+      className="hero-module-clock gpu-accel"
       style={{
         padding: isMobile ? "40px 0 20px" : "90px 0 50px",
         textAlign: "center",
@@ -80,7 +80,7 @@ function Clock() {
       }}
     >
       <motion.div
-        animate={{ filter: ["blur(0px)", "blur(0.5px)", "blur(0px)"] }}
+        animate={isMobile ? {} : { filter: ["blur(0px)", "blur(0.5px)", "blur(0px)"] }}
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
       >
         <div
@@ -184,6 +184,7 @@ function Clock() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
+            className="gpu-accel"
             style={{
               color: "#fff",
               background: "rgba(255, 255, 255, 0.05)",
@@ -203,7 +204,7 @@ function Clock() {
       </div>
     </motion.div>
   );
-}
+});
 
 const AuraOrb = React.memo(
   ({ color, size, top, left, delay, duration = 15 }) => (
@@ -402,19 +403,22 @@ export default function DashboardPage() {
       >
         <AuraOrb
           color="var(--accent)"
-          size={300}
+          size={isMobile ? 200 : 300}
           top="-100px"
           left="-50px"
           delay={0}
+          duration={isMobile ? 20 : 15}
         />
-        <AuraOrb
-          color="var(--accent2)"
-          size={250}
-          top="20px"
-          left="200px"
-          delay={2}
-          duration={12}
-        />
+        {!isMobile && (
+          <AuraOrb
+            color="var(--accent2)"
+            size={250}
+            top="20px"
+            left="200px"
+            delay={2}
+            duration={12}
+          />
+        )}
         <div className="flex-items-center gap-4" style={{ justifyContent: isMobile ? 'center' : 'flex-start' }}>
           <GreetingIcon
             className="text-accent aura-float"

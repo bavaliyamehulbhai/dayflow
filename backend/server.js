@@ -294,6 +294,9 @@ app.use("/api/google", require("./routes/google"));
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
+  const buildPath = path.join(__dirname, "..", "frontend", "build");
+  const distPath = path.join(__dirname, "..", "frontend", "dist");
+  
   res.json({
     status: "ok",
     message: "DayFlow API is running",
@@ -301,15 +304,41 @@ app.get("/api/health", (req, res) => {
     mongodb:
       mongoose.connection.readyState === 1 ? "connected" : "disconnected",
     environment: process.env.NODE_ENV || "development",
+    frontendBuild: {
+      expectedPath: buildPath,
+      exists: fs.existsSync(buildPath),
+      alternativeDistExists: fs.existsSync(distPath)
+    }
   });
 });
 
 // ─── Production Static File Serving ───────────────────────────────────────────
 const path = require("path");
+const fs = require("fs");
+
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "..", "frontend", "build")));
+  const buildPath = path.join(__dirname, "..", "frontend", "build");
+  
+  // Debug log to help identify path issues on Render
+  if (fs.existsSync(buildPath)) {
+    console.log(`✅ Frontend build found at: ${buildPath}`);
+  } else {
+    console.error(`❌ WARNING: Frontend build NOT found at: ${buildPath}`);
+    console.error(`   Current __dirname: ${__dirname}`);
+    console.log("   Checking alternative path: ../frontend/dist (for Vite apps)");
+    if (fs.existsSync(path.join(__dirname, "..", "frontend", "dist"))) {
+       console.log("   ✅ Found 'dist' folder instead of 'build'.");
+    }
+  }
+
+  app.use(express.static(buildPath));
   app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "frontend", "build", "index.html"));
+    const indexPath = path.join(buildPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send("Frontend build not found. Please ensure 'npm run build' completed successfully.");
+    }
   });
 }
 
