@@ -290,7 +290,6 @@ app.use("/api/notes", require("./routes/notes"));
 app.use("/api/dashboard", require("./routes/dashboard"));
 app.use("/api/badges", require("./routes/badges"));
 app.use("/api/ai", require("./routes/ai"));
-app.use("/api/google", require("./routes/google"));
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {

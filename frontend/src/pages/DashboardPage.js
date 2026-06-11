@@ -11,13 +11,31 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { format, addSeconds } from "date-fns";
 import { safeFormat } from "../utils/dateUtils";
-import { Sun, Moon, Sunrise, Sunset, Zap, Sparkles } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Sunrise,
+  Sunset,
+  Zap,
+  Sparkles,
+  Target,
+  GripVertical,
+  X,
+  Check,
+  Eye,
+  EyeOff,
+  Sliders,
+  LayoutGrid
+} from "lucide-react";
 import { motion, Reorder, AnimatePresence } from "framer-motion";
+
+export const DashboardDensityContext = React.createContext('comfortable');
 import Skeleton from "../components/Skeleton";
 import GuidedTour from "../components/common/GuidedTour";
 import { getSafeId } from "../utils/idUtils";
 
 // Import Widgets
+import WidgetWrapper from "../components/dashboard/WidgetWrapper";
 import StatsWidget from "../components/dashboard/StatsWidget";
 import HeatmapWidget from "../components/dashboard/HeatmapWidget";
 import TasksWidget from "../components/dashboard/TasksWidget";
@@ -28,7 +46,6 @@ import HabitsWidget from "../components/dashboard/HabitsWidget";
 import NotesWidget from "../components/dashboard/NotesWidget";
 import NotificationsWidget from "../components/dashboard/NotificationsWidget";
 import WeeklyProgressBar from "../components/dashboard/WeeklyProgressBar";
-import GoogleCalendarWidget from "../components/dashboard/GoogleCalendarWidget";
 
 const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
 
@@ -57,152 +74,28 @@ const Clock = React.memo(() => {
     return () => clearInterval(t);
   }, []);
 
-  const hours = time.getHours();
-  const pct = Math.min(
-    100,
-    Math.max(0, (((hours - 6) * 60 + time.getMinutes()) / (17 * 60)) * 100),
-  );
-  const isMobile = window.innerWidth <= 768;
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="hero-module-clock gpu-accel"
+    <div
       style={{
-        padding: isMobile ? "40px 0 20px" : "90px 0 50px",
-        textAlign: "center",
-        position: "relative",
         zIndex: 1,
-        marginBottom: isMobile ? "20px" : "70px",
-        background:
-          "radial-gradient(circle at 50% 50%, rgba(124, 109, 250, 0.12) 0%, transparent 75%)",
+        background: "rgba(255, 255, 255, 0.02)",
+        border: "1px solid var(--border)",
+        borderRadius: "12px",
+        padding: "8px 16px",
+        textAlign: "right",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center"
       }}
     >
-      <motion.div
-        animate={isMobile ? {} : { filter: ["blur(0px)", "blur(0.5px)", "blur(0px)"] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <div
-          style={{
-            fontSize: isMobile ? "clamp(3.2rem, 14vw, 4.8rem)" : "10rem",
-            fontWeight: 900,
-            fontFamily: "Syne, sans-serif",
-            letterSpacing: "-0.06em",
-            lineHeight: 0.9,
-            background:
-              "linear-gradient(135deg, #fff 30%, rgba(255,255,255,0.7) 60%, #fff 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            textShadow: "0 0 40px rgba(124, 109, 250, 0.4)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            position: "relative",
-          }}
-        >
-          {safeFormat(time, "HH:mm")}
-          <span
-            style={{
-              opacity: 0.4,
-              fontSize: "0.35em",
-              marginLeft: 12,
-              WebkitTextFillColor: "var(--accent)",
-              textShadow: "none",
-            }}
-          >
-            {safeFormat(time, "ss")}
-          </span>
-        </div>
-        <div
-          className="clock-date-display"
-          style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: isMobile ? "0.9rem" : "1.2rem",
-            fontWeight: 800,
-            color: "var(--accent3)",
-            marginTop: 16,
-            textTransform: "uppercase",
-            letterSpacing: "0.4em",
-          }}
-        >
-          {safeFormat(time, "EEEE, MMMM do")}
-        </div>
-      </motion.div>
-
-      <div
-        style={{
-          marginTop: isMobile ? "28px" : "80px",
-          maxWidth: "800px",
-          marginLeft: "auto",
-          marginRight: "auto",
-          position: "relative",
-          padding: isMobile ? "0 14px" : "0",
-        }}
-      >
-        <div
-          style={{
-            height: 6,
-            background: "rgba(255,255,255,0.02)",
-            borderRadius: 20,
-            overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.05)",
-            backdropFilter: "blur(5px)",
-          }}
-        >
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 3, ease: "circOut" }}
-            style={{
-              height: "100%",
-              background: "linear-gradient(90deg, #7c6dfa 0%, #00f2fe 100%)",
-              borderRadius: 20,
-              boxShadow: "0 0 25px rgba(124, 109, 250, 0.3)",
-              position: "relative",
-            }}
-          >
-            <div
-              className="shimmer-sweep"
-              style={{ position: "absolute", inset: 0, opacity: 0.5 }}
-            />
-          </motion.div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            fontSize: 10,
-            color: "var(--muted)",
-            marginTop: 16,
-            fontWeight: 900,
-            letterSpacing: "0.2em",
-          }}
-        >
-          <span style={{ opacity: 0.5 }}>DAWN</span>
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="gpu-accel"
-            style={{
-              color: "#fff",
-              background: "rgba(255, 255, 255, 0.05)",
-              padding: "8px 20px",
-              borderRadius: 30,
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              fontSize: 11,
-              fontWeight: 800,
-              backdropFilter: "blur(10px)",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-            }}
-          >
-            {Math.round(pct)}% COMPLETE
-          </motion.div>
-          <span style={{ opacity: 0.5 }}>DUSK</span>
-        </div>
+      <div style={{ fontSize: "1.35rem", fontWeight: 800, fontFamily: "Syne, sans-serif", color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+        <span>{safeFormat(time, "HH:mm")}</span>
+        <span style={{ fontSize: "0.8rem", color: "var(--accent)" }}>{safeFormat(time, "ss")}</span>
       </div>
-    </motion.div>
+      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
+        {safeFormat(time, "EEEE, MMMM d")}
+      </div>
+    </div>
   );
 });
 
@@ -242,7 +135,6 @@ const DEFAULT_LAYOUT = [
   "stats",
   "weekly-goal",
   "notifications",
-  "google-calendar",
   "heatmap",
   "tasks",
   "ai-coach",
@@ -251,6 +143,11 @@ const DEFAULT_LAYOUT = [
   "habits",
   "notes",
 ];
+
+const getWidgetSpan = (id) => {
+  if (id === "stats" || id === "heatmap") return "span 2";
+  return "span 1";
+};
 
 // ─── Shared Widget Components ───────────────────────────────────────
 const WidgetRenderer = ({
@@ -293,9 +190,11 @@ const WidgetRenderer = ({
     case "notifications":
       return <NotificationsWidget data={data} navigate={navigate} />;
     case "weekly-goal":
-      return <WeeklyProgressBar progress={data?.weeklyProgress} />;
-    case "google-calendar":
-      return <GoogleCalendarWidget />;
+      return (
+        <WidgetWrapper title="Weekly Progress" icon={Target}>
+          <WeeklyProgressBar progress={data?.weeklyProgress} />
+        </WidgetWrapper>
+      );
     default:
       return null;
   }
@@ -311,6 +210,16 @@ export default function DashboardPage() {
   const [selectedLog, setSelectedLog] = useState(null);
   const [showTour, setShowTour] = useState(false);
   const [layout, setLayout] = useState(DEFAULT_LAYOUT);
+
+  // Layout visibilities and density custom states
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [activeWidgets, setActiveWidgets] = useState(() => {
+    const saved = localStorage.getItem("df_dashboard_visible_widgets");
+    return saved ? JSON.parse(saved) : DEFAULT_LAYOUT;
+  });
+  const [density, setDensity] = useState(() => {
+    return localStorage.getItem("df_dashboard_density") || "comfortable";
+  });
 
   useEffect(() => {
     if (user && !user.onboardingCompleted) {
@@ -347,6 +256,43 @@ export default function DashboardPage() {
       console.error("Failed to persist dashboard layout:", err);
     }
   };
+
+  const toggleWidgetVisibility = (id) => {
+    const next = activeWidgets.includes(id)
+      ? activeWidgets.filter(w => w !== id)
+      : [...activeWidgets, id];
+    setActiveWidgets(next);
+    localStorage.setItem("df_dashboard_visible_widgets", JSON.stringify(next));
+  };
+
+  const applyPreset = (presetType) => {
+    if (presetType === "standard") {
+      setDensity("comfortable");
+      setActiveWidgets(DEFAULT_LAYOUT);
+      localStorage.setItem("df_dashboard_density", "comfortable");
+      localStorage.setItem("df_dashboard_visible_widgets", JSON.stringify(DEFAULT_LAYOUT));
+    } else if (presetType === "focus") {
+      setDensity("focus");
+      const focusWidgets = ["stats", "weekly-goal", "tasks", "schedule"];
+      setActiveWidgets(focusWidgets);
+      localStorage.setItem("df_dashboard_density", "focus");
+      localStorage.setItem("df_dashboard_visible_widgets", JSON.stringify(focusWidgets));
+    } else if (presetType === "compact") {
+      setDensity("compact");
+      setActiveWidgets(DEFAULT_LAYOUT);
+      localStorage.setItem("df_dashboard_density", "compact");
+      localStorage.setItem("df_dashboard_visible_widgets", JSON.stringify(DEFAULT_LAYOUT));
+    }
+  };
+
+  const handleDensityChange = (newDensity) => {
+    setDensity(newDensity);
+    localStorage.setItem("df_dashboard_density", newDensity);
+  };
+
+  const visibleWidgets = useMemo(() => {
+    return layout.filter(id => activeWidgets.includes(id));
+  }, [layout, activeWidgets]);
 
   const { greeting, GreetingIcon } = useMemo(() => {
     const hours = new Date().getHours();
@@ -398,125 +344,331 @@ export default function DashboardPage() {
   return (
     <div className="responsive-container page-shell" style={{ overflowX: 'hidden' }}>
       <div
-        className="dashboard-header"
-        style={{ position: "relative", overflow: "hidden", borderRadius: 32, marginBottom: 32 }}
+        className="dashboard-header-premium"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          padding: isMobile ? "16px" : "20px 24px",
+          background: "var(--surface2)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px",
+          marginBottom: "24px",
+          position: "relative",
+          overflow: "hidden"
+        }}
       >
         <AuraOrb
           color="var(--accent)"
-          size={isMobile ? 200 : 300}
-          top="-100px"
-          left="-50px"
+          size={isMobile ? 120 : 200}
+          top="-60px"
+          left="-30px"
           delay={0}
           duration={isMobile ? 20 : 15}
         />
-        {!isMobile && (
-          <AuraOrb
-            color="var(--accent2)"
-            size={250}
-            top="20px"
-            left="200px"
-            delay={2}
-            duration={12}
-          />
-        )}
-        <div className="flex-items-center gap-4" style={{ justifyContent: isMobile ? 'center' : 'flex-start' }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
           <GreetingIcon
             className="text-accent aura-float"
-            size={isMobile ? 28 : 44}
+            size={isMobile ? 22 : 28}
           />
-          <div
-            className="dashboard-title text-display"
-            style={{ fontSize: "var(--fs-2xl)" }}
-          >
-            {greeting},{" "}
-            <span className="holographic-text">
-              {user?.name?.split(" ")[0]}
-            </span>
+          <div>
+            <h1
+              className="dashboard-title"
+              style={{
+                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontWeight: 800,
+                fontFamily: "Syne, sans-serif",
+                margin: 0,
+                color: "var(--text)"
+              }}
+            >
+              {greeting}, <span className="holographic-text" style={{ color: "var(--accent)" }}>{user?.name?.split(" ")[0]}</span>
+            </h1>
+            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+              Here is your workspace overview for today.
+            </p>
           </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
+          <button
+            onClick={() => setCustomizeOpen(true)}
+            style={{
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              color: "white",
+              padding: "8px 16px",
+              borderRadius: "12px",
+              fontSize: "12px",
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer"
+            }}
+            className="haptic-tap hover-lift"
+          >
+            <Sparkles size={14} className="text-accent" />
+            <span>Customize</span>
+          </button>
+          <Clock />
         </div>
       </div>
 
-      <Clock />
+      <DashboardDensityContext.Provider value={density}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : density === "compact"
+              ? "repeat(auto-fit, minmax(280px, 1fr))"
+              : "repeat(3, 1fr)",
+            gap: isMobile 
+              ? "16px" 
+              : density === "compact" 
+              ? "12px" 
+              : density === "focus" 
+              ? "32px" 
+              : "24px",
+            padding: 0,
+            margin: 0,
+            paddingBottom: "80px",
+          }}
+        >
+          <AnimatePresence mode="popLayout">
+            {visibleWidgets.map((itemId, index) => {
+              const safeKey = getSafeId(itemId, `widget-${index}`);
+              const span = getWidgetSpan(itemId);
+              
+              return (
+                <motion.div
+                  key={safeKey}
+                  layoutId={safeKey}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 30,
+                    delay: index * 0.05
+                  }}
+                  style={{
+                    gridColumn: isMobile ? "auto" : (density === "compact" ? "auto" : span)
+                  }}
+                >
+                  <div style={{ height: "100%", perspective: "1000px" }} className="gpu-accel">
+                    <MemoWidget
+                      id={itemId}
+                      data={data}
+                      user={user}
+                      navigate={navigate}
+                      activityData={activityData}
+                      isMobile={isMobile}
+                      selectedLog={selectedLog}
+                      setSelectedLog={setSelectedLog}
+                    />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      </DashboardDensityContext.Provider>
 
-      <Reorder.Group
-        axis="y"
-        values={layout}
-        onReorder={isMobile ? () => {} : handleReorder}
-        style={{
-          display: "grid",
-          gridTemplateColumns: isMobile
-            ? "1fr"
-            : "repeat(auto-fill, minmax(420px, 1fr))",
-          gap: isMobile ? "24px" : "48px",
-          padding: 0,
-          margin: 0,
-          paddingBottom: isMobile ? "60px" : "60px",
-          listStyle: "none",
-        }}
-      >
-        <AnimatePresence mode="popLayout">
-          {layout.map((itemId, index) => {
-            const safeKey = getSafeId(itemId, `widget-${index}`);
-            const animProps = {
-              initial: { opacity: 0, y: 30, scale: 0.95 },
-              animate: {
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                transition: {
-                  duration: 0.6,
-                  delay: index * 0.1,
-                  ease: [0.16, 1, 0.3, 1],
-                },
-              },
-              exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2 } },
-              style: { listStyle: "none" }
-            };
-
-            const childContent = (
-              <div
-                style={{ height: "100%", perspective: "1000px" }}
-                className="app-module-entrance gpu-accel"
-              >
-                <MemoWidget
-                  id={itemId}
-                  data={data}
-                  user={user}
-                  navigate={navigate}
-                  activityData={activityData}
-                  isMobile={isMobile}
-                  selectedLog={selectedLog}
-                  setSelectedLog={setSelectedLog}
-                />
+      {/* ─── CUSTOMIZE SIDEBAR DRAWER ─────────────────────────────────────── */}
+      <AnimatePresence>
+        {customizeOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCustomizeOpen(false)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.7)",
+                backdropFilter: "blur(4px)",
+                zIndex: 999
+              }}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 220 }}
+              style={{
+                position: "fixed",
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: isMobile ? "100%" : "420px",
+                background: "rgba(12, 12, 22, 0.98)",
+                backdropFilter: "blur(30px)",
+                borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                padding: "32px 24px",
+                zIndex: 1000,
+                display: "flex",
+                flexDirection: "column",
+                gap: 24,
+                boxShadow: "-10px 0 50px rgba(0,0,0,0.6)",
+                boxSizing: "border-box"
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Sliders className="text-accent" size={20} />
+                  <h3 style={{ fontFamily: "Syne", fontSize: 18, fontWeight: 900, color: "white", margin: 0 }}>WORKSPACE CONFIG</h3>
+                </div>
+                <button
+                  onClick={() => setCustomizeOpen(false)}
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "none",
+                    borderRadius: 10,
+                    padding: 8,
+                    color: "white",
+                    cursor: "pointer"
+                  }}
+                  className="haptic-tap"
+                >
+                  <X size={18} />
+                </button>
               </div>
-            );
 
-            if (isMobile) {
-               return (
-                 <motion.li key={safeKey} {...animProps}>
-                   {childContent}
-                 </motion.li>
-               );
-            }
+              {/* Presets */}
+              <div>
+                <h4 style={{ fontSize: 11, fontWeight: 900, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>LAYOUT PRESETS</h4>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  {[
+                    { id: "standard", label: "Standard" },
+                    { id: "compact", label: "Compact" },
+                    { id: "focus", label: "Focus" }
+                  ].map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => applyPreset(p.id)}
+                      style={{
+                        padding: "10px 8px",
+                        fontSize: 10,
+                        fontWeight: 800,
+                        borderRadius: 10,
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        color: "white",
+                        cursor: "pointer"
+                      }}
+                      className="haptic-tap hover-lift"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            return (
-              <Reorder.Item
-                key={safeKey}
-                value={itemId}
-                dragListener={true}
-                className="drag-handle"
-                {...animProps}
-                whileDrag={{
-                  scale: 1.05,
-                  boxShadow: "0 20px 50px rgba(0,0,0,0.4)",
-                }}
-              >
-                {childContent}
-              </Reorder.Item>
-            );
-          })}
-        </AnimatePresence>
-      </Reorder.Group>
+              {/* Density */}
+              <div>
+                <h4 style={{ fontSize: 11, fontWeight: 900, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>DENSITY SPACING</h4>
+                <div style={{ display: "flex", gap: 8, background: "rgba(0,0,0,0.2)", padding: 4, borderRadius: 10, border: "1px solid rgba(255,255,255,0.04)" }}>
+                  {[
+                    { id: "compact", label: "Compact" },
+                    { id: "comfortable", label: "Comfortable" },
+                    { id: "focus", label: "Focus" }
+                  ].map(d => {
+                    const active = density === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        onClick={() => handleDensityChange(d.id)}
+                        style={{
+                          flex: 1,
+                          padding: "8px 0",
+                          fontSize: 11,
+                          fontWeight: 800,
+                          borderRadius: 8,
+                          background: active ? "var(--accent)" : "transparent",
+                          color: active ? "white" : "var(--muted)",
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Visibility and Reordering */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                <h4 style={{ fontSize: 11, fontWeight: 900, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>REORDER & TOGGLE WIDGETS</h4>
+                
+                <div style={{ flex: 1, overflowY: "auto", paddingRight: 4 }} className="custom-scrollbar">
+                  <Reorder.Group
+                    axis="y"
+                    values={layout}
+                    onReorder={handleReorder}
+                    style={{ display: "flex", flexDirection: "column", gap: 8, padding: 0, margin: 0, listStyle: "none" }}
+                  >
+                    {layout.map(itemId => {
+                      const isVisible = activeWidgets.includes(itemId);
+                      return (
+                        <Reorder.Item
+                          key={itemId}
+                          value={itemId}
+                          style={{
+                            background: "rgba(255,255,255,0.02)",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                            borderRadius: 12,
+                            padding: "10px 14px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            cursor: "grab",
+                            listStyle: "none"
+                          }}
+                          whileDrag={{ scale: 1.02, background: "rgba(255,255,255,0.08)" }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <GripVertical size={14} style={{ color: "var(--muted)" }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, textTransform: "capitalize", color: isVisible ? "white" : "var(--muted)" }}>
+                              {itemId.replace("-", " ")}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleWidgetVisibility(itemId);
+                            }}
+                            style={{
+                              background: isVisible ? "rgba(99, 102, 241, 0.15)" : "rgba(255,255,255,0.03)",
+                              border: isVisible ? "1px solid var(--accent)" : "1px solid rgba(255,255,255,0.05)",
+                              color: isVisible ? "var(--accent)" : "var(--muted)",
+                              fontSize: 9,
+                              fontWeight: 900,
+                              padding: "4px 8px",
+                              borderRadius: 6,
+                              cursor: "pointer"
+                            }}
+                          >
+                            {isVisible ? "VISIBLE" : "HIDDEN"}
+                          </button>
+                        </Reorder.Item>
+                      );
+                    })}
+                  </Reorder.Group>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <GuidedTour
         show={showTour}

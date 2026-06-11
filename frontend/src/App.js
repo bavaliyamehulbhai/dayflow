@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -10,9 +10,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SecurityProvider } from "./context/SecurityGuard";
+import { NotificationProvider, useNotifications } from "./context/NotificationContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/layout/Layout";
-import { lazy, Suspense } from "react";
+import ToastContainer from "./components/common/ToastContainer";
+import { useZenTheme } from "./hooks/useZenTheme";
+import "./styles/globals.css";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -24,8 +27,6 @@ const PomodoroPage = lazy(() => import("./pages/PomodoroPage"));
 const NotesPage = lazy(() => import("./pages/NotesPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
-import { useZenTheme } from "./hooks/useZenTheme";
-import "./styles/globals.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,9 +76,7 @@ const PageWrapper = ({ children }) => (
   </motion.div>
 );
 
-import { NotificationProvider, useNotifications } from "./context/NotificationContext";
-import ToastContainer from "./components/common/ToastContainer";
-import { useEffect } from "react";
+
 
 function AppRoutes() {
   const location = useLocation();

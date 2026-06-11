@@ -27,9 +27,9 @@ const HeatmapWidget = ({ activityData, isMobile, navigate, selectedLog, setSelec
             style={{ overflow: 'hidden' }}
           >
             <div className="selected-day-card mb-6" style={{ 
-              padding: '20px', 
+              padding: '14px 16px', 
               background: 'linear-gradient(135deg, var(--surface2), var(--surface3))',
-              borderRadius: 16,
+              borderRadius: 12,
               border: '1px solid var(--accent)',
               boxShadow: '0 0 20px rgba(95, 250, 209, 0.1)'
             }}>
@@ -102,9 +102,9 @@ const HeatmapWidget = ({ activityData, isMobile, navigate, selectedLog, setSelec
             <div key={log.date} style={{
               display: 'grid',
               gridTemplateColumns: '1fr auto',
-              padding: '14px 20px',
+              padding: '10px 14px',
               background: 'rgba(255,255,255,0.02)',
-              borderRadius: '20px',
+              borderRadius: '12px',
               alignItems: 'center',
               border: '1px solid rgba(255,255,255,0.04)',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'

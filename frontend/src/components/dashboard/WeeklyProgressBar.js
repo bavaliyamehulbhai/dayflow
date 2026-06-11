@@ -16,15 +16,7 @@ const WeeklyProgressBar = ({ progress = {} }) => {
   const progressColor = getColor();
 
   return (
-    <div className="premium-card aura-iridescent" style={{ 
-      padding: '24px', 
-      borderRadius: '24px',
-      border: '1px solid rgba(255,255,255,0.05)',
-      background: 'rgba(255,255,255,0.02)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      <div className="btn-glint" style={{ opacity: 0.05 }} />
+    <div style={{ position: 'relative' }}>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -1,10 +1,12 @@
-import React from 'react';
-import { useCountUp } from '../../hooks/useCountUp'; // I'll need to create this hook
+import React, { useContext } from 'react';
+import { useCountUp } from '../../hooks/useCountUp';
 import SensitivityShield from '../layout/SensitivityShield';
 import { CheckCircle2, Zap, Timer, Trophy } from 'lucide-react';
 import WidgetWrapper from './WidgetWrapper';
+import { DashboardDensityContext } from '../../pages/DashboardPage';
 
 const AnimatedStat = React.memo(({ value, label, color, icon: Icon, onClick }) => {
+  const density = useContext(DashboardDensityContext) || 'comfortable';
   const animated = useCountUp(typeof value === 'number' ? value : 0);
   const display = typeof value === 'string' ? value : animated;
   const isMobile = window.innerWidth <= 768;
@@ -16,7 +18,7 @@ const AnimatedStat = React.memo(({ value, label, color, icon: Icon, onClick }) =
         cursor: onClick ? 'pointer' : 'default', 
         background: 'var(--surface2)', 
         borderRadius: 16, 
-        padding: isMobile ? '12px' : '16px', 
+        padding: isMobile ? '12px' : density === 'compact' ? '10px 12px' : density === 'focus' ? '20px' : '16px', 
         position: 'relative', 
         overflow: 'hidden' 
       }}
@@ -52,7 +54,11 @@ const StatsWidget = ({ data, user, navigate }) => {
 
   return (
     <WidgetWrapper title="Vitals" icon={Zap}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', 
+        gap: 12 
+      }}>
         {stats.map((s, i) => (
           <AnimatedStat key={i} {...s} />
         ))}

@@ -540,18 +540,27 @@ const RitualCard = ({
         </p>
       </div>
 
-      <div className="ritual-consistency-dots">
+      <div className="ritual-consistency-dots" onClick={(e) => e.stopPropagation()}>
         {completionStatus.map((s) => {
           return (
-            <div
+            <button
               key={s.dateStr}
+              type="button"
               className={`ritual-dot ${s.done ? "completed" : ""} ${s.isToday ? "today" : ""}`}
               style={{
-                backgroundColor: s.done ? habit.color : "",
-                boxShadow: s.done ? `0 0 10px ${habit.color}aa` : "",
-                borderColor: s.isToday ? habit.color : "",
+                cursor: "pointer",
+                backgroundColor: s.done ? habit.color : "transparent",
+                boxShadow: s.done ? `0 0 10px ${habit.color}88` : "none",
+                borderColor: s.isToday ? habit.color : "rgba(255, 255, 255, 0.15)",
+                width: 14,
+                height: 14,
+                borderRadius: "50%",
+                border: "2px solid",
+                padding: 0,
+                display: "inline-block"
               }}
               title={s.label}
+              onClick={() => onComplete({ id: getSafeId(habit), date: s.dateStr })}
             />
           );
         })}
@@ -972,91 +981,105 @@ export default function HabitsPage() {
       </div>
 
       <div
-        className="page-header"
+        className="dashboard-header-premium"
         style={{
-          marginBottom: isMobile ? 24 : 40,
-          paddingTop: isMobile ? 12 : 24,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          padding: isMobile ? "16px" : "20px 24px",
+          background: "var(--surface2)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px",
+          marginBottom: "24px",
           position: "relative",
+          overflow: "hidden"
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          style={{ display: "flex", alignItems: "center", gap: 16 }}
-        >
-          <div
-            className="auth-logo-icon aura-float"
-            style={{
-              width: isMobile ? 48 : 64,
-              height: isMobile ? 48 : 64,
-              background: "var(--grad-premium)",
-              borderRadius: "16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 12px 30px rgba(124, 109, 250, 0.4)",
-            }}
-          >
-            <RefreshCcw
-              size={isMobile ? 24 : 32}
-              color="white"
-              strokeWidth={2.5}
-            />
-          </div>
+        <AuraOrb
+          color="var(--accent)"
+          size={isMobile ? 120 : 200}
+          top="-60px"
+          left="-30px"
+          delay={0}
+          duration={isMobile ? 20 : 15}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
+          <RefreshCcw
+            className="text-accent aura-float"
+            size={isMobile ? 22 : 28}
+          />
           <div>
-            <div
+            <h1
+              className="dashboard-title"
               style={{
+                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontWeight: 800,
                 fontFamily: "Syne, sans-serif",
-                fontSize: isMobile ? "32px" : "48px",
-                fontWeight: 800,
-                letterSpacing: "-0.05em",
-                lineHeight: 1,
-                background:
-                  "linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
+                margin: 0,
+                color: "var(--text)"
               }}
             >
-              Ritual Engine
-            </div>
-            <p
-              style={{
-                fontSize: "12px",
-                fontWeight: 800,
-                color: "var(--muted)",
-                textTransform: "uppercase",
-                letterSpacing: 2,
-                marginTop: 4,
-              }}
-            >
-              Bio-Neural Maintenance
+              Habits
+            </h1>
+            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+              Build consistency through daily rituals
             </p>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
+          <button
+            onClick={() => setModal("create")}
+            className="auth-button magnetic-btn haptic-tap"
+            style={{
+              height: 42,
+              padding: "0 16px",
+              borderRadius: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: "13px",
+              fontWeight: 600,
+            }}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            <span>New Habit</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Filter / Search Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        style={{
+          width: "100%",
+          marginBottom: 24,
+        }}
+      >
+        <div
+          className="glass-holographic"
           style={{
-            display: "flex",
-            gap: 10,
-            alignItems: "center",
-            width: "100%",
-            marginTop: 24,
+            padding: "12px",
+            borderRadius: 16,
+            background: "rgba(255, 255, 255, 0.02)",
+            border: "1px solid rgba(255, 255, 255, 0.05)",
+            backdropFilter: "blur(40px)",
           }}
         >
           <div
             className="glass"
             style={{
-              borderRadius: 16,
+              borderRadius: 12,
               padding: "0 16px",
-              height: 52,
-              flex: 1,
+              height: 42,
               display: "flex",
               alignItems: "center",
               gap: 12,
-              background: "rgba(255,255,255,0.03)",
+              background: "rgba(0,0,0,0.2)",
               border: "1px solid rgba(255,255,255,0.05)",
             }}
           >
@@ -1072,27 +1095,12 @@ export default function HabitsPage() {
                 color: "white",
                 fontWeight: 600,
                 width: "100%",
-                fontSize: 14,
+                fontSize: 13,
               }}
             />
           </div>
-          <button
-            onClick={() => setModal("create")}
-            className="auth-button magnetic-btn haptic-tap"
-            style={{
-              height: 52,
-              width: 52,
-              borderRadius: 16,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 0,
-            }}
-          >
-            <Plus size={24} strokeWidth={2.5} />
-          </button>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
       <div
         className="stats-grid-auto mb-10"

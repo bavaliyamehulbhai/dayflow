@@ -62,6 +62,7 @@ import { useZenTheme } from "../hooks/useZenTheme";
 import ConfirmDialog from "../components/ConfirmDialog";
 import SensitivityShield from "../components/layout/SensitivityShield";
 import AuraOrb from "../components/common/AuraOrb";
+import MagneticButton from "../components/common/MagneticButton";
 
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
@@ -418,6 +419,13 @@ export default function ProfilePage() {
       ),
     ) || 0;
 
+  const currentTier = useMemo(() => {
+    if (productivityScore >= 85) return { tier: "platinum", label: "PLATINUM PARAGON", config: TIER_CONFIG.platinum };
+    if (productivityScore >= 65) return { tier: "gold", label: "GOLD ZENITH", config: TIER_CONFIG.gold };
+    if (productivityScore >= 30) return { tier: "silver", label: "SILVER ASCENDANT", config: TIER_CONFIG.silver };
+    return { tier: "bronze", label: "BRONZE INITIATE", config: TIER_CONFIG.bronze };
+  }, [productivityScore]);
+
   // Profile completeness
   const profileFields = [
     !!user?.name,
@@ -500,63 +508,76 @@ export default function ProfilePage() {
       </div>
 
       <div
-        className="page-header"
+        className="dashboard-header-premium"
         style={{
-          marginBottom: isMobile ? 32 : 48,
-          paddingTop: isMobile ? 12 : 24,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          padding: isMobile ? "16px" : "20px 24px",
+          background: "var(--surface2)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px",
+          marginBottom: "24px",
           position: "relative",
+          overflow: "hidden"
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          style={{ display: "flex", alignItems: "center", gap: 16 }}
-        >
-          <div
-            className="auth-logo-icon aura-float"
-            style={{
-              width: isMobile ? 48 : 64,
-              height: isMobile ? 48 : 64,
-              background: "var(--grad-premium)",
-              borderRadius: "18px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 12px 30px rgba(124, 109, 250, 0.4)",
-            }}
-          >
-            <User size={isMobile ? 24 : 32} color="white" strokeWidth={2.5} />
-          </div>
+        <AuraOrb
+          color="var(--accent)"
+          size={isMobile ? 120 : 200}
+          top="-60px"
+          left="-30px"
+          delay={0}
+          duration={isMobile ? 20 : 15}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
+          <User
+            className="text-accent aura-float"
+            size={isMobile ? 22 : 28}
+          />
           <div>
-            <div
+            <h1
+              className="dashboard-title"
               style={{
-                fontFamily: "Syne, sans-serif",
-                fontSize: isMobile ? "32px" : "48px",
+                fontSize: isMobile ? "1.25rem" : "1.6rem",
                 fontWeight: 800,
-                letterSpacing: "-0.05em",
-                lineHeight: 1,
-                background:
-                  "linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
+                fontFamily: "Syne, sans-serif",
+                margin: 0,
+                color: "var(--text)"
               }}
             >
-              Settings Hub
-            </div>
-            <p
-              style={{
-                fontSize: "11px",
-                fontWeight: 900,
-                color: "var(--muted)",
-                textTransform: "uppercase",
-                letterSpacing: 3,
-                marginTop: 4,
-              }}
-            >
-              Neural Configuration & Bio-Stats
+              Settings
+            </h1>
+            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+              Configure profile and preferences
             </p>
           </div>
-        </motion.div>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
+          <MagneticButton
+            className="auth-button magnetic-btn haptic-tap"
+            onClick={logout}
+            style={{
+              height: 42,
+              padding: "0 16px",
+              borderRadius: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: "13px",
+              fontWeight: 600,
+              border: "1px solid rgba(239, 68, 68, 0.2)",
+              color: "var(--red)",
+              background: "rgba(239, 68, 68, 0.05)",
+            }}
+          >
+            <LogOut size={16} />
+            <span>Logout</span>
+          </MagneticButton>
+        </div>
       </div>
 
       {/* ─── IDENTITY HERO ─────────────────────────────────────────────────── */}
@@ -734,22 +755,24 @@ export default function ProfilePage() {
               >
                 {user?.name}
               </div>
-              {earnedCount >= 5 && (
-                <div
-                  style={{
-                    background: "linear-gradient(135deg, #ffd700, #ffaa00)",
-                    color: "black",
-                    padding: "4px 10px",
-                    borderRadius: 50,
-                    fontSize: 9,
-                    fontWeight: 900,
-                    letterSpacing: 1,
-                    boxShadow: "0 4px 15px rgba(255,215,0,0.3)",
-                  }}
-                >
-                  ZENITH ADHERENT
-                </div>
-              )}
+              <div
+                style={{
+                  background: currentTier.config.gradient,
+                  color: currentTier.tier === "gold" || currentTier.tier === "bronze" ? "black" : "white",
+                  padding: "4px 12px",
+                  borderRadius: 50,
+                  fontSize: 10,
+                  fontWeight: 900,
+                  letterSpacing: 1,
+                  boxShadow: `0 4px 15px ${currentTier.config.glow}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4
+                }}
+              >
+                <Award size={12} />
+                <span>{currentTier.label}</span>
+              </div>
             </div>
 
             <div
@@ -864,14 +887,21 @@ export default function ProfilePage() {
               <div
                 className="glass-badge"
                 style={{
-                  background: "rgba(255,255,255,0.05)",
+                  background: currentTier.config.gradient,
                   padding: "6px 12px",
                   fontSize: 10,
-                  fontWeight: 800,
-                  color: "var(--muted)",
+                  fontWeight: 900,
+                  letterSpacing: 1,
+                  color: currentTier.tier === "gold" || currentTier.tier === "bronze" ? "black" : "white",
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  boxShadow: `0 4px 15px ${currentTier.config.glow}`,
                 }}
               >
-                RANK: ASCENDANT
+                <Medal size={12} />
+                <span>{currentTier.label}</span>
               </div>
             </div>
           )}

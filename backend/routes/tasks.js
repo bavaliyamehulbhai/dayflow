@@ -124,28 +124,36 @@ router.put('/:id',
       if (dueDate !== undefined) updates.dueDate = dueDate || null;
       if (estimatedMinutes !== undefined) updates.estimatedMinutes = estimatedMinutes ? parseInt(estimatedMinutes) : null;
       if (tags !== undefined) updates.tags = tags.map(t => String(t).trim()).filter(Boolean);
-      if (subtasks !== undefined) updates.subtasks = subtasks.map(s => ({ title: String(s.title || '').trim(), completed: Boolean(s.completed) }));
+      if (subtasks !== undefined && Array.isArray(subtasks)) updates.subtasks = subtasks.map(s => ({ title: String(s.title || '').trim(), completed: Boolean(s.completed) }));
 
-      // Set completedAt if completing task
-      if (updates.status === 'completed') {
+      const existingTask = await Task.findOne({ _id: req.params.id, user: req.user._id });
+      if (!existingTask) return res.status(404).json({ error: 'Task not found.' });
+
+      const wasCompleted = existingTask.status === 'completed';
+
+      // Adjust completedAt and stats depending on status transitions
+      if (updates.status === 'completed' && !wasCompleted) {
         updates.completedAt = new Date();
         await User.findByIdAndUpdate(req.user._id, { $inc: { 'stats.tasksCompleted': 1 } });
+      } else if (wasCompleted && updates.status && updates.status !== 'completed') {
+        updates.completedAt = null;
+        await User.findByIdAndUpdate(req.user._id, { $inc: { 'stats.tasksCompleted': -1 } });
       }
 
-      const task = await Task.findOneAndUpdate(
-        { _id: req.params.id, user: req.user._id },
+      const task = await Task.findByIdAndUpdate(
+        existingTask._id,
         updates,
         { new: true, runValidators: true }
       );
 
-      if (!task) return res.status(404).json({ error: 'Task not found.' });
-
       // Award badges and log activity async (non-blocking)
       let newBadges = [];
-      if (updates.status === 'completed') {
+      if (updates.status === 'completed' && !wasCompleted) {
         newBadges = await awardBadges(req.user._id);
         await logActivity(req.user._id, { tasksCompleted: 1 });
         await updateStreak(req.user._id);
+      } else if (wasCompleted && updates.status && updates.status !== 'completed') {
+        await logActivity(req.user._id, { tasksCompleted: -1 });
       }
 
       clearCache(req.user._id);
@@ -187,13 +195,40 @@ router.post('/bulk/status', async (req, res) => {
     if (!ids || !status) return res.status(400).json({ error: 'IDs and status required.' });
     const update = { status };
     if (status === 'completed') {
-      update.completedAt = new Date();
-      // Increment stats and log activity
-      await User.findByIdAndUpdate(req.user._id, { $inc: { 'stats.tasksCompleted': ids.length } });
-      await logActivity(req.user._id, { tasksCompleted: ids.length });
-      await updateStreak(req.user._id);
+      // Find the tasks in this list that are not already completed
+      const pendingTasks = await Task.find({
+        _id: { $in: ids },
+        user: req.user._id,
+        status: { $ne: 'completed' }
+      }).select('_id');
+
+      const countToComplete = pendingTasks.length;
+      if (countToComplete > 0) {
+        update.completedAt = new Date();
+        await User.findByIdAndUpdate(req.user._id, { $inc: { 'stats.tasksCompleted': countToComplete } });
+        await logActivity(req.user._id, { tasksCompleted: countToComplete });
+        await updateStreak(req.user._id);
+        
+        const pendingIds = pendingTasks.map(t => t._id);
+        await Task.updateMany({ _id: { $in: pendingIds }, user: req.user._id }, update);
+      }
+    } else {
+      // If changing to pending, in-progress, or cancelled, decrement stats for tasks that WERE completed
+      const completedTasks = await Task.find({
+        _id: { $in: ids },
+        user: req.user._id,
+        status: 'completed'
+      }).select('_id');
+
+      const countToRevert = completedTasks.length;
+      if (countToRevert > 0) {
+        update.completedAt = null;
+        await User.findByIdAndUpdate(req.user._id, { $inc: { 'stats.tasksCompleted': -countToRevert } });
+        await logActivity(req.user._id, { tasksCompleted: -countToRevert });
+      }
+
+      await Task.updateMany({ _id: { $in: ids }, user: req.user._id }, update);
     }
-    await Task.updateMany({ _id: { $in: ids }, user: req.user._id }, update);
     clearCache(req.user._id);
     res.json({ success: true, message: 'Tasks updated.' });
   } catch (err) {

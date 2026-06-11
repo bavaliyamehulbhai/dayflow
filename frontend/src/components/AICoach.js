@@ -31,18 +31,7 @@ const AICoach = () => {
 
     return (
         <>
-            <div className="card glass-holographic" style={{
-                overflow: 'hidden',
-                position: 'relative',
-                border: 'none',
-                background: 'linear-gradient(135deg, rgba(130, 114, 255, 0.08), rgba(255, 107, 139, 0.05))',
-            }}>
-                <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, background: 'var(--accent)', filter: 'blur(50px)', opacity: 0.1, pointerEvents: 'none' }}></div>
-
-                <div className="card-title" style={{ color: 'var(--accent)', fontWeight: 800, fontSize: 'var(--fs-xs)', textTransform: 'uppercase', letterSpacing: 2 }}>
-                    <Sparkles size={14} /> AI Perspective
-                </div>
-
+            <div style={{ position: 'relative' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <AnimatePresence mode="popLayout">
                         {insights.map((insight, idx) => (

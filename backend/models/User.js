@@ -116,12 +116,6 @@ const userSchema = new mongoose.Schema({
   isDemo: {
     type: Boolean,
     default: false
-  },
-  googleCalendar: {
-    accessToken: { type: String, select: false },
-    refreshToken: { type: String, select: false },
-    expiryDate: { type: Number, select: false },
-    email: { type: String }
   }
 }, { timestamps: true });
 
@@ -176,11 +170,6 @@ userSchema.methods.toJSON = function () {
   delete obj.twoFactorSecret;
   delete obj.twoFactorRecoveryCodes;
   delete obj.verificationToken;
-  if (obj.googleCalendar) {
-    delete obj.googleCalendar.accessToken;
-    delete obj.googleCalendar.refreshToken;
-    delete obj.googleCalendar.expiryDate;
-  }
   return obj;
 };
 

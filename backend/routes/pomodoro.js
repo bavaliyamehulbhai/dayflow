@@ -62,6 +62,10 @@ router.patch('/:id/complete', async (req, res) => {
     const pomo = await Pomodoro.findOne({ _id: req.params.id, user: req.user._id });
     if (!pomo) return res.status(404).json({ error: 'Pomodoro not found.' });
 
+    if (pomo.completed) {
+      return res.status(400).json({ error: 'Pomodoro is already completed.' });
+    }
+
     pomo.completed = true;
     pomo.completedAt = new Date();
     pomo.actualDuration = actualDuration || pomo.duration * 60;

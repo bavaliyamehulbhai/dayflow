@@ -124,8 +124,10 @@ router.post('/:id/complete',
       if (idx > -1) {
         // Remove completion
         habit.completions.splice(idx, 1);
-        // Log negative activity
-        await logActivity(req.user._id, { habitsCompleted: -1 });
+        // Log negative activity only if the completion was for today
+        if (date === todayStr) {
+          await logActivity(req.user._id, { habitsCompleted: -1 });
+        }
       } else {
         // Add completion
         habit.completions.push({ date, count, note });
@@ -147,7 +149,10 @@ router.post('/:id/complete',
         // Check if last completion is today or yesterday to maintain streak
         const yesterday = new Date(); 
         yesterday.setDate(yesterday.getDate() - 1);
-        const yestStr = yesterday.toISOString().split('T')[0];
+        const yestYear = yesterday.getFullYear();
+        const yestMonth = String(yesterday.getMonth() + 1).padStart(2, '0');
+        const yestDay = String(yesterday.getDate()).padStart(2, '0');
+        const yestStr = `${yestYear}-${yestMonth}-${yestDay}`;
 
         // Only calculate if the last completion is recent enough to sustain a streak
         if (lastCompleted === todayStr || lastCompleted === yestStr) {

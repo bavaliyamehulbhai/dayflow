@@ -169,74 +169,70 @@
 
 
 :root {
-  /* Core Colors - Neutral & Professional */
-  --bg: #030305;
-  --surface: rgba(13, 13, 22, 0.35);
-  --surface-solid: #0d0d16;
-  --surface2: rgba(26, 26, 42, 0.3);
-  --surface3: rgba(38, 38, 60, 0.45);
-  --surface-strong: rgba(18, 18, 30, 0.75);
-  --border: rgba(255, 255, 255, 0.05);
-  --border2: rgba(255, 255, 255, 0.1);
-  --border-focus: rgba(124, 109, 250, 0.3);
-  --border-premium: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.01));
+  /* Core Colors - Modern SaaS Theme */
+  --bg: #0b0f19;
+  --surface: rgba(17, 24, 39, 0.55);
+  --surface-solid: #111827;
+  --surface2: rgba(17, 24, 39, 0.75);
+  --surface3: rgba(31, 41, 55, 0.65);
+  --surface-strong: rgba(17, 24, 39, 0.95);
+  --border: rgba(255, 255, 255, 0.06);
+  --border2: rgba(255, 255, 255, 0.12);
+  --border-focus: rgba(99, 102, 241, 0.4);
+  --border-premium: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
 
-  /* Accent Palette - Vibrant but Sophisticated */
-  --accent: #7c6dfa;
-  /* Primary Indigo */
-  --accent-glow: rgba(124, 109, 250, 0.25);
-  --accent-hover: #9184ff;
-  --accent2: #ff4d7d;
-  /* Soft Rose */
-  --accent3: #00f2fe;
-  /* Cyber Cyan */
-  --accent4: #4facfe;
-  /* Royal Blue */
-  --focus-ring: rgba(79, 172, 254, 0.6);
-  --focus-glow: rgba(0, 242, 254, 0.25);
+  /* Accent Palette */
+  --accent: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.15);
+  --accent-hover: #4f46e5;
+  --accent2: #f43f5e;
+  --accent3: #06b6d4;
+  --accent4: #3b82f6;
+  --focus-ring: rgba(99, 102, 241, 0.5);
+  --focus-glow: rgba(6, 118, 212, 0.2);
 
   /* Functional Colors */
-  --text: #ffffff;
-  --text2: #a8a8c5;
-  --muted: #6b6b8f;
-  --green: #4ade80;
-  --yellow: #fbbf24;
-  --red: #f87171;
-  --orange: #fb923c;
+  --text: #f9fafb;
+  --text2: #9ca3af;
+  --muted: #6b7280;
+  --green: #10b981;
+  --yellow: #f59e0b;
+  --red: #ef4444;
+  --orange: #f97316;
 
-  /* Design Tokens - Standardized & Fluid */
+  /* Design Tokens */
   --sidebar-w: 260px;
   --sidebar-collapsed-w: 72px;
   --header-h: 72px;
-  --radius: clamp(16px, 2vw, 24px);
-  --radius-sm: clamp(8px, 1vw, 14px);
-  --radius-xl: clamp(24px, 3vw, 40px);
-  --transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease, border-color 0.4s ease;
-  --transition-fast: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-  --glass: blur(20px) saturate(180%);
-  --glass-premium: blur(40px) saturate(220%) brightness(1.1);
-  --glass-frost: blur(24px) saturate(180%) brightness(1.5);
-  --glass-holographic: blur(28px) saturate(250%) brightness(1.2);
+  --radius: clamp(12px, 1.5vw, 16px);
+  --radius-sm: clamp(6px, 0.8vw, 10px);
+  --radius-xl: clamp(16px, 2vw, 24px);
+  --transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, border-color 0.3s ease;
+  --transition-fast: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  --glass: blur(16px) saturate(160%);
+  --glass-premium: blur(32px) saturate(180%) brightness(1.05);
+  --glass-frost: blur(20px) saturate(140%) brightness(1.2);
+  --glass-holographic: blur(24px) saturate(200%) brightness(1.1);
 
-  /* Shadows - Layered for Depth */
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 16px 48px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 32px 80px rgba(0, 0, 0, 0.35);
-  --shadow-accent: 0 8px 32px rgba(124, 109, 250, 0.15);
-  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.18);
-  --shadow-lift: 0 18px 50px rgba(0, 0, 0, 0.35);
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.25);
+  --shadow-accent: 0 8px 24px rgba(99, 102, 241, 0.1);
+  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-lift: 0 12px 36px rgba(0, 0, 0, 0.22);
 
   /* Gradients */
   --grad-primary: linear-gradient(135deg, var(--accent), var(--accent4));
   --grad-premium: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-  --grad-premium-soft: linear-gradient(135deg, rgba(124, 109, 250, 0.7), rgba(255, 77, 125, 0.7));
-  --grad-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
-  --grad-mesh: radial-gradient(at 0% 0%, rgba(124, 109, 250, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(255, 77, 125, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(0, 242, 254, 0.08) 0px, transparent 50%);
-  --grad-mesh-vibrant: radial-gradient(at 20% 20%, rgba(124, 109, 250, 0.15) 0px, transparent 50%),
-    radial-gradient(at 80% 80%, rgba(255, 77, 125, 0.12) 0px, transparent 50%),
-    radial-gradient(at 50% 50%, rgba(0, 242, 254, 0.1) 0px, transparent 50%);
+  --grad-premium-soft: linear-gradient(135deg, rgba(99, 102, 241, 0.7), rgba(244, 63, 94, 0.7));
+  --grad-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+  --grad-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(244, 63, 94, 0.06) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.06) 0px, transparent 50%);
+  --grad-mesh-vibrant: radial-gradient(at 20% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 80% 80%, rgba(244, 63, 94, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
   --grad-aura: radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 70%);
 
   --container-max: 1440px;
@@ -244,16 +240,15 @@
   --tablet-pad: 32px;
   --desktop-pad: 48px;
 
-  /* Fluid Typography & Spacing (Scales with Viewport Width) */
+  /* Typography & Spacing */
   --fs-xs: clamp(0.65rem, 0.6rem + 0.2vw, 0.75rem);
-  --fs-sm: clamp(0.75rem, 0.7rem + 0.3vw, 0.9rem);
-  --fs-base: clamp(0.85rem, 0.8rem + 0.3vw, 1rem);
-  /* Refined base size */
-  --fs-md: clamp(1rem, 0.9rem + 0.4vw, 1.15rem);
-  --fs-lg: clamp(1.1rem, 1rem + 0.6vw, 1.4rem);
-  --fs-xl: clamp(1.1rem, 1.1rem + 1vw, 2rem);
-  --fs-2xl: clamp(1.25rem, 1.25rem + 1.5vw, 2.5rem);
-  --fs-display: clamp(1.8rem, 1.4rem + 2.5vw, 3.2rem);
+  --fs-sm: clamp(0.72rem, 0.68rem + 0.25vw, 0.85rem);
+  --fs-base: clamp(0.82rem, 0.78rem + 0.25vw, 0.95rem);
+  --fs-md: clamp(0.95rem, 0.9rem + 0.3vw, 1.1rem);
+  --fs-lg: clamp(1.08rem, 1.02rem + 0.4vw, 1.28rem);
+  --fs-xl: clamp(1.22rem, 1.18rem + 0.6vw, 1.6rem);
+  --fs-2xl: clamp(1.4rem, 1.35rem + 1vw, 2.2rem);
+  --fs-display: clamp(1.8rem, 1.5rem + 2vw, 2.8rem);
 
   --space-1: clamp(0.15rem, 0.15rem + 0.2vw, 0.5rem);
   --space-2: clamp(0.3rem, 0.3rem + 0.5vw, 0.8rem);
@@ -270,36 +265,37 @@
   --icon-xl: clamp(32px, 5vw, 48px);
 
   /* Aura Tokens */
-  --aura-color: rgba(124, 109, 250, 0.12);
-  --aura-color-2: rgba(255, 77, 125, 0.08);
-  --aura-color-3: rgba(0, 242, 254, 0.1);
+  --aura-color: rgba(99, 102, 241, 0.08);
+  --aura-color-2: rgba(244, 63, 94, 0.05);
+  --aura-color-3: rgba(6, 182, 212, 0.06);
   --aura-glow: blur(80px) saturate(200%);
+}
 
-  /* Responsive Typography Adjustments */
-  @media (max-width: 768px) {
-    :root {
-      --fs-xs: 0.65rem;
-      --fs-sm: 0.72rem;
-      --fs-base: 0.82rem;
-      --fs-md: 0.95rem;
-      --fs-lg: 1.05rem;
-      --fs-xl: 1.15rem;
-      --fs-2xl: 1.35rem;
-      --fs-display: 1.75rem;
+/* Responsive Typography Adjustments */
+@media (max-width: 768px) {
+  :root {
+    --fs-xs: 0.65rem;
+    --fs-sm: 0.72rem;
+    --fs-base: 0.82rem;
+    --fs-md: 0.95rem;
+    --fs-lg: 1.05rem;
+    --fs-xl: 1.15rem;
+    --fs-2xl: 1.35rem;
+    --fs-display: 1.75rem;
 
-      --space-3: 0.6rem;
-      --space-4: 0.85rem;
-      --space-6: 1.25rem;
-      --space-8: 1.75rem;
-      --space-12: 2.5rem;
+    --space-3: 0.6rem;
+    --space-4: 0.85rem;
+    --space-6: 1.25rem;
+    --space-8: 1.75rem;
+    --space-12: 2.5rem;
 
-      --radius: 16px;
-      --radius-sm: 10px;
-      --radius-xl: 24px;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-xl: 20px;
 
-      --mobile-pad: 14px;
-    }
+    --mobile-pad: 14px;
   }
+}
 
   .hide {
     display: none !important;
@@ -734,7 +730,7 @@
       gap: 2px !important;
     }
   }
-}
+
 
 @media (max-width: 640px) {
   .responsive-container {

@@ -636,12 +636,18 @@ router.put(
       await user.save();
 
       // Invalidate current session after password change
-      const token = req.headers.authorization.split(" ")[1];
-      const decoded = require("jsonwebtoken").decode(token);
-      await require("../models/Blacklist").create({
-        token,
-        expiresAt: new Date(decoded.exp * 1000),
-      });
+      const token = (req.headers.authorization && req.headers.authorization.startsWith("Bearer "))
+        ? req.headers.authorization.split(" ")[1]
+        : req.cookies?.accessToken;
+      if (token) {
+        const decoded = require("jsonwebtoken").decode(token);
+        if (decoded && decoded.exp) {
+          await require("../models/Blacklist").create({
+            token,
+            expiresAt: new Date(decoded.exp * 1000),
+          });
+        }
+      }
 
       await logSecurityEvent({
         userId: req.user._id,

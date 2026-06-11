@@ -345,6 +345,140 @@ const TaskItem = React.memo(
   },
 );
 
+// ─── Kanban Card Component ──────────────────────────────────────────
+const KanbanCard = React.memo(({ task, toggleComplete, setModal, deleteMutation, updateMutation, setConfirmState }) => {
+  const tid = getSafeId(task);
+  const priorityColor = {
+    urgent: "var(--red)",
+    high: "var(--orange)",
+    medium: "var(--yellow)",
+    low: "var(--green)"
+  }[task.priority] || "var(--muted)";
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={{ y: -2 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      onClick={() => setModal(task)}
+      style={{
+        padding: 16,
+        background: "rgba(255, 255, 255, 0.03)",
+        borderRadius: 14,
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderLeft: `4px solid ${priorityColor}`,
+        cursor: "pointer",
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        transition: "border-color 0.2s ease, background 0.2s ease"
+      }}
+      className="hover-lift"
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+        <div style={{ 
+          fontSize: 14, 
+          fontWeight: 600, 
+          color: task.status === "completed" ? "var(--muted)" : "white",
+          textDecoration: task.status === "completed" ? "line-through" : "none",
+          lineHeight: 1.4,
+          wordBreak: "break-word"
+        }}>
+          {task.title}
+        </div>
+      </div>
+
+      {task.description && (
+        <div style={{ fontSize: 12, color: "var(--text2)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.5 }}>
+          {task.description}
+        </div>
+      )}
+
+      {/* Subtasks Progress if any exist */}
+      {task.subtasks && task.subtasks.length > 0 && (() => {
+        const completedCount = task.subtasks.filter(s => s.completed).length;
+        const pct = Math.round((completedCount / task.subtasks.length) * 100);
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--muted)", fontWeight: 700 }}>
+              <span>CHECKLIST</span>
+              <span>{completedCount}/{task.subtasks.length}</span>
+            </div>
+            <div style={{ height: 4, background: "rgba(255,255,255,0.05)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: "var(--accent)", borderRadius: 2 }} />
+            </div>
+          </div>
+        );
+      })()}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {task.category && (
+            <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: "rgba(255,255,255,0.05)", color: "var(--text2)", fontWeight: 700, letterSpacing: 0.5 }}>
+              {task.category.toUpperCase()}
+            </span>
+          )}
+          {task.dueDate && (
+            <span style={{ fontSize: 9, color: "var(--muted)", display: "flex", alignItems: "center", gap: 3, fontWeight: 600 }}>
+              <Clock size={10} />
+              {safeFormat(task.dueDate, "MMM d", "")}
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }} onClick={e => e.stopPropagation()}>
+          {/* Quick status transition actions */}
+          {task.status === "pending" && (
+            <button
+              onClick={() => updateMutation.mutate({ id: tid, data: { status: "in-progress" }, suppressToast: true })}
+              style={{ padding: "4px 8px", fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "rgba(99,102,241,0.1)", borderRadius: 6 }}
+              className="haptic-tap"
+            >
+              START
+            </button>
+          )}
+          {task.status === "in-progress" && (
+            <button
+              onClick={() => updateMutation.mutate({ id: tid, data: { status: "completed" }, suppressToast: true })}
+              style={{ padding: "4px 8px", fontSize: 10, fontWeight: 700, color: "var(--green)", background: "rgba(34,197,94,0.1)", borderRadius: 6 }}
+              className="haptic-tap"
+            >
+              COMPLETE
+            </button>
+          )}
+          {task.status === "completed" && (
+            <button
+              onClick={() => updateMutation.mutate({ id: tid, data: { status: "pending" }, suppressToast: true })}
+              style={{ padding: "4px 8px", fontSize: 10, fontWeight: 700, color: "var(--muted)", background: "rgba(255,255,255,0.05)", borderRadius: 6 }}
+              className="haptic-tap"
+            >
+              REOPEN
+            </button>
+          )}
+
+          <button
+            onClick={() => setConfirmState({
+              open: true,
+              title: "Remove Objective?",
+              message: `Delete "${task.title}"?`,
+              onConfirm: () => deleteMutation.mutate(tid)
+            })}
+            style={{ padding: 6, color: "var(--red)", opacity: 0.5, borderRadius: 6 }}
+            className="haptic-tap hover-lift"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
 // ─── Skeleton loader rows ─────────────────────────────────────────────────────
 function TasksSkeleton() {
   return (
@@ -698,6 +832,7 @@ export default function TasksPage() {
   });
   const [selected, setSelected] = useState([]);
   const [confirmState, setConfirmState] = useState({ open: false, task: null });
+  const [viewMode, setViewMode] = useState("list");
 
   const { data, isLoading } = useQuery({
     queryKey: ["tasks", filters],
@@ -786,6 +921,14 @@ export default function TasksPage() {
   });
 
   const tasks = data?.tasks || [];
+
+  const kanbanColumns = useMemo(() => {
+    return [
+      { id: "pending", title: "To Do", tasks: tasks.filter(t => t.status === "pending" || t.status === "cancelled"), color: "var(--accent)" },
+      { id: "in-progress", title: "In Progress", tasks: tasks.filter(t => t.status === "in-progress"), color: "var(--orange)" },
+      { id: "completed", title: "Done", tasks: tasks.filter(t => t.status === "completed"), color: "var(--green)" }
+    ];
+  }, [tasks]);
 
   useEffect(() => {
     const handler = () => setModal("create");
@@ -898,67 +1041,111 @@ export default function TasksPage() {
       </div>
 
       <div
-        className="page-header"
+        className="dashboard-header-premium"
         style={{
-          marginBottom: isMobile ? 24 : 40,
-          paddingTop: isMobile ? 12 : 24,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          padding: isMobile ? "16px" : "20px 24px",
+          background: "var(--surface2)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px",
+          marginBottom: "24px",
           position: "relative",
+          overflow: "hidden"
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          style={{ display: "flex", alignItems: "center", gap: 16 }}
-        >
-          <div
-            className="auth-logo-icon aura-float"
-            style={{
-              width: isMobile ? 48 : 64,
-              height: isMobile ? 48 : 64,
-              background: "var(--grad-premium)",
-              borderRadius: "16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 12px 30px rgba(124, 109, 250, 0.4)",
-            }}
-          >
-            <ClipboardList
-              size={isMobile ? 24 : 32}
-              color="white"
-              strokeWidth={2.5}
-            />
-          </div>
+        <AuraOrb
+          color="var(--accent)"
+          size={isMobile ? 120 : 200}
+          top="-60px"
+          left="-30px"
+          delay={0}
+          duration={isMobile ? 20 : 15}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
+          <ClipboardList
+            className="text-accent aura-float"
+            size={isMobile ? 22 : 28}
+          />
           <div>
-            <div
+            <h1
+              className="dashboard-title"
               style={{
+                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontWeight: 800,
                 fontFamily: "Syne, sans-serif",
-                fontSize: isMobile ? "32px" : "48px",
-                fontWeight: 800,
-                letterSpacing: "-0.05em",
-                lineHeight: 1,
-                background:
-                  "linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
+                margin: 0,
+                color: "var(--text)"
               }}
             >
-              Mission Control
-            </div>
-            <p
-              style={{
-                fontSize: "12px",
-                fontWeight: 800,
-                color: "var(--muted)",
-                textTransform: "uppercase",
-                letterSpacing: 2,
-                marginTop: 4,
-              }}
-            >
-              Tactical Dashboard
+              Tasks
+            </h1>
+            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+              Manage and track your objectives
             </p>
           </div>
-        </motion.div>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
+          <div style={{
+            display: "flex",
+            background: "rgba(0, 0, 0, 0.2)",
+            borderRadius: "10px",
+            padding: "3px",
+            border: "1px solid var(--border)"
+          }}>
+            <button
+              onClick={() => setViewMode("list")}
+              style={{
+                padding: "6px 12px",
+                fontSize: "11px",
+                fontWeight: 700,
+                borderRadius: "8px",
+                background: viewMode === "list" ? "var(--accent)" : "transparent",
+                color: viewMode === "list" ? "white" : "var(--text2)",
+                transition: "all 0.2s ease"
+              }}
+              type="button"
+            >
+              LIST
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              style={{
+                padding: "6px 12px",
+                fontSize: "11px",
+                fontWeight: 700,
+                borderRadius: "8px",
+                background: viewMode === "kanban" ? "var(--accent)" : "transparent",
+                color: viewMode === "kanban" ? "white" : "var(--text2)",
+                transition: "all 0.2s ease"
+              }}
+              type="button"
+            >
+              BOARD
+            </button>
+          </div>
+          <MagneticButton
+            className="auth-button haptic-tap"
+            onClick={() => setModal("create")}
+            style={{
+              height: 42,
+              padding: "0 16px",
+              borderRadius: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: "13px",
+              fontWeight: 600,
+            }}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            <span>New Task</span>
+          </MagneticButton>
+        </div>
       </div>
 
       {statsData && (
@@ -1056,21 +1243,21 @@ export default function TasksPage() {
           className="glass-holographic"
           style={{
             padding: "12px",
-            borderRadius: 24,
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 16,
+            background: "rgba(255, 255, 255, 0.02)",
+            border: "1px solid rgba(255, 255, 255, 0.05)",
             backdropFilter: "blur(40px)",
           }}
         >
           <div
             style={{
               display: "flex",
-              gap: 10,
+              gap: 12,
+              flexWrap: "wrap",
               alignItems: "center",
-              marginBottom: 12,
             }}
           >
-            <div style={{ position: "relative", flex: 1 }}>
+            <div style={{ position: "relative", flex: "1 1 300px" }}>
               <Search
                 size={18}
                 style={{
@@ -1085,9 +1272,9 @@ export default function TasksPage() {
                 className="auth-input"
                 style={{
                   paddingLeft: 46,
-                  height: 52,
-                  fontSize: 14,
-                  borderRadius: 16,
+                  height: 42,
+                  fontSize: 13,
+                  borderRadius: 12,
                   width: "100%",
                   background: "rgba(0,0,0,0.2)",
                   border: "1px solid rgba(255,255,255,0.05)",
@@ -1099,72 +1286,54 @@ export default function TasksPage() {
                 }
               />
             </div>
-            <MagneticButton
-              className="auth-button haptic-tap"
-              onClick={() => setModal("create")}
-              style={{
-                width: 52,
-                height: 52,
-                padding: 0,
-                borderRadius: 16,
-                flexShrink: 0,
-              }}
-            >
-              <Plus size={24} strokeWidth={2.5} />
-            </MagneticButton>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              overflowX: "auto",
-              paddingBottom: 4,
-            }}
-            className="no-scrollbar"
-          >
-            <select
-              className="select premium-select"
-              style={{
-                height: 38,
-                borderRadius: 12,
-                minWidth: 120,
-                fontSize: 11,
-                background: "rgba(255,255,255,0.03)",
-              }}
-              value={filters.status}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, status: e.target.value }))
-              }
-            >
-              <option value="">STATUS: ALL</option>
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace("-", " ").toUpperCase()}
-                </option>
-              ))}
-            </select>
-            <select
-              className="select premium-select"
-              style={{
-                height: 38,
-                borderRadius: 12,
-                minWidth: 120,
-                fontSize: 11,
-                background: "rgba(255,255,255,0.03)",
-              }}
-              value={filters.priority}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, priority: e.target.value }))
-              }
-            >
-              <option value="">PRIORITY: ALL</option>
-              {PRIORITIES.map((p) => (
-                <option key={p} value={p}>
-                  {p.toUpperCase()}
-                </option>
-              ))}
-            </select>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <select
+                className="select premium-select"
+                style={{
+                  height: 42,
+                  borderRadius: 12,
+                  minWidth: 120,
+                  fontSize: 12,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  color: "var(--text)",
+                }}
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, status: e.target.value }))
+                }
+              >
+                <option value="">STATUS: ALL</option>
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace("-", " ").toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="select premium-select"
+                style={{
+                  height: 42,
+                  borderRadius: 12,
+                  minWidth: 120,
+                  fontSize: 12,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  color: "var(--text)",
+                }}
+                value={filters.priority}
+                onChange={(e) =>
+                  setFilters((f) => ({ ...f, priority: e.target.value }))
+                }
+              >
+                <option value="">PRIORITY: ALL</option>
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {p.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -1174,34 +1343,84 @@ export default function TasksPage() {
       ) : (
         <div className="tasks-list" style={{ paddingBottom: 20 }}>
           {tasks.length > 0 ? (
-            <div className="tasks-container">
-              <List
-                height={isMobile ? Math.max(300, windowHeight - 300) : 700}
-                itemCount={tasks.length}
-                itemSize={isMobile ? 110 : 96}
-                width="100%"
-                itemData={tasks}
-                itemKey={(index, data) => getSafeId(data[index]) || index}
-              >
-                {({ index, style }) => {
-                  const task = tasks[index];
-                  return (
-                    <div style={{ ...style, paddingTop: 4 }}>
-                      <TaskItem
-                        task={task}
-                        isMobile={isMobile}
-                        selected={selected.includes(getSafeId(task))}
-                        toggleSelect={toggleSelect}
-                        toggleComplete={toggleComplete}
-                        setModal={setModal}
-                        setConfirmState={setConfirmState}
-                        deleteMutation={deleteMutation}
-                      />
+            viewMode === "list" ? (
+              <div className="tasks-container">
+                <List
+                  height={isMobile ? Math.max(300, windowHeight - 300) : 700}
+                  itemCount={tasks.length}
+                  itemSize={isMobile ? 110 : 96}
+                  width="100%"
+                  itemData={tasks}
+                  itemKey={(index, data) => getSafeId(data[index]) || index}
+                >
+                  {({ index, style }) => {
+                    const task = tasks[index];
+                    return (
+                      <div style={{ ...style, paddingTop: 4 }}>
+                        <TaskItem
+                          task={task}
+                          isMobile={isMobile}
+                          selected={selected.includes(getSafeId(task))}
+                          toggleSelect={toggleSelect}
+                          toggleComplete={toggleComplete}
+                          setModal={setModal}
+                          setConfirmState={setConfirmState}
+                          deleteMutation={deleteMutation}
+                        />
+                      </div>
+                    );
+                  }}
+                </List>
+              </div>
+            ) : (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+                gap: 20,
+                alignItems: "start",
+                marginTop: 8
+              }}>
+                {kanbanColumns.map(col => (
+                  <div key={col.id} style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 16,
+                    background: "rgba(255,255,255,0.01)",
+                    border: "1px solid rgba(255,255,255,0.03)",
+                    borderRadius: 20,
+                    padding: 16,
+                    minHeight: 300
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: col.color }} />
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", textTransform: "uppercase", letterSpacing: 1 }}>{col.title}</span>
+                      </div>
+                      <span style={{ fontSize: 10, padding: "2px 8px", background: "rgba(255,255,255,0.04)", borderRadius: 10, fontWeight: 700, color: "var(--text2)" }}>{col.tasks.length}</span>
                     </div>
-                  );
-                }}
-              </List>
-            </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {col.tasks.map(task => (
+                        <KanbanCard
+                          key={getSafeId(task)}
+                          task={task}
+                          toggleComplete={toggleComplete}
+                          setModal={setModal}
+                          deleteMutation={deleteMutation}
+                          updateMutation={updateMutation}
+                          setConfirmState={setConfirmState}
+                        />
+                      ))}
+                      {col.tasks.length === 0 && (
+                        <div style={{ textAlign: "center", padding: "40px 10px", color: "var(--muted)", fontSize: 12, border: "1px dashed rgba(255,255,255,0.04)", borderRadius: 12 }}>
+                          No tasks in this board
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : (
             <EmptyState
               key="tasks-empty"

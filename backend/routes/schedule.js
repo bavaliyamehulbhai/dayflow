@@ -105,11 +105,13 @@ router.patch('/:id/complete', async (req, res) => {
     event.isCompleted = !event.isCompleted;
     await event.save();
 
-    // Log activity if toggled to completed today
-    if (!wasCompleted && event.isCompleted) {
-      const today = new Date().toISOString().split('T')[0];
-      if (event.date === today) {
+    // Log activity if toggled to/from completed today
+    const today = new Date().toISOString().split('T')[0];
+    if (event.date === today) {
+      if (!wasCompleted && event.isCompleted) {
         await logActivity(req.user._id, { scheduleEventsCompleted: 1 });
+      } else if (wasCompleted && !event.isCompleted) {
+        await logActivity(req.user._id, { scheduleEventsCompleted: -1 });
       }
     }
 

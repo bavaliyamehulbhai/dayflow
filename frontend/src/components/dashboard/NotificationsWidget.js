@@ -36,8 +36,8 @@ const NotificationsWidget = ({ data, navigate }) => {
                 onClick={() => navigate('/tasks')}
                 className="glass-card aura-iridescent haptic-tap"
                 style={{
-                  padding: '14px 16px',
-                  borderRadius: 16,
+                  padding: '10px 12px',
+                  borderRadius: 12,
                   border: `1px solid ${isUrgent ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 255, 255, 0.05)'}`,
                   background: isUrgent ? 'rgba(255, 107, 107, 0.03)' : 'rgba(255, 255, 255, 0.02)',
                   display: 'flex',
@@ -105,10 +105,10 @@ const NotificationsWidget = ({ data, navigate }) => {
           })
         ) : (
           <div style={{ 
-            padding: '32px 16px', 
+            padding: '20px 12px', 
             textAlign: 'center', 
             background: 'rgba(255, 255, 255, 0.02)', 
-            borderRadius: 20, 
+            borderRadius: 12, 
             border: '1px dashed rgba(255, 255, 255, 0.05)' 
           }}>
             <div style={{ fontSize: 24, marginBottom: 8 }}>🛰️</div>

@@ -75,6 +75,27 @@ const createRainSound = (ctx) => {
   return { source: whiteNoise, gain, filter };
 };
 
+const createBrownNoiseSound = (ctx) => {
+  const bufferSize = 2 * ctx.sampleRate;
+  const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const output = noiseBuffer.getChannelData(0);
+  let lastOut = 0.0;
+  for (let i = 0; i < bufferSize; i++) {
+    const white = Math.random() * 2 - 1;
+    output[i] = (lastOut + (0.02 * white)) / 1.02;
+    lastOut = output[i];
+    output[i] *= 3.5; // Compensate for volume
+  }
+  const source = ctx.createBufferSource();
+  source.buffer = noiseBuffer;
+  source.loop = true;
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  return { source, gain };
+};
+
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
@@ -189,6 +210,18 @@ export default function PomodoroPage() {
   const rainRef = useRef(null);
   const persistRef = useRef(0);
 
+  // Sync durations with loaded user preferences when not running
+  const userPomoWork = prefs.pomodoroWork;
+  const userPomoBreak = prefs.pomodoroBreak;
+  const userPomoLong = prefs.pomodoroLong;
+
+  useEffect(() => {
+    const storedRunning = localStorage.getItem("df_pomo_running") === "true";
+    if (!running && !storedRunning) {
+      setTimeLeft(DURATIONS[mode]);
+    }
+  }, [userPomoWork, userPomoBreak, userPomoLong, mode]);
+
   // Sync to local storage
   useEffect(() => {
     const now = Date.now();
@@ -228,6 +261,11 @@ export default function PomodoroPage() {
     queryFn: () => pomodoroAPI.stats({ period: 7 }).then((r) => r.data.stats),
   });
 
+  const { data: historyData } = useQuery({
+    queryKey: ["pomo-history"],
+    queryFn: () => pomodoroAPI.getAll({ limit: 10 }).then((r) => r.data.pomodoros),
+  });
+
   const focusTrendData = useMemo(() => {
     const base = statsData?.daily || [];
     return base.map((day) => {
@@ -262,6 +300,7 @@ export default function PomodoroPage() {
     mutationFn: ({ id, data }) => pomodoroAPI.complete(id, data),
     onSuccess: () => {
       qc.invalidateQueries(["pomo-stats"]);
+      qc.invalidateQueries(["pomo-history"]);
       qc.invalidateQueries(["dashboard"]);
     },
   });
@@ -306,18 +345,28 @@ export default function PomodoroPage() {
 
     if (soundType === type) {
       if (rainRef.current) {
-        rainRef.current.gain.gain.exponentialRampToValueAtTime(
-          0.001,
-          ctx.currentTime + 1,
-        );
+        try {
+          rainRef.current.gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            ctx.currentTime + 1,
+          );
+        } catch {}
         setTimeout(() => {
-          if (rainRef.current) rainRef.current.source.stop();
+          if (rainRef.current) {
+            try {
+              rainRef.current.source.stop();
+            } catch {}
+          }
           rainRef.current = null;
         }, 1100);
       }
       setSoundType("none");
     } else {
-      if (rainRef.current) rainRef.current.source.stop();
+      if (rainRef.current) {
+        try {
+          rainRef.current.source.stop();
+        } catch {}
+      }
       if (type === "rain") {
         const rain = createRainSound(ctx);
         rain.source.start();
@@ -326,6 +375,14 @@ export default function PomodoroPage() {
           ctx.currentTime + 1,
         );
         rainRef.current = rain;
+      } else if (type === "brown") {
+        const brown = createBrownNoiseSound(ctx);
+        brown.source.start();
+        brown.gain.gain.exponentialRampToValueAtTime(
+          soundVolume,
+          ctx.currentTime + 1,
+        );
+        rainRef.current = brown;
       }
       setSoundType(type);
     }
@@ -729,25 +786,47 @@ export default function PomodoroPage() {
               flex: 1,
               borderRadius: 12,
               height: 44,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: 700,
             }}
             onClick={() => toggleSound("rain")}
+            type="button"
           >
-            <CloudRain size={16} /> <span style={{ marginLeft: 8 }}>Rain</span>
+            <CloudRain size={14} /> <span style={{ marginLeft: 4 }}>Rain</span>
           </button>
           <button
-            className={`btn haptic-tap glass`}
+            className={`btn haptic-tap ${soundType === "brown" ? "btn-primary" : "glass"}`}
             style={{
               flex: 1,
               borderRadius: 12,
               height: 44,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: 700,
             }}
-            onClick={() => toggleSound(soundType)}
+            onClick={() => toggleSound("brown")}
+            type="button"
           >
-            <VolumeX size={16} /> <span style={{ marginLeft: 8 }}>Mute</span>
+            <Wind size={14} /> <span style={{ marginLeft: 4 }}>Brown</span>
+          </button>
+          <button
+            className={`btn haptic-tap ${soundType === "none" ? "btn-primary" : "glass"}`}
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              height: 44,
+              fontSize: 11,
+              fontWeight: 700,
+            }}
+            onClick={() => {
+              if (rainRef.current) {
+                try { rainRef.current.source.stop(); } catch {}
+                rainRef.current = null;
+              }
+              setSoundType("none");
+            }}
+            type="button"
+          >
+            <VolumeX size={14} /> <span style={{ marginLeft: 4 }}>Mute</span>
           </button>
         </div>
         {soundType !== "none" && (
@@ -887,77 +966,79 @@ export default function PomodoroPage() {
         className={`responsive-container page-shell ${running && isMobile && isFocusMode ? "focus-immersion" : ""}`}
         style={{ position: "relative", zIndex: 1 }}
       >
-        <div
-          className="page-header mb-10"
-          style={{ alignItems: "flex-start", position: "relative" }}
-        >
+      <div
+        className="dashboard-header-premium"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          padding: isMobile ? "16px" : "20px 24px",
+          background: "var(--surface2)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px",
+          marginBottom: "24px",
+          position: "relative",
+          overflow: "hidden"
+        }}
+      >
+        <AuraOrb
+          color="var(--accent)"
+          size={isMobile ? 120 : 200}
+          top="-60px"
+          left="-30px"
+          delay={0}
+          duration={isMobile ? 20 : 15}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
+          <Timer
+            className="text-accent aura-float"
+            size={isMobile ? 22 : 28}
+          />
           <div>
-            <div
-              className="page-title flex items-center gap-4"
+            <h1
+              className="dashboard-title"
               style={{
+                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontWeight: 800,
                 fontFamily: "Syne, sans-serif",
-                fontSize: "clamp(28px, 5vw, 42px)",
-                fontWeight: 900,
-                letterSpacing: "-0.05em",
-                lineHeight: 1,
-                background:
-                  "linear-gradient(to right, #fff, rgba(255,255,255,0.7))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
+                margin: 0,
+                color: "var(--text)"
               }}
             >
-              <div
-                className="auth-logo-icon aura-float"
-                style={{
-                  width: isMobile ? 40 : 54,
-                  height: isMobile ? 40 : 54,
-                  marginBottom: 0,
-                  background: "var(--grad-premium)",
-                }}
-              >
-                <Timer
-                  size={isMobile ? 20 : 28}
-                  color="white"
-                  strokeWidth={2.5}
-                  fill="white"
-                />
-              </div>
-              Temporal Engine
-            </div>
-            <p
-              className="page-subtitle"
-              style={{
-                fontSize: "var(--fs-sm)",
-                fontWeight: 700,
-                color: "var(--muted)",
-                marginTop: 12,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                opacity: 0.8,
-              }}
-            >
-              Optimizing cognitive output · v2.4
+              Focus Session
+            </h1>
+            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+              Immerse in flow state work intervals
             </p>
           </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
           <button
             className="btn glass haptic-tap glow-on-hover"
             onClick={() => setIsFocusMode(true)}
             style={{
-              borderRadius: 20,
-              height: isMobile ? 44 : 54,
-              padding: isMobile ? "0 20px" : "0 32px",
-              fontWeight: 900,
+              borderRadius: 12,
+              height: 42,
+              padding: "0 16px",
+              fontWeight: 700,
               border: "1px solid rgba(255,255,255,0.1)",
-              fontSize: isMobile ? 12 : 14,
+              fontSize: "13px",
               background: "rgba(255,255,255,0.03)",
               textTransform: "uppercase",
               letterSpacing: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
             }}
           >
-            <Maximize2 size={isMobile ? 16 : 18} style={{ marginRight: 10 }} />{" "}
-            IMMERSE
+            <Maximize2 size={16} />
+            <span>Immerse</span>
           </button>
         </div>
+      </div>
 
         <div
           style={{
@@ -1381,6 +1462,68 @@ export default function PomodoroPage() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="card glass-card" style={{ marginTop: 8 }}>
+              <div className="card-title" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <History size={16} className="text-accent" />
+                <span>Recent Sessions</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {historyData && historyData.length > 0 ? (
+                  historyData.slice(0, 5).map((session, idx) => {
+                    const durationMin = Math.round(session.actualDuration / 60);
+                    return (
+                      <div key={session._id || idx} style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 16px",
+                        background: "rgba(255, 255, 255, 0.02)",
+                        border: "1px solid rgba(255, 255, 255, 0.05)",
+                        borderRadius: 14,
+                        gap: 12
+                      }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "white", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                              {session.linkedTask?.title || "Independent Focus"}
+                            </span>
+                            <span style={{ 
+                              fontSize: 9, 
+                              padding: "2px 6px", 
+                              borderRadius: 4, 
+                              background: session.type === "work" ? "rgba(99,102,241,0.15)" : "rgba(34,197,94,0.15)",
+                              color: session.type === "work" ? "var(--accent)" : "var(--green)",
+                              fontWeight: 800,
+                              textTransform: "uppercase"
+                            }}>
+                              {session.type}
+                            </span>
+                          </div>
+                          {session.note && (
+                            <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 4, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                              "{session.note}"
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: "white" }}>
+                            {durationMin} min
+                          </div>
+                          <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 2, fontWeight: 600 }}>
+                            {safeFormat(session.completedAt || session.createdAt, "MMM d, h:mm a")}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ textAlign: "center", padding: "30px 10px", color: "var(--muted)", fontSize: 12, border: "1px dashed rgba(255,255,255,0.04)", borderRadius: 12 }}>
+                    No focus sessions recorded yet. Start a timer to begin!
+                  </div>
+                )}
               </div>
             </div>
 

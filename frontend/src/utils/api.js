@@ -120,10 +120,4 @@ export const aiAPI = {
   getCoach: () => api.get('/ai/coach')
 };
 
-// ─── Google Calendar ──────────────────────────────────────────────────────────
-export const googleAPI = {
-  getAuthUrl: () => api.get('/google/auth'),
-  getEvents: () => api.get('/google/events'),
-  disconnect: () => api.delete('/google/disconnect')
-};
 

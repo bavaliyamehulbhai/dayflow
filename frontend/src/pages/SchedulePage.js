@@ -541,81 +541,75 @@ export default function SchedulePage() {
         animate="visible"
         style={{ position: "relative", zIndex: 1 }}
       >
-        <div
-          className="page-header mb-10"
-          style={{
-            alignItems: "flex-start",
-            position: "relative",
-            padding: isMobile ? "12px 0" : "40px 0",
-          }}
-        >
+      <div
+        className="dashboard-header-premium"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          padding: isMobile ? "16px" : "20px 24px",
+          background: "var(--surface2)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px",
+          marginBottom: "24px",
+          position: "relative",
+          overflow: "hidden"
+        }}
+      >
+        <AuraOrb
+          color="var(--accent)"
+          size={isMobile ? 120 : 200}
+          top="-60px"
+          left="-30px"
+          delay={0}
+          duration={isMobile ? 20 : 15}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
+          <Sparkles
+            className="text-accent aura-float"
+            size={isMobile ? 22 : 28}
+          />
           <div>
-            <div className="page-title flex items-center gap-4">
-              <div
-                className="auth-logo-icon aura-float"
-                style={{
-                  width: isMobile ? 40 : 54,
-                  height: isMobile ? 40 : 54,
-                  marginBottom: 0,
-                  background: "var(--grad-premium)",
-                }}
-              >
-                <Sparkles
-                  size={isMobile ? 20 : 28}
-                  color="white"
-                  strokeWidth={2.5}
-                  fill="white"
-                />
-              </div>
-              <h1
-                style={{
-                  fontSize: "clamp(28px, 5vw, 42px)",
-                  fontWeight: 900,
-                  fontFamily: "Syne, sans-serif",
-                  letterSpacing: "-0.05em",
-                  lineHeight: 1,
-                  background:
-                    "linear-gradient(to right, #fff, rgba(255,255,255,0.7))",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Temporal Nexus
-              </h1>
-            </div>
-            <p
-              className="page-subtitle"
+            <h1
+              className="dashboard-title"
               style={{
-                fontSize: "var(--fs-sm)",
-                opacity: 0.8,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.15em",
-                marginTop: 12,
+                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontWeight: 800,
+                fontFamily: "Syne, sans-serif",
+                margin: 0,
+                color: "var(--text)"
               }}
             >
-              Architecture of flow & alignment
+              Schedule
+            </h1>
+            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+              Plan and align your calendar events
             </p>
           </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
           <MagneticButton
-            className="auth-button hide-mobile glow-on-hover"
+            className="auth-button magnetic-btn haptic-tap"
             onClick={() => setModal("create")}
             style={{
-              width: "auto",
-              padding: "0 32px",
-              height: 60,
-              borderRadius: 24,
-              fontSize: 14,
-              fontWeight: 900,
-              textTransform: "uppercase",
-              letterSpacing: 1,
+              height: 42,
+              padding: "0 16px",
+              borderRadius: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: "13px",
+              fontWeight: 600,
             }}
           >
-            <div className="btn-glint" />
-            <Plus size={22} style={{ marginRight: 10 }} strokeWidth={3} />{" "}
-            SCHEDULE ALIGNMENT
+            <Plus size={16} strokeWidth={2.5} />
+            <span>New Event</span>
           </MagneticButton>
         </div>
+      </div>
 
         {/* Date navigation */}
         <div
@@ -768,11 +762,22 @@ export default function SchedulePage() {
               {hours.map((h) => (
                 <div
                   key={h}
+                  onClick={() => {
+                    const padHour = String(h).padStart(2, "0");
+                    setModal({
+                      title: "",
+                      description: "",
+                      startTime: `${padHour}:00`,
+                      endTime: `${String(h + 1).padStart(2, "0")}:00`,
+                      category: "other"
+                    });
+                  }}
                   style={{
                     position: "relative",
                     height: isMobile ? 48 : 64,
                     borderBottom: "1px solid rgba(255,255,255,0.02)",
                     zIndex: 1,
+                    cursor: "pointer"
                   }}
                 >
                   <div

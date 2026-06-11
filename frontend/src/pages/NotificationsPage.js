@@ -33,17 +33,52 @@ export default function NotificationsPage() {
         delay={4}
       />
 
-      <div className="page-header" style={{ paddingTop: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div
-            className="auth-logo-icon aura-float"
-            style={{ width: 54, height: 54, marginBottom: 0 }}
-          >
-            <Bell size={24} color="white" strokeWidth={2.5} />
-          </div>
+      <div
+        className="dashboard-header-premium"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          padding: "20px 24px",
+          background: "var(--surface2)",
+          border: "1px solid var(--border)",
+          borderRadius: "16px",
+          marginBottom: "24px",
+          position: "relative",
+          overflow: "hidden"
+        }}
+      >
+        <AuraOrb
+          color="var(--accent)"
+          size={200}
+          top="-60px"
+          left="-30px"
+          delay={0}
+          duration={15}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
+          <Bell
+            className="text-accent aura-float"
+            size={28}
+          />
           <div>
-            <div className="page-title">Notifications</div>
-            <div className="page-subtitle">Signals and upcoming deadlines</div>
+            <h1
+              className="dashboard-title"
+              style={{
+                fontSize: "1.6rem",
+                fontWeight: 800,
+                fontFamily: "Syne, sans-serif",
+                margin: 0,
+                color: "var(--text)"
+              }}
+            >
+              Notifications
+            </h1>
+            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+              Signals and upcoming deadlines
+            </p>
           </div>
         </div>
       </div>

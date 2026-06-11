@@ -24,23 +24,16 @@ const ProductivityCircle = ({ stats }) => {
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="premium-card aura-iridescent"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             style={{
-                borderRadius: 24,
-                padding: '32px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 24,
+                gap: 16,
                 width: '100%',
-                background: 'rgba(255,255,255,0.01)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                position: 'relative',
-                overflow: 'hidden'
+                position: 'relative'
             }}
         >
-            <div className="btn-glint" style={{ opacity: 0.02 }} />
             <h3 style={{ fontSize: 11, fontWeight: 900, color: 'var(--muted)', margin: 0, textTransform: 'uppercase', letterSpacing: 2 }}>Output Distribution Protocol</h3>
 
             <div style={{ position: 'relative', width: size, height: size, margin: '10px auto' }}>
