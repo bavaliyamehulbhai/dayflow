@@ -2,8 +2,26 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { habitsAPI } from "../utils/api";
 import { useNotifications } from "../context/NotificationContext";
-import { subDays, eachDayOfInterval } from "date-fns";
 import { safeFormat, safeToLocalISO } from "../utils/dateUtils";
+
+const localSubDays = (date, amount) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() - amount);
+  return d;
+};
+
+const localEachDayOfInterval = ({ start, end }) => {
+  const dates = [];
+  let d = new Date(start);
+  d.setHours(0, 0, 0, 0);
+  const e = new Date(end);
+  e.setHours(0, 0, 0, 0);
+  while (d <= e) {
+    dates.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+};
 import { getSafeId } from "../utils/idUtils";
 import {
   Plus,
@@ -38,7 +56,6 @@ import SensitivityShield from "../components/layout/SensitivityShield";
 import Celebration from "../components/Celebration";
 import ShortcutsHelp from "../components/layout/ShortcutsHelp";
 import MobileBottomSheet from "../components/common/MobileBottomSheet";
-import AuraOrb from "../components/common/AuraOrb";
 
 const ICONS = [
   "⭐",
@@ -105,13 +122,11 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
         if (!form.name.trim()) return addToast("Ritual name required", "error");
         onSave(form);
       }}
-      className="flex flex-col h-full"
+      style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
     >
       <div
-        className="modal-body custom-scrollbar"
         style={{
-          padding: isMobile ? "24px" : "32px 40px",
-          paddingBottom: isMobile ? "140px" : 40,
+          padding: "24px",
           flex: 1,
           overflowY: "auto",
         }}
@@ -119,32 +134,32 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
         <div className="form-group mb-8">
           <label
             style={{
-              fontSize: 11,
-              fontWeight: 900,
+              fontSize: 10,
+              fontWeight: 600,
               color: "var(--muted)",
-              letterSpacing: 2,
+              letterSpacing: 0.5,
               textTransform: "uppercase",
               marginBottom: 12,
               display: "block",
             }}
           >
-            Ritual Title
+            Title
           </label>
           <input
-            className="auth-input haptic-feedback custom-ritual-input"
             style={{
-              height: 60,
-              fontSize: 18,
-              fontWeight: 700,
-              background: "rgba(255,255,255,0.02)",
-              borderRadius: 18,
-              border: "1px solid rgba(255,255,255,0.05)",
-              boxShadow: "inset 0 2px 10px rgba(0,0,0,0.2)",
+              height: 44,
+              fontSize: 14,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              padding: "0 16px",
               width: "100%",
+              color: "var(--text)",
+              outline: "none"
             }}
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder="e.g. MORNING MEDITATION"
+            placeholder="e.g. Read 10 pages"
             autoFocus
           />
         </div>
@@ -152,35 +167,37 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
         <div className="form-group mb-8">
           <label
             style={{
-              fontSize: 11,
-              fontWeight: 900,
+              fontSize: 10,
+              fontWeight: 600,
               color: "var(--muted)",
-              letterSpacing: 2,
+              letterSpacing: 0.5,
               textTransform: "uppercase",
               marginBottom: 12,
               display: "block",
             }}
           >
-            Identity & Intent
+            Description
           </label>
           <textarea
-            className="auth-input haptic-feedback"
             value={form.description}
             onChange={(e) =>
               setForm((f) => ({ ...f, description: e.target.value }))
             }
-            placeholder="Why is this ritual essential to your biological evolution?"
-            rows={isMobile ? 3 : 4}
-            style={{
-              height: "auto",
-              minHeight: 100,
-              padding: "20px",
-              borderRadius: 18,
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.05)",
-              fontSize: 15,
-              width: "100%",
-            }}
+            placeholder="Add context..."
+            rows={3}
+              style={{
+                height: "auto",
+                minHeight: 80,
+                padding: "12px 16px",
+                borderRadius: 6,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid var(--border)",
+                fontSize: 14,
+                width: "100%",
+                color: "var(--text)",
+                outline: "none",
+                resize: "vertical"
+              }}
           />
         </div>
 
@@ -188,10 +205,10 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
           <div className="form-group">
             <label
               style={{
-                fontSize: 11,
-                fontWeight: 900,
+                fontSize: 10,
+                fontWeight: 600,
                 color: "var(--muted)",
-                letterSpacing: 1.5,
+                letterSpacing: 0.5,
                 textTransform: "uppercase",
                 marginBottom: 10,
                 display: "block",
@@ -200,13 +217,16 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
               Frequency
             </label>
             <select
-              className="auth-input"
               style={{
-                height: 56,
-                borderRadius: 16,
+                height: 44,
+                borderRadius: 6,
                 width: "100%",
                 fontSize: 14,
-                fontWeight: 700,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid var(--border)",
+                padding: "0 12px",
+                color: "var(--text)",
+                outline: "none"
               }}
               value={form.frequency}
               onChange={(e) =>
@@ -223,10 +243,10 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
           <div className="form-group">
             <label
               style={{
-                fontSize: 11,
-                fontWeight: 900,
+                fontSize: 10,
+                fontWeight: 600,
                 color: "var(--muted)",
-                letterSpacing: 1.5,
+                letterSpacing: 0.5,
                 textTransform: "uppercase",
                 marginBottom: 10,
                 display: "block",
@@ -237,15 +257,16 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
             <div className="flex gap-4 items-center">
               <input
                 type="number"
-                className="auth-input"
                 style={{
-                  height: 56,
-                  borderRadius: 16,
-                  width: "60%",
-                  background: "rgba(255,255,255,0.02)",
-                  fontWeight: 900,
-                  fontSize: 18,
+                  height: 44,
+                  borderRadius: 6,
+                  width: "100%",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid var(--border)",
+                  fontSize: 14,
                   textAlign: "center",
+                  color: "var(--text)",
+                  outline: "none"
                 }}
                 value={form.targetCount}
                 onChange={(e) =>
@@ -257,13 +278,12 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
               />
               <span
                 style={{
-                  fontSize: 11,
-                  fontWeight: 900,
-                  color: "var(--muted)",
-                  letterSpacing: 1.5,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: "var(--text2)",
                 }}
               >
-                {form.unit.toUpperCase()}
+                {form.unit}
               </span>
             </div>
           </div>
@@ -272,12 +292,10 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
         <div className="form-group mb-10">
           <label
             style={{
-              fontSize: 11,
-              fontWeight: 900,
-              color: "var(--muted)",
-              letterSpacing: 2,
-              textTransform: "uppercase",
-              marginBottom: 16,
+              fontSize: 12,
+              fontWeight: 500,
+              color: "var(--text2)",
+              marginBottom: 12,
               display: "block",
             }}
           >
@@ -292,79 +310,75 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
                 onClick={() => setForm((f) => ({ ...f, color: c }))}
                 className="flex-shrink-0"
                 style={{
-                  width: 44,
-                  height: 44,
+                  width: 32,
+                  height: 32,
                   borderRadius: "50%",
                   background: c,
                   border:
                     form.color === c
-                      ? "3px solid white"
-                      : "2px solid rgba(255,255,255,0.1)",
+                      ? "2px solid white"
+                      : "2px solid transparent",
+                  outline: form.color === c ? "2px solid rgba(255,255,255,0.2)" : "none",
                   position: "relative",
+                  cursor: "pointer"
                 }}
               >
-                {form.color === c && (
-                  <motion.div
-                    layoutId="active-color-ring"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1.25 }}
-                    style={{
-                      position: "absolute",
-                      inset: -6,
-                      borderRadius: "50%",
-                      border: `2px solid ${c}`,
-                      opacity: 0.5,
-                    }}
-                  />
-                )}
-                {form.color === c && (
-                  <motion.div
-                    animate={{ scale: [1, 1.4], opacity: [0.3, 0] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                    style={{
-                      position: "absolute",
-                      inset: -6,
-                      borderRadius: "50%",
-                      border: `2px solid ${c}`,
-                    }}
-                  />
-                )}
+
               </motion.button>
             ))}
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="auth-button w-full haptic-tap"
+        <div
           style={{
-            height: 64,
-            borderRadius: 20,
-            fontSize: 16,
-            fontWeight: 900,
-            background: form.color,
-            letterSpacing: 1.5,
+            padding: "20px 24px",
+            borderTop: "1px solid var(--border)",
+            display: "flex",
+            gap: 12,
+            justifyContent: "flex-end",
+            alignItems: "center"
           }}
         >
-          {habit ? "REFINE RITUAL" : "FORGE RITUAL"}
-        </button>
-
-        {habit && (
+          {habit && (
+            <button
+              type="button"
+              onClick={() => onDelete(habit)}
+              style={{
+                marginRight: "auto",
+                padding: "8px 16px",
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                color: "var(--red)",
+                background: "transparent",
+                border: "1px solid rgba(239, 68, 68, 0.2)"
+              }}
+            >
+              Delete
+            </button>
+          )}
           <button
             type="button"
-            className="btn btn-ghost text-red w-full mt-4 haptic-tap"
-            style={{
-              height: 48,
-              borderRadius: 14,
-              fontSize: 14,
-              fontWeight: 700,
-              border: "1px solid rgba(239, 68, 68, 0.2)",
-            }}
-            onClick={() => onDelete(habit)}
+            onClick={onClose}
+            style={{ padding: "8px 16px", borderRadius: 6, fontWeight: 600, background: "transparent", border: "1px solid var(--border)", color: "var(--text)" }}
           >
-            Banish Ritual
+            Cancel
           </button>
-        )}
+          <button
+            type="submit"
+            style={{
+              padding: "8px 16px",
+              borderRadius: 6,
+              fontSize: 14,
+              fontWeight: 600,
+              background: "var(--text)",
+              color: "var(--bg)",
+              border: "none"
+            }}
+          >
+            {habit ? "Save changes" : "Create habit"}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -384,36 +398,54 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
   return (
     <div
       className="modal-overlay"
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+      }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        initial={{ opacity: 0, scale: 0.9, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 30 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="auth-card aura-iridescent"
-        style={{ width: "100%", maxWidth: 540, padding: 0, overflow: "hidden" }}
+        exit={{ opacity: 0, scale: 0.9, y: 10 }}
+        transition={{ type: "spring", damping: 25, stiffness: 400 }}
+        style={{ 
+          width: "100%", 
+          maxWidth: 480, 
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+          padding: 0, 
+          overflow: "hidden", 
+          background: "var(--surface-solid)",
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)"
+        }}
       >
         <div
-          className="modal-header"
           style={{
-            padding: "24px 32px",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            padding: "20px 24px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
           }}
         >
           <div
-            className="modal-title"
-            style={{ fontFamily: "Syne", fontWeight: 800, fontSize: 22 }}
+            style={{ fontWeight: 600, fontSize: 18, color: "var(--text)" }}
           >
-            {habit ? "Refine Ritual" : "Forge Ritual"}
+            {habit ? "Edit Habit" : "New Habit"}
           </div>
           <button
-            className="modal-close haptic-tap"
+            className="haptic-tap"
             onClick={onClose}
             style={{
-              background: "rgba(255,255,255,0.05)",
-              borderRadius: 12,
-              padding: 8,
+              background: "transparent",
+              borderRadius: 6,
+              padding: 6,
+              border: "none",
+              color: "var(--text2)",
+              cursor: "pointer"
             }}
           >
             <X size={20} />
@@ -437,8 +469,8 @@ const RitualCard = ({
   const daysToShow = 7;
   const last7 = React.useMemo(
     () =>
-      eachDayOfInterval({
-        start: subDays(new Date(), daysToShow - 1),
+      localEachDayOfInterval({
+        start: localSubDays(new Date(), daysToShow - 1),
         end: new Date(),
       }),
     [],
@@ -516,11 +548,11 @@ const RitualCard = ({
         <SensitivityShield>
           <h3
             style={{
-              fontSize: 18,
-              fontWeight: 800,
-              fontFamily: "Syne",
+              fontSize: 16,
+              fontWeight: 700,
+              fontFamily: "'Inter', sans-serif",
               marginBottom: 4,
-              letterSpacing: "-0.02em",
+              letterSpacing: 0,
             }}
           >
             {habit.name}
@@ -550,7 +582,7 @@ const RitualCard = ({
               style={{
                 cursor: "pointer",
                 backgroundColor: s.done ? habit.color : "transparent",
-                boxShadow: s.done ? `0 0 10px ${habit.color}88` : "none",
+                boxShadow: s.done ? `inset 0 1px 0 rgba(255,255,255,0.2)` : "none",
                 borderColor: s.isToday ? habit.color : "rgba(255, 255, 255, 0.15)",
                 width: 14,
                 height: 14,
@@ -568,10 +600,7 @@ const RitualCard = ({
         <div style={{ marginLeft: "auto" }}>
           <motion.button
             whileHover={{
-              scale: 1.1,
-              boxShadow: isTodayCompleted
-                ? `0 8px 25px ${habit.color}66`
-                : "0 8px 20px rgba(255,255,255,0.1)",
+              scale: 1.05
             }}
             whileTap={{ scale: 0.85 }}
             transition={{ type: "spring", stiffness: 400, damping: 15 }}
@@ -593,7 +622,7 @@ const RitualCard = ({
               alignItems: "center",
               justifyContent: "center",
               boxShadow: isTodayCompleted
-                ? `0 8px 20px ${habit.color}44`
+                ? `inset 0 1px 0 rgba(255,255,255,0.2)`
                 : "none",
               transition: "background 0.3s ease, border-color 0.3s ease",
             }}
@@ -679,10 +708,11 @@ const MobileRitualCard = ({
           touchAction: "pan-y",
           position: "relative",
           zIndex: 1,
-          borderRadius: 24,
-          border: `1.5px solid ${completed ? `${habit.color}33` : "rgba(255,255,255,0.08)"}`,
+          borderRadius: 12,
+          border: `1px solid ${completed ? habit.color : "var(--border)"}`,
+          borderLeft: `4px solid ${habit.color}`,
           overflow: "hidden",
-          background: "rgba(20, 20, 25, 0.95)",
+          background: completed ? `color-mix(in srgb, ${habit.color} 15%, var(--surface-solid))` : "var(--surface-solid)",
         }}
         onDragEnd={(e, info) => {
           if (info.offset.x > 80) {
@@ -691,7 +721,7 @@ const MobileRitualCard = ({
             onDelete(habit);
           }
         }}
-        className="glass-holographic aura-iridescent haptic-tap"
+        className="haptic-tap"
         onClick={() => onEdit(habit)}
       >
         <div className="btn-glint" style={{ opacity: 0.05 }} />
@@ -705,10 +735,8 @@ const MobileRitualCard = ({
         >
           <div
             style={{
-              fontSize: 28,
-              filter: completed
-                ? `drop-shadow(0 0 12px ${habit.color})`
-                : "none",
+              fontSize: 24,
+              filter: "none",
               background: completed
                 ? `${habit.color}15`
                 : "rgba(255,255,255,0.03)",
@@ -725,11 +753,10 @@ const MobileRitualCard = ({
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontWeight: 800,
-                fontSize: 17,
-                fontFamily: "Syne",
-                letterSpacing: "-0.02em",
-                color: completed ? "white" : "var(--text)",
+                fontWeight: 600,
+                fontSize: 16,
+                letterSpacing: "-0.01em",
+                color: "var(--text)",
               }}
             >
               {habit.name}
@@ -767,7 +794,7 @@ const MobileRitualCard = ({
               height: 48,
               borderRadius: 16,
               background: completed ? habit.color : "rgba(255,255,255,0.05)",
-              boxShadow: completed ? `0 8px 20px ${habit.color}44` : "none",
+              boxShadow: completed ? `inset 0 1px 0 rgba(255,255,255,0.2)` : "none",
               border: completed ? "none" : "1.5px solid rgba(255,255,255,0.05)",
               color: "white",
               display: "flex",
@@ -955,75 +982,62 @@ export default function HabitsPage() {
         paddingBottom: 120,
       }}
     >
-      {/* Immersive Background Layer */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-        <AuraOrb
-          color="rgba(124, 109, 250, 0.15)"
-          size="400px"
-          top="-5%"
-          left="-5%"
-          delay={0}
-        />
-        <AuraOrb
-          color="rgba(110, 250, 204, 0.1)"
-          size="350px"
-          top="40%"
-          left="65%"
-          delay={3}
-        />
-        <AuraOrb
-          color="rgba(250, 109, 138, 0.08)"
-          size="300px"
-          top="75%"
-          left="5%"
-          delay={5}
-        />
-      </div>
-
       <div
-        className="dashboard-header-premium"
+        className="premium-card"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "16px",
-          padding: isMobile ? "16px" : "20px 24px",
-          background: "var(--surface2)",
-          border: "1px solid var(--border)",
-          borderRadius: "16px",
-          marginBottom: "24px",
+          padding: isMobile ? "20px" : "28px 32px",
+          marginBottom: "32px",
           position: "relative",
-          overflow: "hidden"
+          overflow: "hidden",
         }}
       >
-        <AuraOrb
-          color="var(--accent)"
-          size={isMobile ? 120 : 200}
-          top="-60px"
-          left="-30px"
-          delay={0}
-          duration={isMobile ? 20 : 15}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
-          <RefreshCcw
-            className="text-accent aura-float"
-            size={isMobile ? 22 : 28}
-          />
+        {/* Subtle background glow */}
+        <div style={{
+          position: 'absolute',
+          top: '-50%',
+          left: '-10%',
+          width: '50%',
+          height: '200%',
+          background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
+          opacity: 0.05,
+          filter: 'blur(40px)',
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "20px", zIndex: 1 }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            borderRadius: "16px",
+            background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))",
+            border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
+          }}>
+            <RefreshCcw size={24} style={{ color: "var(--accent)" }} />
+          </div>
           <div>
             <h1
-              className="dashboard-title"
               style={{
-                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontSize: isMobile ? "1.6rem" : "2.1rem",
                 fontWeight: 800,
-                fontFamily: "Syne, sans-serif",
                 margin: 0,
-                color: "var(--text)"
+                background: "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                letterSpacing: "-0.04em"
               }}
             >
               Habits
             </h1>
-            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+            <p style={{ fontSize: "0.95rem", color: "var(--muted)", margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.2px" }}>
               Build consistency through daily rituals
             </p>
           </div>
@@ -1032,20 +1046,26 @@ export default function HabitsPage() {
         <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
           <button
             onClick={() => setModal("create")}
-            className="auth-button magnetic-btn haptic-tap"
             style={{
-              height: 42,
-              padding: "0 16px",
-              borderRadius: 12,
+              background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "#fff",
+              padding: "10px 20px",
+              borderRadius: "12px",
+              fontSize: "13px",
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
               gap: 8,
-              fontSize: "13px",
-              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.2s ease"
             }}
+            className="haptic-tap hover-lift"
           >
-            <Plus size={16} strokeWidth={2.5} />
-            <span>New Habit</span>
+            <Plus size={16} style={{ color: "var(--accent)" }} />
+            <span style={{ letterSpacing: "0.5px" }}>New Habit</span>
           </button>
         </div>
       </div>
@@ -1061,25 +1081,22 @@ export default function HabitsPage() {
         }}
       >
         <div
-          className="glass-holographic"
           style={{
-            padding: "12px",
-            borderRadius: 16,
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.05)",
-            backdropFilter: "blur(40px)",
+            padding: "4px",
+            borderRadius: 12,
+            background: "var(--surface-solid)",
+            border: "1px solid var(--border)",
           }}
         >
           <div
-            className="glass"
             style={{
-              borderRadius: 12,
+              borderRadius: 8,
               padding: "0 16px",
               height: 42,
               display: "flex",
               alignItems: "center",
               gap: 12,
-              background: "rgba(0,0,0,0.2)",
+              background: "rgba(255,255,255,0.02)",
               border: "1px solid rgba(255,255,255,0.05)",
             }}
           >
@@ -1088,14 +1105,16 @@ export default function HabitsPage() {
               placeholder="Find rituals..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              className="no-ring"
               style={{
-                background: "none",
+                background: "transparent",
                 border: "none",
                 outline: "none",
-                color: "white",
-                fontWeight: 600,
+                boxShadow: "none",
+                color: "var(--text)",
+                fontWeight: 500,
                 width: "100%",
-                fontSize: 13,
+                fontSize: 14,
               }}
             />
           </div>
@@ -1118,18 +1137,18 @@ export default function HabitsPage() {
           className="app-module-entrance"
           style={{
             padding: "20px",
-            borderRadius: 24,
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 16,
+            background: "rgba(255, 255, 255, 0.02)",
+            border: "1px dashed rgba(255, 255, 255, 0.08)",
             backdropFilter: "blur(20px)",
           }}
         >
           <div
             style={{
               fontSize: 10,
-              fontWeight: 900,
+              fontWeight: 600,
               color: "var(--muted)",
-              letterSpacing: 1.5,
+              letterSpacing: 0.5,
               marginBottom: 4,
               textTransform: "uppercase",
             }}
@@ -1138,9 +1157,9 @@ export default function HabitsPage() {
           </div>
           <div
             style={{
-              fontSize: "28px",
-              fontWeight: 900,
-              fontFamily: "Syne",
+              fontSize: "24px",
+              fontWeight: 700,
+              fontFamily: "'Inter', sans-serif",
               color: "white",
             }}
           >
@@ -1154,18 +1173,18 @@ export default function HabitsPage() {
           className="app-module-entrance"
           style={{
             padding: "20px",
-            borderRadius: 24,
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 16,
+            background: "rgba(255, 255, 255, 0.02)",
+            border: "1px dashed rgba(255, 255, 255, 0.08)",
             backdropFilter: "blur(20px)",
           }}
         >
           <div
             style={{
               fontSize: 10,
-              fontWeight: 900,
+              fontWeight: 600,
               color: "var(--muted)",
-              letterSpacing: 1.5,
+              letterSpacing: 0.5,
               marginBottom: 4,
               textTransform: "uppercase",
             }}
@@ -1174,9 +1193,9 @@ export default function HabitsPage() {
           </div>
           <div
             style={{
-              fontSize: "28px",
-              fontWeight: 900,
-              fontFamily: "Syne",
+              fontSize: "24px",
+              fontWeight: 700,
+              fontFamily: "'Inter', sans-serif",
               color: syncRate > 80 ? "var(--green)" : "var(--yellow)",
             }}
           >
@@ -1193,20 +1212,21 @@ export default function HabitsPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="glass-card aura-iridescent"
+          className="empty-state-premium"
           style={{
-            padding: "100px 40px",
+            padding: "60px 40px",
             textAlign: "center",
-            borderRadius: 40,
-            border: "none",
+            borderRadius: 16,
+            background: "rgba(255, 255, 255, 0.02)",
+            border: "1px dashed rgba(255, 255, 255, 0.08)",
           }}
         >
           <div
             className="empty-icon aura-float"
             style={{
-              fontSize: 80,
+              fontSize: 64,
               marginBottom: 24,
-              filter: "drop-shadow(0 0 30px var(--accent-glow))",
+              filter: "none",
             }}
           >
             🎭
@@ -1214,10 +1234,10 @@ export default function HabitsPage() {
           <h2
             className="empty-title"
             style={{
-              fontSize: 32,
-              fontWeight: 800,
-              fontFamily: "Syne",
-              letterSpacing: "-0.04em",
+              fontSize: 24,
+              fontWeight: 700,
+              fontFamily: "'Inter', sans-serif",
+              letterSpacing: "-0.02em",
             }}
           >
             The Stage is Set

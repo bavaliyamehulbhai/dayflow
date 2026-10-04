@@ -134,13 +134,20 @@ const MODES = {
   },
 };
 
-// Responsive hook
+// Responsive hook - debounced to prevent excessive re-renders on resize
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
   useEffect(() => {
-    const h = () => setW(window.innerWidth);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
+    let tid;
+    const h = () => {
+      clearTimeout(tid);
+      tid = setTimeout(() => setW(window.innerWidth), 150);
+    };
+    window.addEventListener("resize", h, { passive: true });
+    return () => {
+      window.removeEventListener("resize", h);
+      clearTimeout(tid);
+    };
   }, []);
   return w;
 }
@@ -209,6 +216,8 @@ export default function PomodoroPage() {
   const audioCtxRef = useRef(null);
   const rainRef = useRef(null);
   const persistRef = useRef(0);
+  // Store handleComplete in a ref so the timer interval doesn't need to recreate on every dependency change
+  const handleCompleteRef = useRef(null);
 
   // Sync durations with loaded user preferences when not running
   const userPomoWork = prefs.pomodoroWork;
@@ -439,6 +448,11 @@ export default function PomodoroPage() {
     addToast,
   ]);
 
+  // Keep ref always up-to-date so timer interval can call it without being in deps
+  useEffect(() => {
+    handleCompleteRef.current = handleComplete;
+  });
+
   useEffect(() => {
     if (running) {
       const startTimer = Date.now();
@@ -450,12 +464,12 @@ export default function PomodoroPage() {
 
         setTimeLeft(nextTime);
         if (nextTime <= 0) {
-          handleComplete();
+          handleCompleteRef.current?.();
         }
       }, 1000);
     }
     return () => clearInterval(intervalRef.current);
-  }, [running, handleComplete]);
+  }, [running]);
 
   useEffect(() => {
     document.title = running
@@ -751,11 +765,11 @@ export default function PomodoroPage() {
       {/* Soundscapes */}
       <motion.div
         variants={itemVariants}
-        className="premium-card aura-iridescent"
         style={{
-          borderRadius: 24,
-          padding: 24,
-          border: "1px solid rgba(255,255,255,0.05)",
+          borderRadius: 12,
+          padding: 20,
+          background: "var(--surface-solid)",
+          border: "1px solid var(--border)",
         }}
       >
         <div
@@ -851,12 +865,11 @@ export default function PomodoroPage() {
       {/* Config */}
       <motion.div
         variants={itemVariants}
-        className="premium-card aura-iridescent"
         style={{
-          borderRadius: 24,
+          borderRadius: 12,
           padding: 20,
-          border: "1px solid rgba(255,255,255,0.03)",
-          opacity: 0.8,
+          background: "var(--surface-solid)",
+          border: "1px solid var(--border)",
         }}
       >
         <div
@@ -944,20 +957,7 @@ export default function PomodoroPage() {
     <div
       style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}
     >
-      <AuraOrb
-        color="rgba(124, 109, 250, 0.15)"
-        size="600px"
-        top="-10%"
-        left="-10%"
-        delay={0}
-      />
-      <AuraOrb
-        color="rgba(255, 77, 125, 0.1)"
-        size="500px"
-        top="60%"
-        left="60%"
-        delay={5}
-      />
+
 
       <motion.div
         variants={containerVariants}
@@ -967,49 +967,61 @@ export default function PomodoroPage() {
         style={{ position: "relative", zIndex: 1 }}
       >
       <div
-        className="dashboard-header-premium"
+        className="premium-card"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "16px",
-          padding: isMobile ? "16px" : "20px 24px",
-          background: "var(--surface2)",
-          border: "1px solid var(--border)",
-          borderRadius: "16px",
-          marginBottom: "24px",
+          padding: isMobile ? "20px" : "28px 32px",
+          marginBottom: "32px",
           position: "relative",
-          overflow: "hidden"
+          overflow: "hidden",
         }}
       >
-        <AuraOrb
-          color="var(--accent)"
-          size={isMobile ? 120 : 200}
-          top="-60px"
-          left="-30px"
-          delay={0}
-          duration={isMobile ? 20 : 15}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
-          <Timer
-            className="text-accent aura-float"
-            size={isMobile ? 22 : 28}
-          />
+        {/* Subtle background glow */}
+        <div style={{
+          position: 'absolute',
+          top: '-50%',
+          left: '-10%',
+          width: '50%',
+          height: '200%',
+          background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
+          opacity: 0.05,
+          filter: 'blur(40px)',
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "20px", zIndex: 1 }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            borderRadius: "16px",
+            background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))",
+            border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
+          }}>
+            <Timer size={24} style={{ color: "var(--accent)" }} />
+          </div>
           <div>
             <h1
-              className="dashboard-title"
               style={{
-                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontSize: isMobile ? "1.6rem" : "2.1rem",
                 fontWeight: 800,
-                fontFamily: "Syne, sans-serif",
                 margin: 0,
-                color: "var(--text)"
+                background: "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                letterSpacing: "-0.04em"
               }}
             >
               Focus Session
             </h1>
-            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+            <p style={{ fontSize: "0.95rem", color: "var(--muted)", margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.2px" }}>
               Immerse in flow state work intervals
             </p>
           </div>
@@ -1017,25 +1029,27 @@ export default function PomodoroPage() {
 
         <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
           <button
-            className="btn glass haptic-tap glow-on-hover"
             onClick={() => setIsFocusMode(true)}
             style={{
-              borderRadius: 12,
-              height: 42,
-              padding: "0 16px",
-              fontWeight: 700,
+              background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
               border: "1px solid rgba(255,255,255,0.1)",
+              color: "#fff",
+              padding: "10px 20px",
+              borderRadius: "12px",
               fontSize: "13px",
-              background: "rgba(255,255,255,0.03)",
-              textTransform: "uppercase",
-              letterSpacing: 1,
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
               gap: 8,
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.2s ease"
             }}
+            className="haptic-tap hover-lift"
           >
-            <Maximize2 size={16} />
-            <span>Immerse</span>
+            <Maximize2 size={16} style={{ color: "var(--accent)" }} />
+            <span style={{ letterSpacing: "0.5px" }}>Immerse</span>
           </button>
         </div>
       </div>
@@ -1057,33 +1071,29 @@ export default function PomodoroPage() {
             }}
           >
             <motion.div
-              variants={itemVariants}
-              className="glass-holographic aura-iridescent"
               style={{
                 textAlign: "center",
-                padding: isMobile
-                  ? "var(--space-6) var(--space-4)"
-                  : "var(--space-10) var(--space-6)",
+                padding: isMobile ? "24px" : "32px",
+                background: "var(--surface-solid)",
+                border: "1px solid var(--border)",
+                borderRadius: 12,
                 position: "relative",
-                overflow: "hidden",
-                borderRadius: isMobile ? 32 : 40,
-                border: "none",
+                overflow: "hidden"
               }}
             >
-              <div className="btn-glint" style={{ opacity: 0.05 }} />
 
               <div
                 style={{
                   display: "flex",
                   gap: 8,
                   justifyContent: "center",
-                  marginBottom: isMobile ? 32 : 56,
-                  background: "rgba(255,255,255,0.03)",
-                  padding: 6,
-                  borderRadius: 50,
-                  border: "1px solid rgba(255,255,255,0.05)",
+                  marginBottom: isMobile ? 24 : 32,
+                  background: "var(--bg)",
+                  padding: 4,
+                  borderRadius: 8,
+                  border: "1px solid var(--border)",
                   width: "fit-content",
-                  margin: `0 auto ${isMobile ? "32px" : "56px"}`,
+                  margin: `0 auto ${isMobile ? "24px" : "32px"}`,
                 }}
               >
                 {Object.entries(MODES).map(([key, info]) => (
@@ -1092,24 +1102,22 @@ export default function PomodoroPage() {
                     onClick={() => handleModeChange(key)}
                     className="haptic-tap"
                     style={{
-                      padding: isMobile ? "10px 18px" : "12px 24px",
+                      padding: "8px 16px",
                       fontSize: 13,
-                      fontWeight: 800,
-                      borderRadius: 50,
+                      fontWeight: 600,
+                      borderRadius: 6,
                       border: "none",
-                      background: mode === key ? info.gradient : "transparent",
-                      color: mode === key ? "white" : "var(--muted)",
+                      background: mode === key ? info.color : "transparent",
+                      color: mode === key ? "var(--bg)" : "var(--muted)",
                       cursor: "pointer",
-                      boxShadow:
-                        mode === key ? `0 10px 20px ${info.color}33` : "none",
                       display: "flex",
                       alignItems: "center",
                       gap: 8,
-                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      transition: "all 0.2s ease",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    <info.icon size={16} />
+                    <info.icon size={14} />
                     <span className={isMobile && mode !== key ? "hide" : ""}>
                       {info.label}
                     </span>
@@ -1211,15 +1219,12 @@ export default function PomodoroPage() {
                       exit={{ scale: 1.05, opacity: 0 }}
                       transition={{ duration: 0.2 }}
                       style={{
-                        fontFamily: "Syne, sans-serif",
-                        fontSize: isMobile ? "54px" : "88px",
-                        fontWeight: 800,
-                        letterSpacing: "-0.05em",
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: isMobile ? "48px" : "72px",
+                        fontWeight: 700,
+                        letterSpacing: "-0.04em",
                         lineHeight: 1,
                         color: "var(--text)",
-                        filter: running
-                          ? `drop-shadow(0 0 30px ${modeInfo.color}44)`
-                          : "none",
                       }}
                     >
                       {formatTime(timeLeft)}
@@ -1723,19 +1728,15 @@ export default function PomodoroPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="auth-card aura-iridescent"
                   style={{
-                    marginTop: 100,
-                    padding: "40px",
-                    background: "rgba(255,255,255,0.01)",
-                    borderRadius: 40,
-                    border: "1px solid rgba(255,255,255,0.05)",
-                    backdropFilter: "blur(40px)",
-                    position: "relative",
-                    overflow: "hidden",
+                    marginTop: 64,
+                    padding: "24px",
+                    background: "rgba(255,255,255,0.03)",
+                    borderRadius: 24,
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    backdropFilter: "blur(20px)",
                   }}
                 >
-                  <div className="btn-glint" style={{ opacity: 0.05 }} />
                   <div
                     style={{
                       fontSize: 12,

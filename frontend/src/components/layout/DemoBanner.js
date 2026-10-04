@@ -15,10 +15,8 @@ const DemoBanner = () => {
       animate={{ opacity: 1, y: 0 }}
       className="premium-status-bar"
       style={{
-        background: 'rgba(13, 13, 22, 0.45)',
-        backdropFilter: 'blur(30px) saturate(210%)',
-        WebkitBackdropFilter: 'blur(30px) saturate(210%)',
-        borderBottom: '1px solid rgba(124, 109, 250, 0.15)',
+        background: '#0d0d12',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
         padding: isMobile ? '8px 16px' : '10px 24px',
         display: 'flex',
         alignItems: 'center',
@@ -27,11 +25,11 @@ const DemoBanner = () => {
         zIndex: 1000,
         position: 'relative',
         width: '100%',
-        color: 'var(--text)',
+        color: '#f4f4f5',
         fontSize: isMobile ? '11px' : '12px',
         fontWeight: 600,
         letterSpacing: '0.04em',
-        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
         overflow: 'hidden'
       }}
     >

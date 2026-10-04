@@ -11,7 +11,14 @@ const HabitsWidget = ({ data, navigate }) => {
           {data.habits.list.slice(0, 5).map((h, index) => {
             const hid = getSafeId(h, `habit-${index}`);
             return (
-              <div key={hid} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }} onClick={() => navigate('/habits')}>
+              <div key={hid} style={{ 
+                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', 
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)',
+                border: '1px solid rgba(255,255,255,0.03)',
+                borderRadius: 14,
+                cursor: 'pointer',
+                boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.03)'
+              }} onClick={() => navigate('/habits')} className="hover-lift">
               <div style={{ fontSize: 20 }}>{h.icon}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{h.name}</div>

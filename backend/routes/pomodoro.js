@@ -35,9 +35,9 @@ router.post('/start', async (req, res) => {
     const user = await User.findById(req.user._id);
 
     const durationMap = {
-      work: user.preferences.pomodoroWork || 25,
-      'short-break': user.preferences.pomodoroBreak || 5,
-      'long-break': user.preferences.pomodoroLong || 15
+      work: user?.preferences?.pomodoroWork || 25,
+      'short-break': user?.preferences?.pomodoroBreak || 5,
+      'long-break': user?.preferences?.pomodoroLong || 15
     };
 
     const pomo = await Pomodoro.create({

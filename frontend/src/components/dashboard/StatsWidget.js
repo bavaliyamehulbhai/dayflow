@@ -12,24 +12,26 @@ const AnimatedStat = React.memo(({ value, label, color, icon: Icon, onClick }) =
   const isMobile = window.innerWidth <= 768;
   return (
     <div 
-      className="stat-card-premium gpu-accel haptic-tap" 
+      className="haptic-tap" 
       onClick={onClick}
       style={{ 
         cursor: onClick ? 'pointer' : 'default', 
-        background: 'var(--surface2)', 
-        borderRadius: 16, 
-        padding: isMobile ? '12px' : density === 'compact' ? '10px 12px' : density === 'focus' ? '20px' : '16px', 
+        background: 'transparent', 
+        borderRadius: 8, 
+        padding: '12px', 
         position: 'relative', 
-        overflow: 'hidden' 
+        border: '1px solid var(--border2)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
       }}
     >
-      <div className="stat-card-glow" style={{ position: 'absolute', inset: 0, opacity: 0.1, background: `radial-gradient(circle at 50% 50%, ${color}, transparent 70%)` }} />
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ color, opacity: 0.9, marginBottom: 4 }}><Icon size={isMobile ? 18 : 20} /></div>
-        <SensitivityShield>
-          <div style={{ fontSize: isMobile ? 21 : 24, fontWeight: 900, color, letterSpacing: '-0.02em', fontFamily: 'Syne, sans-serif' }}>{display}</div>
-        </SensitivityShield>
-        <div style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text2)' }}>
+        <Icon size={14} />
+        <div style={{ fontSize: 12, fontWeight: 500 }}>{label}</div>
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+        {display}
       </div>
     </div>
   );

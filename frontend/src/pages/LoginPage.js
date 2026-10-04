@@ -1,39 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Eye, EyeOff, Lock, Zap, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Lock, Zap, ArrowRight, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useRef } from 'react';
-
-import AuraOrb from '../components/common/AuraOrb';
-
-const Magnetic = ({ children }) => {
-  const ref = useRef(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const isMobile = window.innerWidth <= 768;
-
-  const handleMouseMove = (e) => {
-    if (isMobile) return;
-    const { clientX, clientY } = e;
-    const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const x = clientX - (left + width / 2);
-    const y = clientY - (top + height / 2);
-    setPosition({ x, y });
-  };
-  const handleMouseLeave = () => setPosition({ x: 0, y: 0 });
-  return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      animate={{ x: position.x * 0.3, y: position.y * 0.3 }}
-      transition={{ type: 'spring', stiffness: 150, damping: 15, mass: 0.1 }}
-    >
-      {children}
-    </motion.div>
-  );
-};
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -52,8 +22,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(form.email, form.password);
-      addToast('Synchronizing your workspace...', 'success');
-      navigate('/');
+      addToast('Synchronizing workspace...', 'success');
+      navigate('/dashboard');
     } catch (err) {
       const data = err.response?.data;
       const errorMsg = data?.error || 'Login failed. Please verify credentials.';
@@ -74,7 +44,7 @@ export default function LoginPage() {
     try {
       await login('demo@dayflow.app', 'Demo123!');
       addToast('Welcome to DayFlow Demo!', 'success');
-      navigate('/');
+      navigate('/dashboard');
     } catch {
       const errorMsg = 'Demo account connectivity issues.';
       setError(errorMsg);
@@ -84,237 +54,380 @@ export default function LoginPage() {
     }
   };
 
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const cardRef = useRef(null);
-  const lastMouseUpdate = useRef(0);
-
-  const handleCardMouseMove = (e) => {
-    const now = performance.now();
-    if (now - lastMouseUpdate.current < 16) return; // Throttle to ~60fps
-    lastMouseUpdate.current = now;
-
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const x = (e.clientX - centerX) / (rect.width / 2);
-    const y = (e.clientY - centerY) / (rect.height / 2);
-    setMousePos({ x, y });
-  };
-
-  const handleCardMouseLeave = () => setMousePos({ x: 0, y: 0 });
-
   return (
-    <div 
-      onMouseMove={handleCardMouseMove}
-      onMouseLeave={handleCardMouseLeave}
-      className="auth-container"
-      style={{ overflow: 'hidden', position: 'relative' }}
-    >
-      {/* Immersive Background Orbs */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <AuraOrb color="rgba(124, 109, 250, 0.2)" size="600px" top="-10%" left="-10%" delay={0} />
-        <AuraOrb color="rgba(255, 107, 139, 0.15)" size="500px" top="60%" left="60%" delay={5} />
-        <div style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: `radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`,
-            backgroundSize: '40px 40px',
-            opacity: 0.5,
-            maskImage: 'radial-gradient(circle at 50% 50%, black, transparent 80%)'
-        }} />
+    <div style={{
+      minHeight: '100vh',
+      background: '#09090b',
+      color: '#f4f4f5',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px 16px',
+      position: 'relative',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      overflow: 'hidden'
+    }}>
+      {/* Precision Grid Background (Non-blurry, ultra-crisp) */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        zIndex: 0,
+        backgroundImage: `
+          linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+        `,
+        backgroundSize: '48px 48px',
+        maskImage: 'radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%)'
+      }} />
+
+      {/* Top Ambient Glow Ring */}
+      <div style={{
+        position: 'absolute',
+        top: -120,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 600,
+        height: 300,
+        background: 'radial-gradient(circle, rgba(124, 109, 250, 0.12) 0%, rgba(10, 132, 255, 0.03) 60%, transparent 80%)',
+        pointerEvents: 'none',
+        zIndex: 0
+      }} />
+
+      {/* Back to Home Link */}
+      <div style={{ position: 'absolute', top: 24, left: 24, zIndex: 10 }}>
+        <Link 
+          to="/" 
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 13,
+            fontWeight: 500,
+            color: '#a1a1aa',
+            textDecoration: 'none',
+            padding: '8px 14px',
+            borderRadius: 8,
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.07)',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#a1a1aa';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.07)';
+          }}
+        >
+          <ArrowLeft size={15} />
+          <span>Back to Home</span>
+        </Link>
       </div>
 
       <motion.div
-        ref={cardRef}
-        initial={{ opacity: 0, y: 40, scale: 0.9 }}
-        animate={{ 
-          opacity: 1, 
-          y: 0, 
-          scale: 1,
-          rotateY: (window.innerWidth <= 768) ? 0 : mousePos.x * 12,
-          rotateX: (window.innerWidth <= 768) ? 0 : -mousePos.y * 12,
-        }}
-        transition={{ 
-          opacity: { duration: 0.8 },
-          y: { duration: 0.8 },
-          rotateY: { type: 'spring', stiffness: 100, damping: 30 },
-          rotateX: { type: 'spring', stiffness: 100, damping: 30 }
-        }}
-        style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1, transformStyle: 'preserve-3d' }}
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}
       >
-        {/* Holographic Glint / Scanline Effect */}
-        <div style={{
-          position: 'absolute', inset: -20, borderRadius: 40,
-          background: 'linear-gradient(135deg, rgba(124,109,250,0.1), transparent, rgba(255,77,125,0.05))',
-          pointerEvents: 'none', zIndex: -1,
-          transform: 'translateZ(-50px)', filter: 'blur(20px)'
-        }} />
-
-        {/* Logo & Brand */}
-        <div style={{ textAlign: 'center', marginBottom: 'clamp(16px, 3.5vh, 28px)', transform: 'translateZ(60px)' }}>
-          <Magnetic>
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="auth-logo-icon"
-            >
-              <Zap size={window.innerWidth <= 768 ? 32 : 42} color="white" strokeWidth={2.5} fill="white" />
-            </motion.div>
-          </Magnetic>
-          <motion.div className="auth-title">DayFlow</motion.div>
-          <div style={{ color: 'var(--muted)', fontSize: 'clamp(13px, 1.8vw, 15px)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
-            Your <span className="holographic-text">Personal Dashboard</span>
+        {/* Brand Header */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #7c6dfa 0%, #0a84ff 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 14px rgba(124, 109, 250, 0.35)',
+              border: '1px solid rgba(255, 255, 255, 0.2)'
+            }}>
+              <Zap size={20} color="white" fill="white" />
+            </div>
+            <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.03em', color: '#ffffff' }}>
+              DayFlow
+            </span>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '2px 7px',
+              borderRadius: 6,
+              background: 'rgba(124, 109, 250, 0.15)',
+              color: '#a78bfa',
+              border: '1px solid rgba(124, 109, 250, 0.25)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              v2.0
+            </span>
           </div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff', margin: 0 }}>
+            Welcome back
+          </h1>
+          <p style={{ fontSize: 13, color: '#a1a1aa', marginTop: 4, marginBottom: 0 }}>
+            Enter your credentials to access your workspace.
+          </p>
         </div>
 
         {/* Card */}
-        <motion.div 
-          key={error ? 'error' : 'normal'}
-          initial={error ? { x: [-10, 10, -10, 10, 0] } : { opacity: 0, scale: 0.95 }}
-          animate={error ? { x: 0 } : { opacity: 1, scale: 1 }}
-          transition={error ? { duration: 0.4 } : { delay: 0.4, duration: 0.8 }}
-          className="auth-card aura-iridescent" 
-          style={{
-            transform: 'translateZ(40px)',
-            transformStyle: 'preserve-3d'
-          }}
-        >
-          {/* Internal Glow Orbs */}
-          <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '40%', height: '40%', background: 'var(--accent)', filter: 'blur(60px)', opacity: 0.08, pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40%', height: '40%', background: 'var(--accent2)', filter: 'blur(60px)', opacity: 0.08, pointerEvents: 'none' }} />
-
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            style={{ marginBottom: 24, transform: 'translateZ(30px)' }}
-          >
-            <h2 style={{ fontSize: 24, fontWeight: 900, fontFamily: 'Syne', letterSpacing: '-0.03em', background: 'linear-gradient(to right, #fff, #a8a8c5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Welcome back</h2>
-            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600, marginTop: 2 }}>Enter your details to login.</p>
-          </motion.div>
-
+        <div style={{
+          background: 'linear-gradient(180deg, #121217 0%, #0d0d12 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: 20,
+          padding: '28px 24px',
+          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+        }}>
           {error && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              style={{ 
-                background: 'rgba(248, 113, 113, 0.1)', 
-                border: '1px solid rgba(248, 113, 113, 0.2)',
-                color: 'var(--red)',
-                padding: '12px 16px', borderRadius: 14, marginBottom: 24,
-                fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10,
-                transform: 'translateZ(20px)'
-              }}
-            >
-              <Lock size={14} style={{ flexShrink: 0 }} />
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              color: '#f87171',
+              padding: '12px 14px',
+              borderRadius: 10,
+              marginBottom: 20,
+              fontSize: 13,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10
+            }}>
+              <Lock size={15} style={{ flexShrink: 0 }} />
               <span>{error}</span>
-            </motion.div>
+            </div>
           )}
 
-          <motion.form 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            onSubmit={handleSubmit} 
-            style={{ display: 'flex', flexDirection: 'column', gap: 14, transform: 'translateZ(20px)' }}
-          >
-            <div className="form-group">
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ width: 12, height: 1.2, background: 'var(--accent)', borderRadius: 1 }}></span>
-                Email
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Email Field */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#d4d4d8',
+                marginBottom: 6
+              }}>
+                Email address
               </label>
               <input
                 type="email"
-                className="auth-input haptic-feedback"
-                placeholder="Enter your email"
+                placeholder="name@example.com"
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                required autoFocus autoComplete="email"
+                required
+                autoFocus
+                autoComplete="email"
+                style={{
+                  width: '100%',
+                  height: 44,
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 10,
+                  padding: '0 14px',
+                  fontSize: 14,
+                  color: '#ffffff',
+                  outline: 'none',
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#7c6dfa';
+                  e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
 
-            <div className="form-group">
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ width: 12, height: 1.2, background: 'var(--accent2)', borderRadius: 1 }}></span>
+            {/* Password Field */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#d4d4d8',
+                marginBottom: 6
+              }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className="auth-input haptic-feedback"
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  required autoComplete="current-password"
+                  required
+                  autoComplete="current-password"
+                  style={{
+                    width: '100%',
+                    height: 44,
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 10,
+                    padding: '0 40px 0 14px',
+                    fontSize: 14,
+                    color: '#ffffff',
+                    outline: 'none',
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#7c6dfa';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    e.target.style.boxShadow = 'none';
+                  }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
-                  style={{ 
-                    position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#71717a',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 4
                   }}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            <motion.button
+            {/* Submit Button */}
+            <button
               type="submit"
               disabled={loading}
-              className="auth-button haptic-feedback"
-              style={{ marginTop: 8 }}
+              style={{
+                marginTop: 4,
+                width: '100%',
+                height: 44,
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 4px 14px rgba(124, 109, 250, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'opacity 0.2s, transform 0.1s'
+              }}
             >
-              <div className="btn-glint" />
               {loading ? (
-                <div className="loading-spinner" style={{ width: 24, height: 24 }} />
+                <span>Authenticating...</span>
               ) : (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  LOGIN <ArrowRight size={22} strokeWidth={2.5} />
-                </span>
+                <>
+                  <span>Sign In to Workspace</span>
+                  <ArrowRight size={16} />
+                </>
               )}
-            </motion.button>
-          </motion.form>
+            </button>
+          </form>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '24px 0', opacity: 0.3, transform: 'translateZ(10px)' }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--text)' }} />
-            <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>or</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--text)' }} />
+          {/* Divider */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            margin: '20px 0'
+          }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.06)' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              or quick access
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.06)' }} />
           </div>
 
-          <motion.button
+          {/* Demo Button */}
+          <button
+            type="button"
             onClick={handleDemo}
             disabled={loading}
-            whileHover={{ scale: 1.02, background: 'rgba(255,255,255,0.08)' }}
-            whileTap={{ scale: 0.98 }}
             style={{
-              width: '100%', height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(255,255,255,0.02)', color: 'var(--text)',
-              border: '1.5px solid rgba(255,255,255,0.08)', borderRadius: 14,
-              fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s ease',
-              transform: 'translateZ(10px)'
+              width: '100%',
+              height: 42,
+              borderRadius: 10,
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#e4e4e7',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'background 0.2s, border-color 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
             }}
           >
-            ⚡ Try Demo Account
-          </motion.button>
+            <Zap size={14} color="#f59e0b" fill="#f59e0b" />
+            <span>Launch Instant Demo Workspace</span>
+          </button>
 
-            <div className="auth-footer">
-              New here? <Link to="/register">Create Account</Link>
-            </div>
-        </motion.div>
+          {/* Card Footer Link */}
+          <div style={{
+            marginTop: 22,
+            textAlign: 'center',
+            fontSize: 13,
+            color: '#a1a1aa'
+          }}>
+            Don't have an account?{' '}
+            <Link 
+              to="/register" 
+              style={{ 
+                color: '#a78bfa', 
+                fontWeight: 600, 
+                textDecoration: 'none' 
+              }}
+              onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+            >
+              Sign up
+            </Link>
+          </div>
+        </div>
 
-        {/* Floating elements behind card */}
+        {/* Security / System status bottom badge */}
         <div style={{
-          position: 'absolute', bottom: -50, left: -50, width: 120, height: 120,
-          background: 'var(--accent)', borderRadius: '50%', filter: 'blur(40px)', opacity: 0.2, zIndex: -1
-        }} />
-        <div style={{
-          position: 'absolute', top: -30, right: -40, width: 100, height: 100,
-          background: 'var(--accent2)', borderRadius: '50%', filter: 'blur(40px)', opacity: 0.15, zIndex: -1
-        }} />
+          marginTop: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          fontSize: 11,
+          color: '#52525b',
+          fontWeight: 500
+        }}>
+          <ShieldCheck size={14} color="#10b981" />
+          <span>256-bit encrypted authentication · Sub-50ms sync</span>
+        </div>
       </motion.div>
     </div>
   );

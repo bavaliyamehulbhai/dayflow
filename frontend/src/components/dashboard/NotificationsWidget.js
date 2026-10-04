@@ -34,15 +34,16 @@ const NotificationsWidget = ({ data, navigate }) => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.1 }}
                 onClick={() => navigate('/tasks')}
-                className="glass-card aura-iridescent haptic-tap"
+                className="haptic-tap hover-lift"
                 style={{
-                  padding: '10px 12px',
-                  borderRadius: 12,
-                  border: `1px solid ${isUrgent ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 255, 255, 0.05)'}`,
-                  background: isUrgent ? 'rgba(255, 107, 107, 0.03)' : 'rgba(255, 255, 255, 0.02)',
+                  padding: '14px 16px',
+                  borderRadius: 14,
+                  border: `1px solid ${isUrgent ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 255, 255, 0.04)'}`,
+                  background: isUrgent ? 'linear-gradient(145deg, rgba(255,107,107,0.05) 0%, rgba(255,107,107,0.01) 100%)' : 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+                  boxShadow: isUrgent ? 'inset 0 1px 1px rgba(255,107,107,0.1)' : 'inset 0 1px 1px rgba(255,255,255,0.05)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: 14,
                   cursor: 'pointer',
                   position: 'relative',
                   overflow: 'hidden'
@@ -65,7 +66,7 @@ const NotificationsWidget = ({ data, navigate }) => {
                   <div style={{ 
                     fontSize: 13, 
                     fontWeight: 800, 
-                    fontFamily: 'Syne', 
+                    fontFamily: "'Inter', sans-serif", 
                     color: 'white',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -112,7 +113,7 @@ const NotificationsWidget = ({ data, navigate }) => {
             border: '1px dashed rgba(255, 255, 255, 0.05)' 
           }}>
             <div style={{ fontSize: 24, marginBottom: 8 }}>🛰️</div>
-            <div style={{ fontSize: 13, fontWeight: 800, fontFamily: 'Syne', color: 'white' }}>Silence in the Archive</div>
+            <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "'Inter', sans-serif", color: 'white' }}>Silence in the Archive</div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>No imminent temporal deadlines detected.</div>
           </div>
         )}

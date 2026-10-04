@@ -63,121 +63,106 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
       style={{
         zIndex: 1000,
-        background: "rgba(0,0,0,0.85)",
-        backdropFilter: "blur(15px)",
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
       }}
     >
       <motion.div
-        initial={isMobile ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 20 }}
-        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={isMobile ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className={`premium-card aura-iridescent ${isMobile ? "bottom-sheet" : ""}`}
+        initial={{ opacity: 0, scale: 0.9, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 10 }}
+        transition={{ type: "spring", damping: 25, stiffness: 400 }}
         style={{
           width: "100%",
-          maxWidth: 640,
+          maxWidth: 480,
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
           padding: 0,
           overflow: "hidden",
-          border: isMobile ? "none" : "1px solid rgba(255,255,255,0.05)",
-          background: "rgba(15, 15, 25, 0.95)",
+          background: "var(--surface-solid)",
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)"
         }}
       >
         <div
-          className="modal-header"
           style={{
-            padding: isMobile ? "20px" : "32px 40px",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
-            background: "rgba(255,255,255,0.02)",
+            padding: "20px 24px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
           }}
         >
-          <div
-            className="modal-title"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              fontFamily: "Syne",
-              fontWeight: 900,
-              fontSize: isMobile ? 18 : 24,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            <div
-              className="auth-logo-icon aura-float"
-              style={{
-                width: isMobile ? 32 : 40,
-                height: isMobile ? 32 : 40,
-                marginBottom: 0,
-                background: "var(--grad-premium)",
-              }}
-            >
-              <CalendarIcon
-                size={isMobile ? 16 : 20}
-                color="white"
-                strokeWidth={2.5}
-              />
-            </div>
-            {event ? "REFINE ALIGNMENT" : "TEMPORAL OBJECTIVE"}
+          <div style={{ fontWeight: 600, fontSize: 18, color: "var(--text)" }}>
+            {event ? "Edit Event" : "New Event"}
           </div>
           <button
-            className="modal-close haptic-tap"
+            className="haptic-tap"
             onClick={onClose}
             style={{
-              background: "rgba(255,255,255,0.05)",
-              borderRadius: 12,
-              padding: 10,
+              background: "transparent",
+              borderRadius: 6,
+              padding: 6,
               border: "none",
-              color: "white",
+              color: "var(--text2)",
+              cursor: "pointer"
             }}
           >
             <X size={20} />
           </button>
         </div>
         <div
-          className="modal-body aura-scrollbar"
           style={{
-            padding: isMobile ? "24px" : "40px",
-            maxHeight: "70vh",
+            padding: "24px",
             overflowY: "auto",
+            flex: 1
           }}
         >
           <div className="form-group mb-6">
             <label
               style={{
-                fontSize: 11,
-                fontWeight: 900,
+                fontSize: 10,
+                fontWeight: 600,
                 color: "var(--muted)",
-                letterSpacing: 2,
+                letterSpacing: 0.5,
                 textTransform: "uppercase",
                 marginBottom: 10,
                 display: "block",
               }}
             >
-              Objective Title
+              Title
             </label>
             <input
-              className="auth-input haptic-feedback"
+              className="auth-input"
               style={{
-                height: 60,
-                fontSize: 18,
-                fontWeight: 700,
-                borderRadius: 16,
+                height: 48,
+                fontSize: 15,
+                borderRadius: 8,
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
+                padding: "0 16px"
               }}
               value={form.title}
               onChange={(e) =>
                 setForm((f) => ({ ...f, title: e.target.value }))
               }
-              placeholder="e.g. CORE STRATEGY"
+              placeholder="Event title"
               autoFocus
             />
           </div>
           <div className="form-group mb-6">
             <label
               style={{
-                fontSize: 11,
-                fontWeight: 900,
+                fontSize: 10,
+                fontWeight: 600,
                 color: "var(--muted)",
-                letterSpacing: 2,
+                letterSpacing: 0.5,
                 textTransform: "uppercase",
                 marginBottom: 10,
                 display: "block",
@@ -186,12 +171,14 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
               Context
             </label>
             <textarea
-              className="auth-input haptic-feedback"
+              className="auth-input"
               style={{
-                padding: "16px 20px",
+                padding: "12px 16px",
                 minHeight: 100,
-                fontSize: 15,
-                borderRadius: 16,
+                fontSize: 14,
+                borderRadius: 8,
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
               }}
               value={form.description}
               onChange={(e) =>
@@ -213,11 +200,11 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
             <div className="form-group">
               <label
                 style={{
-                  fontSize: 9,
-                  fontWeight: 900,
+                  fontSize: 10,
+                  fontWeight: 600,
                   color: "var(--muted)",
                   textTransform: "uppercase",
-                  letterSpacing: 1.5,
+                  letterSpacing: 0.5,
                   marginBottom: 8,
                   display: "block",
                 }}
@@ -227,7 +214,7 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
               <input
                 type="date"
                 className="auth-input"
-                style={{ height: 48, fontSize: 13, borderRadius: 12 }}
+                style={{ height: 42, fontSize: 13, borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
                 value={form.date}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, date: e.target.value }))
@@ -237,11 +224,11 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
             <div className="form-group">
               <label
                 style={{
-                  fontSize: 9,
-                  fontWeight: 900,
+                  fontSize: 10,
+                  fontWeight: 600,
                   color: "var(--muted)",
                   textTransform: "uppercase",
-                  letterSpacing: 1.5,
+                  letterSpacing: 0.5,
                   marginBottom: 8,
                   display: "block",
                 }}
@@ -251,7 +238,7 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
               <input
                 type="time"
                 className="auth-input"
-                style={{ height: 48, fontSize: 13, borderRadius: 12 }}
+                style={{ height: 42, fontSize: 13, borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
                 value={form.startTime}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, startTime: e.target.value }))
@@ -261,11 +248,11 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
             <div className="form-group">
               <label
                 style={{
-                  fontSize: 9,
-                  fontWeight: 900,
+                  fontSize: 10,
+                  fontWeight: 600,
                   color: "var(--muted)",
                   textTransform: "uppercase",
-                  letterSpacing: 1.5,
+                  letterSpacing: 0.5,
                   marginBottom: 8,
                   display: "block",
                 }}
@@ -275,7 +262,7 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
               <input
                 type="time"
                 className="auth-input"
-                style={{ height: 48, fontSize: 13, borderRadius: 12 }}
+                style={{ height: 42, fontSize: 13, borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
                 value={form.endTime}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, endTime: e.target.value }))
@@ -291,10 +278,10 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
               <label
                 style={{
                   fontSize: 10,
-                  fontWeight: 900,
+                  fontWeight: 600,
                   color: "var(--muted)",
                   textTransform: "uppercase",
-                  letterSpacing: 1.5,
+                  letterSpacing: 0.5,
                   marginBottom: 8,
                   display: "block",
                 }}
@@ -302,8 +289,8 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
                 DOMAIN
               </label>
               <select
-                className="auth-input"
-                style={{ height: 52, borderRadius: 14, fontSize: 14 }}
+                className="select"
+                style={{ height: 42, borderRadius: 6, fontSize: 13, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px", width: "100%" }}
                 value={form.category}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, category: e.target.value }))
@@ -320,10 +307,10 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
               <label
                 style={{
                   fontSize: 10,
-                  fontWeight: 900,
+                  fontWeight: 600,
                   color: "var(--muted)",
                   textTransform: "uppercase",
-                  letterSpacing: 1.5,
+                  letterSpacing: 0.5,
                   marginBottom: 8,
                   display: "block",
                 }}
@@ -331,8 +318,8 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
                 LINK OBJECTIVE
               </label>
               <select
-                className="auth-input"
-                style={{ height: 52, borderRadius: 14, fontSize: 14 }}
+                className="select"
+                style={{ height: 42, borderRadius: 6, fontSize: 13, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px", width: "100%" }}
                 value={form.linkedTask}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, linkedTask: e.target.value }))
@@ -352,31 +339,29 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
           </div>
         </div>
         <div
-          className="modal-footer"
           style={{
-            padding: isMobile ? "20px" : "32px 40px",
-            background: "rgba(255,255,255,0.02)",
-            borderTop: "1px solid rgba(255,255,255,0.05)",
+            padding: "20px 24px",
+            borderTop: "1px solid var(--border)",
             display: "flex",
             gap: 12,
+            justifyContent: "flex-end"
           }}
         >
           <button
-            className="btn glass haptic-tap"
             onClick={onClose}
-            style={{ flex: 1, height: 56, borderRadius: 18, fontWeight: 800 }}
+            style={{ padding: "8px 16px", borderRadius: 6, fontWeight: 600, background: "transparent", border: "1px solid var(--border)", color: "var(--text)" }}
           >
-            ABORT
+            Cancel
           </button>
           <button
-            className="auth-button haptic-tap"
             style={{
-              flex: 2,
-              height: 56,
-              borderRadius: 18,
-              fontSize: 16,
-              fontWeight: 900,
-              letterSpacing: 1,
+              padding: "8px 16px",
+              borderRadius: 6,
+              fontSize: 14,
+              fontWeight: 600,
+              background: "var(--text)",
+              color: "var(--bg)",
+              border: "none"
             }}
             onClick={() => {
               if (!form.title.trim() || !form.startTime || !form.date)
@@ -384,8 +369,7 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
               onSave({ ...form, linkedTask: form.linkedTask || null });
             }}
           >
-            <div className="btn-glint" />
-            COMMIT ALIGNMENT
+            Save Event
           </button>
         </div>
       </motion.div>
@@ -468,13 +452,20 @@ export default function SchedulePage() {
 
   const events = data || [];
   const now = new Date();
+  const todayStr = format(now, "yyyy-MM-dd");
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
   const getStatus = (ev) => {
-    const [sh, sm] = ev.startTime.split(":").map(Number);
+    if (!ev?.startTime || typeof ev.startTime !== "string") return "future";
+    if (currentDate < todayStr) return "past";
+    if (currentDate > todayStr) return "future";
+
+    const [sh = 0, sm = 0] = ev.startTime.split(":").map(Number);
     const startMin = sh * 60 + sm;
-    if (!ev.endTime) return startMin <= nowMin ? "past" : "future";
-    const [eh, em] = ev.endTime.split(":").map(Number);
+    if (!ev.endTime || typeof ev.endTime !== "string") {
+      return startMin <= nowMin ? "past" : "future";
+    }
+    const [eh = 0, em = 0] = ev.endTime.split(":").map(Number);
     const endMin = eh * 60 + em;
     if (nowMin >= startMin && nowMin < endMin) return "current";
     if (nowMin >= endMin) return "past";
@@ -501,18 +492,20 @@ export default function SchedulePage() {
   const hours = Array.from({ length: 18 }, (_, i) => i + 6);
 
   const getEventTop = (time) => {
-    const [h, m] = time.split(":").map(Number);
+    if (!time || typeof time !== "string") return 0;
+    const [h = 0, m = 0] = time.split(":").map(Number);
     const rowHeight = isMobile ? 48 : 64;
-    return ((h - 6) * 60 + m) * (rowHeight / 60);
+    return Math.max(0, ((h - 6) * 60 + m) * (rowHeight / 60));
   };
 
   const getEventHeight = (start, end) => {
-    if (!end) return 48;
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
+    if (!start || typeof start !== "string") return 48;
+    if (!end || typeof end !== "string") return 48;
+    const [sh = 0, sm = 0] = start.split(":").map(Number);
+    const [eh = 0, em = 0] = end.split(":").map(Number);
     const mins = eh * 60 + em - (sh * 60 + sm);
     const rowHeight = isMobile ? 48 : 64;
-    return Math.max(40, mins * (rowHeight / 60));
+    return Math.max(40, (mins > 0 ? mins : 30) * (rowHeight / 60));
   };
 
   return (
@@ -520,20 +513,7 @@ export default function SchedulePage() {
       className="responsive-container page-shell"
       style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}
     >
-      <AuraOrb
-        color="rgba(124, 109, 250, 0.15)"
-        size="600px"
-        top="-10%"
-        left="-10%"
-        delay={0}
-      />
-      <AuraOrb
-        color="rgba(250, 109, 138, 0.12)"
-        size="500px"
-        top="60%"
-        left="60%"
-        delay={5}
-      />
+
 
       <motion.div
         variants={containerVariants}
@@ -542,86 +522,106 @@ export default function SchedulePage() {
         style={{ position: "relative", zIndex: 1 }}
       >
       <div
-        className="dashboard-header-premium"
+        className="premium-card"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "16px",
-          padding: isMobile ? "16px" : "20px 24px",
-          background: "var(--surface2)",
-          border: "1px solid var(--border)",
-          borderRadius: "16px",
-          marginBottom: "24px",
+          padding: isMobile ? "20px" : "28px 32px",
+          marginBottom: "32px",
           position: "relative",
-          overflow: "hidden"
+          overflow: "hidden",
         }}
       >
-        <AuraOrb
-          color="var(--accent)"
-          size={isMobile ? 120 : 200}
-          top="-60px"
-          left="-30px"
-          delay={0}
-          duration={isMobile ? 20 : 15}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
-          <Sparkles
-            className="text-accent aura-float"
-            size={isMobile ? 22 : 28}
-          />
+        {/* Subtle background glow */}
+        <div style={{
+          position: 'absolute',
+          top: '-50%',
+          left: '-10%',
+          width: '50%',
+          height: '200%',
+          background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
+          opacity: 0.05,
+          filter: 'blur(40px)',
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "20px", zIndex: 1 }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            borderRadius: "16px",
+            background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))",
+            border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
+          }}>
+            <CalendarIcon size={24} style={{ color: "var(--accent)" }} />
+          </div>
           <div>
             <h1
-              className="dashboard-title"
               style={{
-                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontSize: isMobile ? "1.6rem" : "2.1rem",
                 fontWeight: 800,
-                fontFamily: "Syne, sans-serif",
                 margin: 0,
-                color: "var(--text)"
+                background: "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                letterSpacing: "-0.04em"
               }}
             >
               Schedule
             </h1>
-            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+            <p style={{ fontSize: "0.95rem", color: "var(--muted)", margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.2px" }}>
               Plan and align your calendar events
             </p>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
-          <MagneticButton
-            className="auth-button magnetic-btn haptic-tap"
+          <button
             onClick={() => setModal("create")}
             style={{
-              height: 42,
-              padding: "0 16px",
-              borderRadius: 12,
+              background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "#fff",
+              padding: "10px 20px",
+              borderRadius: "12px",
+              fontSize: "13px",
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
               gap: 8,
-              fontSize: "13px",
-              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.2s ease"
             }}
+            className="haptic-tap hover-lift"
           >
-            <Plus size={16} strokeWidth={2.5} />
-            <span>New Event</span>
-          </MagneticButton>
+            <Plus size={16} style={{ color: "var(--accent)" }} />
+            <span style={{ letterSpacing: "0.5px" }}>New Event</span>
+          </button>
         </div>
       </div>
 
         {/* Date navigation */}
         <div
-          className="glass-holographic mb-8"
+          className="mb-8"
           style={{
-            padding: isMobile ? "16px" : "24px 32px",
+            padding: isMobile ? "16px" : "16px 24px",
             display: "flex",
             alignItems: "center",
             gap: 20,
             flexWrap: "wrap",
-            borderRadius: 28,
+            borderRadius: 12,
+            background: "rgba(255, 255, 255, 0.02)",
             border: "1px solid rgba(255,255,255,0.05)",
+            backdropFilter: "blur(20px)",
           }}
         >
           <div
@@ -637,18 +637,17 @@ export default function SchedulePage() {
               whileTap={{ scale: 0.9 }}
               className="btn btn-icon glass haptic-tap"
               onClick={prevDay}
-              style={{ borderRadius: 14, width: 44, height: 44 }}
+              style={{ borderRadius: 8, width: 36, height: 36 }}
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={20} />
             </motion.button>
             <div
-              style={{ textAlign: "center", minWidth: isMobile ? "auto" : 220 }}
+              style={{ textAlign: "center", minWidth: isMobile ? "auto" : 200 }}
             >
               <div
                 style={{
                   fontSize: 24,
-                  fontWeight: 900,
-                  fontFamily: "Syne, sans-serif",
+                  fontWeight: 700,
                   color: "white",
                   lineHeight: 1,
                   letterSpacing: "-0.02em",
@@ -659,10 +658,10 @@ export default function SchedulePage() {
               <div
                 style={{
                   fontSize: 12,
-                  fontWeight: 800,
+                  fontWeight: 600,
                   color: "var(--accent)",
-                  marginTop: 6,
-                  letterSpacing: 2,
+                  marginTop: 4,
+                  letterSpacing: 0.5,
                   textTransform: "uppercase",
                 }}
               >
@@ -673,9 +672,9 @@ export default function SchedulePage() {
               whileTap={{ scale: 0.9 }}
               className="btn btn-icon glass haptic-tap"
               onClick={nextDay}
-              style={{ borderRadius: 14, width: 44, height: 44 }}
+              style={{ borderRadius: 8, width: 36, height: 36 }}
             >
-              <ChevronRight size={24} />
+              <ChevronRight size={20} />
             </motion.button>
           </div>
 
@@ -691,8 +690,9 @@ export default function SchedulePage() {
             <button
               className="btn glass haptic-tap"
               style={{
-                fontWeight: 900,
-                height: 44,
+                fontWeight: 600,
+                fontSize: 12,
+                height: 36,
                 padding: "0 24px",
                 borderRadius: 14,
                 fontSize: 13,
@@ -741,13 +741,12 @@ export default function SchedulePage() {
         >
           {/* Timeline */}
           <div
-            className="premium-card"
             style={{
               padding: 0,
               overflow: "hidden",
-              border: "1px solid rgba(255,255,255,0.03)",
-              borderRadius: 32,
-              background: "rgba(255,255,255,0.01)",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              background: "var(--surface-solid)",
             }}
           >
             <div
@@ -787,10 +786,9 @@ export default function SchedulePage() {
                       top: -11,
                       fontSize: 10,
                       color: "var(--muted)",
-                      fontWeight: 900,
+                      fontWeight: 600,
                       width: isMobile ? 44 : 70,
                       textAlign: "right",
-                      fontFamily: "Syne",
                       opacity: 0.5,
                     }}
                   >
@@ -818,15 +816,13 @@ export default function SchedulePage() {
                     }}
                   >
                     <div
-                      className="aura-pulse"
                       style={{
-                        width: 12,
-                        height: 12,
+                        width: 10,
+                        height: 10,
                         borderRadius: "50%",
                         background: "var(--accent)",
-                        marginTop: -5,
-                        marginLeft: -6,
-                        boxShadow: "0 0 15px var(--accent)",
+                        marginTop: -4,
+                        marginLeft: -5,
                       }}
                     />
                   </div>
@@ -860,13 +856,12 @@ export default function SchedulePage() {
                             height: height - 6,
                             background:
                               status === "current"
-                                ? `linear-gradient(135deg, ${color}33, ${color}11)`
-                                : `rgba(255,255,255,0.03)`,
-                            backdropFilter: "blur(10px)",
-                            border: `1px solid ${color}${status === "current" ? "88" : "22"}`,
-                            borderLeft: `5px solid ${color}`,
-                            borderRadius: 20,
-                            padding: isMobile ? "12px" : "18px 24px",
+                                ? `color-mix(in srgb, ${color} 10%, rgba(255, 255, 255, 0.02))`
+                                : `rgba(255, 255, 255, 0.02)`,
+                            border: `1px solid ${status === "current" ? `color-mix(in srgb, ${color} 30%, transparent)` : "rgba(255, 255, 255, 0.05)"}`,
+                            borderLeft: `3px solid ${color}`,
+                            borderRadius: 8,
+                            padding: isMobile ? "8px 12px" : "12px 16px",
                             overflow: "hidden",
                             cursor: "pointer",
                             opacity: ev.isCompleted
@@ -875,28 +870,21 @@ export default function SchedulePage() {
                                 ? 0.7
                                 : 1,
                             zIndex: 10,
-                            boxShadow:
-                              status === "current"
-                                ? `0 15px 40px ${color}22`
-                                : "none",
+                            boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+                            backdropFilter: "blur(10px)",
                           }}
                           whileHover={{ scale: 1.01, zIndex: 11 }}
                           onClick={() => setModal(ev)}
                         >
                           <div
-                            className="btn-glint"
-                            style={{ opacity: status === "current" ? 0.1 : 0 }}
-                          />
-                          <div
                             style={{
-                              fontWeight: 900,
-                              fontSize: isMobile ? 15 : 17,
+                              fontWeight: 700,
+                              fontSize: isMobile ? 14 : 15,
                               color: "white",
                               display: "flex",
                               alignItems: "center",
                               gap: 10,
-                              letterSpacing: "-0.02em",
-                              fontFamily: "Syne",
+                              letterSpacing: "0",
                             }}
                           >
                             {ev.isCompleted && (

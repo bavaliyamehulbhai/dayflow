@@ -14,13 +14,17 @@ const NotesWidget = ({ data, navigate }) => {
             return (
               <div key={nid} style={{
               padding: '14px 16px',
-              background: 'var(--surface2)',
+              background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
               borderRadius: 14,
               cursor: 'pointer',
               borderLeft: `4px solid ${n.color || 'var(--accent)'}`,
+              borderTop: '1px solid rgba(255,255,255,0.04)',
+              borderRight: '1px solid rgba(255,255,255,0.04)',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
               transition: 'all 0.2s ease',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)'
             }} className="hover-lift" onClick={() => navigate('/notes')}>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{n.title}</div>
               <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4, fontWeight: 600 }}>
@@ -29,7 +33,9 @@ const NotesWidget = ({ data, navigate }) => {
             </div>
             )
           })}
-          <button className="btn btn-sm btn-ghost mt-2" onClick={() => navigate('/notes')} style={{ fontSize: 11, fontWeight: 800 }}>
+          <button className="btn btn-sm mt-2 hover-lift" onClick={() => navigate('/notes')} style={{ 
+            fontSize: 11, fontWeight: 800, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 12 
+          }}>
             ACCESS ALL NOTES
           </button>
         </div>

@@ -285,8 +285,21 @@ body[data-bottom-sheet-active="true"] .elite-nav-container {
   -webkit-transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  perspective: 1000px;
-  will-change: transform, opacity;
+  /* will-change removed - only add per element when actively animating */
+}
+
+/* ─── Disable heavy animations on mobile for performance ─── */
+@media (max-width: 768px) {
+  .aura-float,
+  .aura-pulse {
+    animation: none !important;
+  }
+
+  /* Reduce page transition complexity on mobile */
+  .app-module-entrance {
+    animation-duration: 0.3s !important;
+    filter: none !important;
+  }
 }
 
 .custom-scrollbar::-webkit-scrollbar {

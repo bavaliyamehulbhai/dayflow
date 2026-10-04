@@ -17,6 +17,7 @@ import ToastContainer from "./components/common/ToastContainer";
 import { useZenTheme } from "./hooks/useZenTheme";
 import "./styles/globals.css";
 
+const LandingPage = lazy(() => import("./pages/LandingPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
@@ -32,8 +33,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 30000,
+      staleTime: 5 * 60 * 1000, // 5 minutes - reduces unnecessary API refetches
+      gcTime: 10 * 60 * 1000,   // 10 minutes garbage collection
       refetchOnWindowFocus: false,
+      refetchOnMount: false,     // Don't refetch if data is fresh
     },
   },
 });
@@ -60,7 +63,7 @@ const PublicRoute = ({ children }) => {
         <div className="splash-logo">DayFlow</div>
       </div>
     );
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
   return children;
 };
 
@@ -121,6 +124,16 @@ function AppRoutes() {
         />
         <Route
           path="/"
+          element={
+            <PublicRoute>
+              <PageWrapper>
+                <LandingPage />
+              </PageWrapper>
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <PageWrapper>

@@ -36,9 +36,15 @@ const ScheduleWidget = ({ data, navigate }) => {
           })}
         </div>
       ) : (
-        <div className="empty-state" style={{ padding: '40px 24px', opacity: 0.8 }}>
+        <div className="empty-state" style={{ 
+          padding: '40px 24px', 
+          opacity: 0.8,
+          background: 'linear-gradient(145deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)',
+          borderRadius: 16,
+          border: '1px dashed rgba(255,255,255,0.1)'
+        }}>
           <div className="empty-icon" style={{ fontSize: 32, marginBottom: 12 }}>🍃</div>
-          <div className="empty-title" style={{ fontSize: 14, fontWeight: 700 }}>Orbit Clear</div>
+          <div className="empty-title" style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.5px' }}>Orbit Clear</div>
           <div className="empty-desc" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>No events scheduled for this window.</div>
         </div>
       )}

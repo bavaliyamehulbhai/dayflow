@@ -167,8 +167,11 @@ router.post('/:id/complete',
         }
       }
 
+      if (!habit.streak) {
+        habit.streak = { current: 0, longest: 0, lastCompletedDate: null };
+      }
       habit.streak.current = streak;
-      habit.streak.longest = Math.max(habit.streak.longest, streak);
+      habit.streak.longest = Math.max(habit.streak.longest || 0, streak);
       habit.streak.lastCompletedDate = lastCompleted || null;
 
       await habit.save();

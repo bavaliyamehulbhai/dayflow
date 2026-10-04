@@ -1,5 +1,7 @@
 const cluster = require("cluster");
 const os = require("os");
+const path = require("path");
+const fs = require("fs");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -312,8 +314,6 @@ app.get("/api/health", (req, res) => {
 });
 
 // ─── Production Static File Serving ───────────────────────────────────────────
-const path = require("path");
-const fs = require("fs");
 
 if (process.env.NODE_ENV === "production") {
   const buildPath = path.join(__dirname, "..", "frontend", "build");

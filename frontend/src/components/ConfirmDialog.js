@@ -54,8 +54,8 @@ export default function ConfirmDialog({ open, title, message, confirmText = 'Del
                             margin: 0,
                             border: 'none',
                             position: 'relative',
-                            background: 'rgba(13, 13, 22, 0.95)',
-                            backdropFilter: 'blur(30px)'
+                            background: 'var(--surface-solid)',
+                            backdropFilter: 'none'
                         } : {
                             width: '100%',
                             maxWidth: 420,
@@ -64,8 +64,8 @@ export default function ConfirmDialog({ open, title, message, confirmText = 'Del
                             border: '1px solid rgba(255,255,255,0.06)',
                             position: 'relative',
                             boxShadow: '0 40px 120px rgba(0,0,0,0.8)',
-                            background: 'rgba(13, 13, 22, 0.7)',
-                            backdropFilter: 'blur(40px) saturate(180%)'
+                            background: 'var(--surface-solid)',
+                            backdropFilter: 'none'
                         }}
                     >
                         <button className="modal-close haptic-tap" onClick={onCancel} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.03)', padding: 8, borderRadius: 12 }}>

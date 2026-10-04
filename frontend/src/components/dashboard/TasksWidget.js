@@ -16,14 +16,14 @@ const TasksWidget = ({ data, navigate }) => {
   return (
     <WidgetWrapper title="Priority Focus" icon={Target}>
       {/* Progress bar */}
-      <div style={{ marginBottom: density === 'compact' ? 12 : 20, background: 'var(--surface2)', padding: density === 'compact' ? '12px' : '16px', borderRadius: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: density === 'compact' ? 6 : 10 }}>
+      <div style={{ marginBottom: density === 'compact' ? 12 : 20, background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)', padding: density === 'compact' ? '12px' : '16px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 800, color: '#fff', marginBottom: density === 'compact' ? 8 : 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           <span>Daily Progress</span>
-          <span style={{ color: 'var(--accent)' }}>{completionPct}%</span>
+          <span style={{ color: 'var(--accent)', textShadow: '0 0 10px rgba(124,109,250,0.5)' }}>{completionPct}%</span>
         </div>
-        <div style={{ height: 8, background: 'var(--bg)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+        <div style={{ height: 6, background: 'rgba(0,0,0,0.4)', borderRadius: 3, overflow: 'hidden', position: 'relative', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.5)' }}>
           <div className="shimmer-sweep" style={{ position: 'absolute', inset: 0, zIndex: 1 }} />
-          <div style={{ width: `${completionPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent), var(--green))', borderRadius: 4, transition: 'width 1.2s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 0 15px var(--accent-glow)', position: 'relative', zIndex: 2 }} />
+          <div style={{ width: `${completionPct}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent), #fff)', borderRadius: 3, transition: 'width 1.2s cubic-bezier(0.16, 1, 0.3, 1)', position: 'relative', zIndex: 2, boxShadow: '0 0 10px var(--accent)' }} />
         </div>
       </div>
 
@@ -36,21 +36,27 @@ const TasksWidget = ({ data, navigate }) => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                padding: density === 'compact' ? '8px 12px' : '14px 16px',
-                background: 'var(--surface2)',
-                borderRadius: 12,
-                border: '1px solid var(--border)',
-                transition: 'transform 0.2s ease',
+                padding: density === 'compact' ? '10px 14px' : '14px 16px',
+                background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+                borderRadius: 14,
+                borderTop: '1px solid rgba(255,255,255,0.05)',
+                borderLeft: '1px solid rgba(255,255,255,0.02)',
+                borderRight: '1px solid rgba(255,255,255,0.02)',
+                borderBottom: '1px solid rgba(255,255,255,0.02)',
+                boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)',
+                transition: 'all 0.2s ease',
                 cursor: 'pointer'
               }} className="hover-lift" onClick={() => navigate('/tasks')}>
-                <div style={{ width: 8, height: 8, borderRadius: '4px', background: task.priority === 'urgent' ? 'var(--red)' : task.priority === 'high' ? 'var(--orange)' : task.priority === 'medium' ? 'var(--yellow)' : 'var(--green)', flexShrink: 0, boxShadow: '0 0 8px currentColor' }} />
+                <div style={{ width: 8, height: 8, borderRadius: '4px', background: task.priority === 'urgent' ? 'var(--red)' : task.priority === 'high' ? 'var(--orange)' : task.priority === 'medium' ? 'var(--yellow)' : 'var(--green)', flexShrink: 0 }} />
                 <span style={{ flex: 1, fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</span>
                 <span className={`badge badge-${task.priority}`} style={{ fontSize: 9 }}>{task.priority.toUpperCase()}</span>
               </div>
             )
           })}
-          <button className="btn btn-sm btn-ghost mt-2" onClick={() => navigate('/tasks')} style={{ fontSize: 11, fontWeight: 800 }}>
-            VIEW ALL <ArrowRight size={14} style={{ marginLeft: 4 }} />
+          <button className="btn btn-sm mt-2 hover-lift" onClick={() => navigate('/tasks')} style={{ 
+            fontSize: 11, fontWeight: 800, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 12 
+          }}>
+            VIEW ALL <ArrowRight size={14} style={{ marginLeft: 6, color: 'var(--accent)' }} />
           </button>
         </div>
       ) : (

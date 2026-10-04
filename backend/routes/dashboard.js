@@ -131,7 +131,8 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
         habits: { list: habitSummary, total: activeHabits.length, completedToday: habitsCompleted },
         pomodoro: { todayCount: todayPomos.length, todayMinutes: focusMinutesToday },
         notes: { recent: recentNotes },
-        weekActivity: weekData
+        weekActivity: weekData,
+        weeklyProgress: weeklyProgress
       }
     });
   } catch (err) {
@@ -202,6 +203,7 @@ router.get('/activity/12m', cacheMiddleware(300), async (req, res) => {
     res.json({
       success: true,
       logs,
+      activity: logs,
       analytics: {
         growth,
         currentWeekScore,

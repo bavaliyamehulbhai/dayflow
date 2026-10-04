@@ -22,9 +22,14 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
     if (category) filter.category = category; // ReDoS Safe Exact Match
-    // Use MongoDB text search if available, fall back to regex for partial matches
-    if (search) {
-      filter.$text = { $search: search };
+    // Flexible partial keyword search across title, description, and tags
+    if (search && typeof search === 'string' && search.trim()) {
+      const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.$or = [
+        { title: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+        { tags: { $regex: escaped, $options: 'i' } }
+      ];
     }
     if (dueDate) {
       const date = new Date(dueDate);
@@ -35,7 +40,7 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sortOrder = order === 'asc' ? 1 : -1;
-    const sortField = search ? { score: { $meta: 'textScore' }, [sortBy]: sortOrder } : { [sortBy]: sortOrder };
+    const sortField = { [sortBy]: sortOrder };
 
     const [tasks, total] = await Promise.all([
       Task.find(filter)

@@ -19,10 +19,11 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = error.config?.url;
     
-    // Don't trigger unauthorized flow for logout/login/register requests to avoid infinite loops
+    // Don't trigger unauthorized flow for logout/login/register/me requests to avoid infinite loops
     const isAuthAction = url?.includes('/auth/logout') || 
                          url?.includes('/auth/login') || 
-                         url?.includes('/auth/register');
+                         url?.includes('/auth/register') ||
+                         url?.includes('/auth/me');
 
     if (status === 401 && !isAuthAction) {
       // Dispatch event so AuthContext can clear user state without hard reload

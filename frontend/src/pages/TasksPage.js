@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useDeferredValue } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { tasksAPI } from "../utils/api";
 import { useNotifications } from "../context/NotificationContext";
@@ -139,13 +139,13 @@ const TaskItem = React.memo(
           initial={false}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative overflow-hidden mb-4"
-          style={{ borderRadius: 24 }}
+          className="relative overflow-hidden mb-2"
+          style={{ borderRadius: 12 }}
         >
           {/* Swipe Actions Background */}
           <motion.div
-            className="absolute inset-0 flex items-center justify-between px-8 z-0"
-            style={{ background, borderRadius: 24 }}
+            className="absolute inset-0 flex items-center justify-between px-6 z-0"
+            style={{ background, borderRadius: 12 }}
           >
             <motion.div
               style={{ opacity, scale }}
@@ -187,7 +187,7 @@ const TaskItem = React.memo(
             dragMomentum={false}
             onDragEnd={handleDragEnd}
             whileTap={{ scale: 0.98 }}
-            className={`premium-card ${selected ? "selected-aura" : ""}`}
+            className={`card ${selected ? "selected-task" : ""}`}
             style={{
               x,
               touchAction: "pan-y",
@@ -196,14 +196,11 @@ const TaskItem = React.memo(
               padding: 0,
               overflow: "hidden",
               boxShadow: selected
-                ? `0 0 40px var(--accent-glow)`
-                : priorityAura,
-              border: selected
-                ? "2px solid var(--accent)"
-                : "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(255, 255, 255, 0.03)",
-              backdropFilter: "blur(30px) saturate(210%)",
-              borderRadius: 24,
+                ? `inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px var(--accent)`
+                : "inset 0 1px 0 rgba(255,255,255,0.05)",
+              border: "1px solid var(--border)",
+              background: selected ? "rgba(255,255,255,0.03)" : "var(--surface-solid)",
+              borderRadius: 12,
             }}
             onClick={() => setModal(task)}
           >
@@ -211,8 +208,8 @@ const TaskItem = React.memo(
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 16,
-                padding: "18px 20px",
+                gap: 12,
+                padding: "12px 16px",
                 background: "transparent",
               }}
             >
@@ -227,19 +224,16 @@ const TaskItem = React.memo(
                     toggleComplete(task);
                   }}
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 12,
-                    border: `3px solid ${task.status === "completed" ? "#22c55e" : "rgba(255,255,255,0.15)"}`,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 6,
+                    border: `2px solid ${task.status === "completed" ? "#22c55e" : "rgba(255,255,255,0.15)"}`,
                     background:
                       task.status === "completed" ? "#22c55e" : "transparent",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow:
-                      task.status === "completed"
-                        ? "0 0 25px rgba(34, 197, 94, 0.4)"
-                        : "none",
+                    boxShadow: "none",
                   }}
                 >
                   <AnimatePresence>
@@ -259,8 +253,8 @@ const TaskItem = React.memo(
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    fontSize: 16,
-                    fontWeight: 700,
+                    fontSize: 15,
+                    fontWeight: 500,
                     textDecoration:
                       task.status === "completed" ? "line-through" : "none",
                     color:
@@ -268,7 +262,6 @@ const TaskItem = React.memo(
                         ? "var(--muted)"
                         : "var(--text)",
                     marginBottom: 4,
-                    fontFamily: "Plus Jakarta Sans, sans-serif",
                   }}
                 >
                   <SensitivityShield>{task.title}</SensitivityShield>
@@ -365,17 +358,18 @@ const KanbanCard = React.memo(({ task, toggleComplete, setModal, deleteMutation,
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
       onClick={() => setModal(task)}
       style={{
-        padding: 16,
-        background: "rgba(255, 255, 255, 0.03)",
-        borderRadius: 14,
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderLeft: `4px solid ${priorityColor}`,
+        padding: "12px 16px",
+        background: "rgba(255, 255, 255, 0.02)",
+        borderRadius: 8,
+        border: "1px solid rgba(255, 255, 255, 0.05)",
+        borderLeft: `3px solid ${priorityColor}`,
         cursor: "pointer",
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        gap: 8,
+        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.02)",
+        backdropFilter: "blur(10px)",
         transition: "border-color 0.2s ease, background 0.2s ease"
       }}
       className="hover-lift"
@@ -585,7 +579,7 @@ function TaskModal({ task, onClose, onSave }) {
   };
 
   const modalContent = (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+    <form onSubmit={handleSubmit} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <div
         className="modal-body custom-scrollbar"
         style={{
@@ -612,16 +606,18 @@ function TaskModal({ task, onClose, onSave }) {
             Objective Title
           </label>
           <input
-            className="auth-input haptic-feedback"
+            className="auth-input"
             style={{
-              height: isMobile ? 52 : 56,
-              fontSize: isMobile ? 16 : 16,
-              background: "rgba(255,255,255,0.03)",
-              borderRadius: 14,
+              height: 48,
+              fontSize: 15,
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              padding: "0 16px"
             }}
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="Declare your intent..."
+            placeholder="E.g., Complete the Q4 report"
             autoFocus
           />
         </div>
@@ -641,8 +637,8 @@ function TaskModal({ task, onClose, onSave }) {
               Priority
             </label>
             <select
-              className="select premium-select"
-              style={{ height: 48, borderRadius: 14, width: "100%" }}
+              className="select"
+              style={{ height: 42, borderRadius: 6, width: "100%", background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
               value={form.priority}
               onChange={(e) =>
                 setForm((f) => ({ ...f, priority: e.target.value }))
@@ -669,8 +665,8 @@ function TaskModal({ task, onClose, onSave }) {
               Status
             </label>
             <select
-              className="select premium-select"
-              style={{ height: 48, borderRadius: 14, width: "100%" }}
+              className="select"
+              style={{ height: 42, borderRadius: 6, width: "100%", background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
               value={form.status}
               onChange={(e) =>
                 setForm((f) => ({ ...f, status: e.target.value }))
@@ -698,13 +694,22 @@ function TaskModal({ task, onClose, onSave }) {
           >
             Category
           </label>
-          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, category: cat }))}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${form.category === cat ? "bg-accent text-white shadow-lg shadow-accent/20" : "bg-white/5 text-muted hover:bg-white/10"}`}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  border: form.category === cat ? "1px solid var(--text)" : "1px solid var(--border)",
+                  background: form.category === cat ? "var(--text)" : "var(--surface-solid)",
+                  color: form.category === cat ? "var(--bg)" : "var(--text2)",
+                }}
               >
                 {cat}
               </button>
@@ -729,9 +734,11 @@ function TaskModal({ task, onClose, onSave }) {
             type="date"
             className="auth-input"
             style={{
-              height: 48,
-              borderRadius: 14,
-              background: "rgba(255,255,255,0.03)",
+              height: 42,
+              borderRadius: 6,
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
+              padding: "0 12px"
             }}
             value={form.dueDate}
             onChange={(e) =>
@@ -742,15 +749,18 @@ function TaskModal({ task, onClose, onSave }) {
 
         <button
           type="submit"
-          className="auth-button w-full haptic-tap"
           style={{
-            height: 56,
-            borderRadius: 16,
-            fontSize: 16,
-            fontWeight: 800,
+            height: 48,
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 600,
+            background: "var(--text)",
+            color: "var(--bg)",
+            border: "none",
+            cursor: "pointer",
           }}
         >
-          {task ? "REFINE OBJECTIVE" : "MANIFEST OBJECTIVE"}
+          {task ? "Save changes" : "Create task"}
         </button>
       </div>
     </form>
@@ -771,28 +781,43 @@ function TaskModal({ task, onClose, onSave }) {
   return (
     <div
       className="modal-overlay"
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+      }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        initial={{ opacity: 0, scale: 0.9, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 30 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="auth-card aura-iridescent"
-        style={{ width: "100%", maxWidth: 540, padding: 0, overflow: "hidden" }}
+        exit={{ opacity: 0, scale: 0.9, y: 10 }}
+        transition={{ type: "spring", damping: 25, stiffness: 400 }}
+        style={{ 
+          width: "100%", 
+          maxWidth: 480, 
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+          padding: 0, 
+          overflow: "hidden", 
+          background: "var(--surface-solid)",
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)"
+        }}
       >
         <div
-          className="modal-header"
           style={{
-            padding: "24px 32px",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            padding: "20px 24px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
           }}
         >
           <div
-            className="modal-title"
-            style={{ fontFamily: "Syne", fontWeight: 800, fontSize: 22 }}
+            style={{ fontWeight: 600, fontSize: 18, color: "var(--text)" }}
           >
-            {task ? "Refine Mission" : "New Objective"}
+            {task ? "Edit Task" : "New Task"}
           </div>
           <button
             className="modal-close haptic-tap"
@@ -834,9 +859,15 @@ export default function TasksPage() {
   const [confirmState, setConfirmState] = useState({ open: false, task: null });
   const [viewMode, setViewMode] = useState("list");
 
+  const deferredSearch = useDeferredValue(filters.search);
+  const activeFilters = useMemo(() => ({
+    ...filters,
+    search: deferredSearch,
+  }), [filters.status, filters.priority, filters.sortBy, deferredSearch]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["tasks", filters],
-    queryFn: () => tasksAPI.getAll(filters).then((r) => r.data),
+    queryKey: ["tasks", activeFilters],
+    queryFn: () => tasksAPI.getAll(activeFilters).then((r) => r.data),
   });
 
   useEffect(() => {
@@ -1041,72 +1072,86 @@ export default function TasksPage() {
       </div>
 
       <div
-        className="dashboard-header-premium"
+        className="premium-card"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "16px",
-          padding: isMobile ? "16px" : "20px 24px",
-          background: "var(--surface2)",
-          border: "1px solid var(--border)",
-          borderRadius: "16px",
-          marginBottom: "24px",
+          padding: isMobile ? "20px" : "28px 32px",
+          marginBottom: "32px",
           position: "relative",
-          overflow: "hidden"
+          overflow: "hidden",
         }}
       >
-        <AuraOrb
-          color="var(--accent)"
-          size={isMobile ? 120 : 200}
-          top="-60px"
-          left="-30px"
-          delay={0}
-          duration={isMobile ? 20 : 15}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
-          <ClipboardList
-            className="text-accent aura-float"
-            size={isMobile ? 22 : 28}
-          />
+        {/* Subtle background glow */}
+        <div style={{
+          position: 'absolute',
+          top: '-50%',
+          left: '-10%',
+          width: '50%',
+          height: '200%',
+          background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
+          opacity: 0.05,
+          filter: 'blur(40px)',
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "20px", zIndex: 1 }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            borderRadius: "16px",
+            background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))",
+            border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
+          }}>
+            <ClipboardList size={24} style={{ color: "var(--accent)" }} />
+          </div>
           <div>
             <h1
-              className="dashboard-title"
               style={{
-                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontSize: isMobile ? "1.6rem" : "2.1rem",
                 fontWeight: 800,
-                fontFamily: "Syne, sans-serif",
                 margin: 0,
-                color: "var(--text)"
+                background: "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                letterSpacing: "-0.04em"
               }}
             >
               Tasks
             </h1>
-            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+            <p style={{ fontSize: "0.95rem", color: "var(--muted)", margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.2px" }}>
               Manage and track your objectives
             </p>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
+        <div style={{ display: "flex", gap: "16px", alignItems: "center", zIndex: 1 }}>
           <div style={{
             display: "flex",
-            background: "rgba(0, 0, 0, 0.2)",
-            borderRadius: "10px",
-            padding: "3px",
-            border: "1px solid var(--border)"
+            background: "rgba(0, 0, 0, 0.3)",
+            borderRadius: "12px",
+            padding: "4px",
+            border: "1px solid rgba(255,255,255,0.05)",
+            boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5)"
           }}>
             <button
               onClick={() => setViewMode("list")}
               style={{
-                padding: "6px 12px",
+                padding: "8px 16px",
                 fontSize: "11px",
-                fontWeight: 700,
-                borderRadius: "8px",
+                fontWeight: 800,
+                borderRadius: "10px",
                 background: viewMode === "list" ? "var(--accent)" : "transparent",
-                color: viewMode === "list" ? "white" : "var(--text2)",
-                transition: "all 0.2s ease"
+                color: viewMode === "list" ? "white" : "var(--muted)",
+                transition: "all 0.2s ease",
+                letterSpacing: "0.5px"
               }}
               type="button"
             >
@@ -1115,36 +1160,43 @@ export default function TasksPage() {
             <button
               onClick={() => setViewMode("kanban")}
               style={{
-                padding: "6px 12px",
+                padding: "8px 16px",
                 fontSize: "11px",
-                fontWeight: 700,
-                borderRadius: "8px",
+                fontWeight: 800,
+                borderRadius: "10px",
                 background: viewMode === "kanban" ? "var(--accent)" : "transparent",
-                color: viewMode === "kanban" ? "white" : "var(--text2)",
-                transition: "all 0.2s ease"
+                color: viewMode === "kanban" ? "white" : "var(--muted)",
+                transition: "all 0.2s ease",
+                letterSpacing: "0.5px"
               }}
               type="button"
             >
               BOARD
             </button>
           </div>
-          <MagneticButton
-            className="auth-button haptic-tap"
+          <button
             onClick={() => setModal("create")}
             style={{
-              height: 42,
-              padding: "0 16px",
-              borderRadius: 12,
+              background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "#fff",
+              padding: "10px 20px",
+              borderRadius: "12px",
+              fontSize: "13px",
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
               gap: 8,
-              fontSize: "13px",
-              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.2s ease"
             }}
+            className="haptic-tap hover-lift"
           >
-            <Plus size={16} strokeWidth={2.5} />
-            <span>New Task</span>
-          </MagneticButton>
+            <Plus size={16} style={{ color: "var(--accent)" }} />
+            <span style={{ letterSpacing: "0.5px" }}>New Task</span>
+          </button>
         </div>
       </div>
 
@@ -1163,9 +1215,9 @@ export default function TasksPage() {
             transition={{ delay: 0.1 }}
             className="app-module-entrance"
             style={{
-              padding: "20px",
-              borderRadius: 24,
-              background: "rgba(255,255,255,0.03)",
+              padding: "16px 20px",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.02)",
               border: "1px solid rgba(255,255,255,0.05)",
               backdropFilter: "blur(20px)",
             }}
@@ -1184,9 +1236,9 @@ export default function TasksPage() {
             </div>
             <div
               style={{
-                fontSize: "28px",
-                fontWeight: 900,
-                fontFamily: "Syne",
+                fontSize: "24px",
+                fontWeight: 700,
+                fontFamily: "Inter, sans-serif",
                 color: "white",
               }}
             >
@@ -1199,9 +1251,9 @@ export default function TasksPage() {
             transition={{ delay: 0.2 }}
             className="app-module-entrance"
             style={{
-              padding: "20px",
-              borderRadius: 24,
-              background: "rgba(255,255,255,0.03)",
+              padding: "16px 20px",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.02)",
               border: "1px solid rgba(255,255,255,0.05)",
               backdropFilter: "blur(20px)",
             }}
@@ -1220,9 +1272,9 @@ export default function TasksPage() {
             </div>
             <div
               style={{
-                fontSize: "28px",
-                fontWeight: 900,
-                fontFamily: "Syne",
+                fontSize: "24px",
+                fontWeight: 700,
+                fontFamily: "Inter, sans-serif",
                 color: "var(--green)",
               }}
             >
@@ -1240,13 +1292,11 @@ export default function TasksPage() {
         style={{ marginBottom: 24 }}
       >
         <div
-          className="glass-holographic"
           style={{
-            padding: "12px",
-            borderRadius: 16,
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.05)",
-            backdropFilter: "blur(40px)",
+            padding: "8px",
+            borderRadius: 8,
+            background: "var(--surface-solid)",
+            border: "1px solid var(--border)",
           }}
         >
           <div
@@ -1257,27 +1307,33 @@ export default function TasksPage() {
               alignItems: "center",
             }}
           >
-            <div style={{ position: "relative", flex: "1 1 300px" }}>
+            <div style={{
+              position: "relative",
+              flex: "1 1 280px",
+              display: "flex",
+              alignItems: "center",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 10,
+              height: 42,
+              padding: "0 14px",
+              gap: 10
+            }}>
               <Search
-                size={18}
-                style={{
-                  position: "absolute",
-                  left: 16,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  opacity: 0.4,
-                }}
+                size={16}
+                color="var(--muted)"
+                style={{ flexShrink: 0 }}
               />
               <input
-                className="auth-input"
                 style={{
-                  paddingLeft: 46,
-                  height: 42,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "#ffffff",
                   fontSize: 13,
-                  borderRadius: 12,
                   width: "100%",
-                  background: "rgba(0,0,0,0.2)",
-                  border: "1px solid rgba(255,255,255,0.05)",
+                  fontWeight: 500,
+                  padding: 0
                 }}
                 placeholder="Search objectives..."
                 value={filters.search}
@@ -1286,17 +1342,20 @@ export default function TasksPage() {
                 }
               />
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               <select
-                className="select premium-select"
                 style={{
                   height: 42,
-                  borderRadius: 12,
-                  minWidth: 120,
+                  borderRadius: 10,
+                  minWidth: 130,
                   fontSize: 12,
+                  fontWeight: 600,
                   background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  color: "var(--text)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "#e4e4e7",
+                  padding: "0 12px",
+                  cursor: "pointer",
+                  outline: "none"
                 }}
                 value={filters.status}
                 onChange={(e) =>
@@ -1311,15 +1370,18 @@ export default function TasksPage() {
                 ))}
               </select>
               <select
-                className="select premium-select"
                 style={{
                   height: 42,
-                  borderRadius: 12,
-                  minWidth: 120,
+                  borderRadius: 10,
+                  minWidth: 130,
                   fontSize: 12,
+                  fontWeight: 600,
                   background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  color: "var(--text)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "#e4e4e7",
+                  padding: "0 12px",
+                  cursor: "pointer",
+                  outline: "none"
                 }}
                 value={filters.priority}
                 onChange={(e) =>
@@ -1348,7 +1410,7 @@ export default function TasksPage() {
                 <List
                   height={isMobile ? Math.max(300, windowHeight - 300) : 700}
                   itemCount={tasks.length}
-                  itemSize={isMobile ? 110 : 96}
+                  itemSize={isMobile ? 80 : 72}
                   width="100%"
                   itemData={tasks}
                   itemKey={(index, data) => getSafeId(data[index]) || index}
@@ -1385,9 +1447,9 @@ export default function TasksPage() {
                     display: "flex",
                     flexDirection: "column",
                     gap: 16,
-                    background: "rgba(255,255,255,0.01)",
-                    border: "1px solid rgba(255,255,255,0.03)",
-                    borderRadius: 20,
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
                     padding: 16,
                     minHeight: 300
                   }}>
@@ -1445,12 +1507,12 @@ export default function TasksPage() {
               bottom: 100,
               left: "50%",
               zIndex: 900,
-              background: "rgba(20, 20, 30, 0.85)",
+              background: "rgba(10, 10, 12, 0.85)",
               padding: "12px 24px",
-              borderRadius: 30,
+              borderRadius: 20,
               backdropFilter: "blur(40px) saturate(200%)",
-              border: "2px solid var(--accent)",
-              boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 25px 50px rgba(0,0,0,0.5)",
               display: "flex",
               alignItems: "center",
               gap: 20,

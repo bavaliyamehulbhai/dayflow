@@ -15,9 +15,10 @@ import {
   Shield,
   ShieldOff,
   Bell,
-  Plus
+  Plus,
+  Zap
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import CommandPalette from './CommandPalette';
 import ShortcutsHelp from './ShortcutsHelp';
 import ShortcutOverlay from './ShortcutOverlay';
@@ -25,7 +26,7 @@ import DemoBanner from './DemoBanner';
 import { useSecurity } from '../../context/SecurityGuard';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/tasks', icon: CheckCircle2, label: 'Tasks' },
   { to: '/schedule', icon: Calendar, label: 'Schedule' },
   { to: '/habits', icon: RefreshCw, label: 'Habits' },
@@ -35,7 +36,7 @@ const navItems = [
 
 // Bottom Premium tabs for mobile - Pro-Minimalist (Icon Only)
 const mobileTabItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Home', exact: true },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Home', exact: true },
   { to: '/tasks', icon: CheckCircle2, label: 'Tasks' },
   { id: 'manifest', action: 'command', icon: Plus, label: 'Manifest' },
   { to: '/habits', icon: RefreshCw, label: 'Habits' },
@@ -71,7 +72,7 @@ export default function Layout({ children }) {
       }, 150);
     };
     handleResize(); // Initial call
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
     return () => {
       window.removeEventListener('resize', handleResize);
       clearTimeout(timeoutId);
@@ -97,20 +98,61 @@ export default function Layout({ children }) {
 
   return (
     <div className="app-layout">
-      {/* ─── Global Aura Orbs ────────────────────────────────────────────── */}
-      {!isMobile && (
-        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: -1 }}>
-          <div className="aura-orb" style={{ top: '10%', left: '15%', width: 400, height: 400, background: 'var(--aura-color)' }} />
-          <div className="aura-orb" style={{ bottom: '15%', right: '10%', width: 500, height: 500, background: 'var(--aura-color-2)', animationDelay: '-5s' }} />
-          <div className="aura-orb" style={{ top: '50%', left: '50%', width: 300, height: 300, background: 'var(--aura-color-3)', animationDelay: '-10s', filter: 'blur(120px)' }} />
-        </div>
-      )}
+      {/* ─── Precision Background Grid ───────────────────────────────────────── */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 0,
+          backgroundImage: `
+            linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px)
+          `,
+          backgroundSize: '48px 48px',
+          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 10%, black 40%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 10%, black 40%, transparent 100%)'
+        }}
+      />
 
       {/* ─── Desktop + Tablet Sidebar ──────────────────────────────────────── */}
       {!isMobile && (
         <aside className={`sidebar ${isTablet ? 'sidebar-icon' : ''}`}>
-          <div className="sidebar-logo">
-            {isTablet ? '⚡' : 'DayFlow'}
+          <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: isTablet ? '16px 0' : '20px 16px', justifyContent: isTablet ? 'center' : 'flex-start' }}>
+            <div style={{
+              width: 32,
+              height: 32,
+              borderRadius: 9,
+              background: 'linear-gradient(135deg, #7c6dfa 0%, #0a84ff 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(124, 109, 250, 0.35)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              flexShrink: 0
+            }}>
+              <Zap size={18} color="white" fill="white" />
+            </div>
+            {!isTablet && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.03em', color: '#ffffff' }}>
+                  DayFlow
+                </span>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '1px 5px',
+                  borderRadius: 5,
+                  background: 'rgba(124, 109, 250, 0.15)',
+                  color: '#a78bfa',
+                  border: '1px solid rgba(124, 109, 250, 0.25)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
+                  v2.0
+                </span>
+              </div>
+            )}
           </div>
 
           <nav className="sidebar-nav">
@@ -266,21 +308,9 @@ export default function Layout({ children }) {
           paddingTop: isMobile ? 'calc(64px + env(safe-area-inset-top, 0px))' : 0
         }}>
           {user?.isDemo && <DemoBanner />}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 1.02 }}
-              transition={{
-                duration: 0.4,
-                ease: [0.16, 1, 0.3, 1]
-              }}
-              className="page-content"
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          <div className="page-content">
+            {children}
+          </div>
         </main>
       </div>
 

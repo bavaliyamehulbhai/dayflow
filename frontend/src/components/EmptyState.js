@@ -4,28 +4,16 @@ import { Sparkles } from 'lucide-react';
 
 const EmptyState = ({ icon: Icon = Sparkles, title, description, action, iconColor = 'var(--accent)' }) => {
   return (
-    <div className="card glass-holographic empty-state-premium" style={{ 
-      padding: '80px 40px', 
+    <div className="empty-state-premium" style={{ 
+      padding: '40px 20px', 
       textAlign: 'center', 
-      borderRadius: 40,
+      borderRadius: 16,
       position: 'relative',
       overflow: 'hidden',
-      border: 'none'
+      background: 'rgba(255, 255, 255, 0.02)',
+      border: '1px dashed rgba(255, 255, 255, 0.08)'
     }}>
-      {/* Background Aura */}
-      <div className="aura-pulse" style={{ 
-        position: 'absolute', 
-        top: '50%',
-        left: '50%',
-        width: '120%',
-        height: '120%',
-        background: 'var(--grad-mesh-vibrant)',
-        transform: 'translate(-50%, -50%)',
-        opacity: 0.15,
-        filter: 'blur(80px)',
-        pointerEvents: 'none'
-      }} />
-      
+
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -33,23 +21,21 @@ const EmptyState = ({ icon: Icon = Sparkles, title, description, action, iconCol
         style={{ position: 'relative', zIndex: 1 }}
       >
         <motion.div 
-          className="aura-float"
           style={{ 
-            display: 'inline-flex', padding: 24, borderRadius: 32, 
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            marginBottom: 32,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-            backdropFilter: 'blur(10px)'
+            display: 'inline-flex', padding: 16, borderRadius: 16, 
+            background: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            marginBottom: 24,
+            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.05)'
           }}
         >
-          <Icon size={48} style={{ color: iconColor, filter: `drop-shadow(0 0 15px ${iconColor}cc)` }} />
+          <Icon size={32} style={{ color: iconColor }} />
         </motion.div>
         
         <h3 style={{ 
-          fontSize: 'var(--fs-xl)', fontWeight: 900, fontFamily: 'Syne, sans-serif', 
-          letterSpacing: '-0.04em', color: 'var(--text)', marginBottom: 16,
-          lineHeight: 1.1
+          fontSize: '18px', fontWeight: 700, fontFamily: "'Inter', sans-serif", 
+          letterSpacing: '-0.02em', color: 'var(--text)', marginBottom: 8,
+          lineHeight: 1.2
         }}>
           {title}
         </h3>

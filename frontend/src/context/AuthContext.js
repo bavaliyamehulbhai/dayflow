@@ -47,9 +47,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const handler = async () => {
       await logout();
-      // Only redirect if not already on /login
-      if (window.location.pathname !== "/login") {
-        window.location.replace("/login");
+      // Only redirect if not already on public routes
+      const path = window.location.pathname;
+      if (path !== "/login" && path !== "/register" && path !== "/") {
+        window.location.replace("/");
       }
     };
     window.addEventListener("dayflow:unauthorized", handler);

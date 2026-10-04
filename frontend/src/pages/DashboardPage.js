@@ -66,7 +66,7 @@ function useWindowWidth() {
   return w;
 }
 
-// ─── Clock Component (Header) ──────────────────────────────────────────────────
+// ─── Clock Component (Premium) ────────────────────────────────────────────────
 const Clock = React.memo(() => {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
@@ -76,60 +76,29 @@ const Clock = React.memo(() => {
 
   return (
     <div
+      className="premium-card aura-iridescent"
       style={{
         zIndex: 1,
-        background: "rgba(255, 255, 255, 0.02)",
-        border: "1px solid var(--border)",
-        borderRadius: "12px",
-        padding: "8px 16px",
+        padding: "10px 20px",
         textAlign: "right",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center"
+        justifyContent: "center",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
       }}
     >
-      <div style={{ fontSize: "1.35rem", fontWeight: 800, fontFamily: "Syne, sans-serif", color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+      <div style={{ fontSize: "1.45rem", fontWeight: 800, fontFamily: "Inter, sans-serif", color: "#fff", display: "flex", alignItems: "center", gap: "6px", letterSpacing: "-0.5px" }}>
         <span>{safeFormat(time, "HH:mm")}</span>
-        <span style={{ fontSize: "0.8rem", color: "var(--accent)" }}>{safeFormat(time, "ss")}</span>
+        <span style={{ fontSize: "0.85rem", color: "var(--accent)", fontWeight: 900 }}>{safeFormat(time, "ss")}</span>
       </div>
-      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
+      <div style={{ fontSize: "0.7rem", fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "2px" }}>
         {safeFormat(time, "EEEE, MMMM d")}
       </div>
     </div>
   );
 });
 
-const AuraOrb = React.memo(
-  ({ color, size, top, left, delay, duration = 15 }) => (
-    <motion.div
-      animate={{
-        x: [0, 50, -30, 0],
-        y: [0, -40, 60, 0],
-        scale: [1, 1.2, 0.9, 1],
-        opacity: [0.1, 0.2, 0.1],
-      }}
-      transition={{
-        duration,
-        repeat: Infinity,
-        ease: "easeInOut",
-        delay,
-      }}
-      style={{
-        position: "absolute",
-        width: size,
-        height: size,
-        background: color,
-        borderRadius: "50%",
-        filter: "blur(80px)",
-        zIndex: -1,
-        top,
-        left,
-        pointerEvents: "none",
-        willChange: "transform, opacity",
-      }}
-    />
-  ),
-);
+const AuraOrb = React.memo(() => null);
 
 const DEFAULT_LAYOUT = [
   "stats",
@@ -344,74 +313,89 @@ export default function DashboardPage() {
   return (
     <div className="responsive-container page-shell" style={{ overflowX: 'hidden' }}>
       <div
-        className="dashboard-header-premium"
+        className="premium-card"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "16px",
-          padding: isMobile ? "16px" : "20px 24px",
-          background: "var(--surface2)",
-          border: "1px solid var(--border)",
-          borderRadius: "16px",
-          marginBottom: "24px",
+          padding: isMobile ? "20px" : "28px 32px",
+          marginBottom: "32px",
           position: "relative",
-          overflow: "hidden"
+          overflow: "hidden",
         }}
       >
-        <AuraOrb
-          color="var(--accent)"
-          size={isMobile ? 120 : 200}
-          top="-60px"
-          left="-30px"
-          delay={0}
-          duration={isMobile ? 20 : 15}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
-          <GreetingIcon
-            className="text-accent aura-float"
-            size={isMobile ? 22 : 28}
-          />
+        {/* Subtle background glow */}
+        <div style={{
+          position: 'absolute',
+          top: '-50%',
+          left: '-10%',
+          width: '50%',
+          height: '200%',
+          background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
+          opacity: 0.05,
+          filter: 'blur(40px)',
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "20px", zIndex: 1 }}>
+          <div style={{
+            width: "48px",
+            height: "48px",
+            borderRadius: "16px",
+            background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))",
+            border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
+          }}>
+            <GreetingIcon size={24} style={{ color: "var(--accent)" }} />
+          </div>
           <div>
             <h1
-              className="dashboard-title"
               style={{
-                fontSize: isMobile ? "1.25rem" : "1.6rem",
+                fontSize: isMobile ? "1.6rem" : "2.1rem",
                 fontWeight: 800,
-                fontFamily: "Syne, sans-serif",
                 margin: 0,
-                color: "var(--text)"
+                background: "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                letterSpacing: "-0.04em"
               }}
             >
-              {greeting}, <span className="holographic-text" style={{ color: "var(--accent)" }}>{user?.name?.split(" ")[0]}</span>
+              {greeting}, {user?.name?.split(" ")[0] || "User"}
             </h1>
-            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
-              Here is your workspace overview for today.
+            <p style={{ fontSize: "0.95rem", color: "var(--muted)", margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.2px" }}>
+              Overview of your workspace
             </p>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
+        <div style={{ display: "flex", gap: "16px", alignItems: "center", zIndex: 1 }}>
           <button
             onClick={() => setCustomizeOpen(true)}
             style={{
-              background: "rgba(255, 255, 255, 0.03)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              color: "white",
-              padding: "8px 16px",
+              background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "#fff",
+              padding: "10px 20px",
               borderRadius: "12px",
-              fontSize: "12px",
-              fontWeight: 700,
+              fontSize: "13px",
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
               gap: 8,
-              cursor: "pointer"
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.2s ease"
             }}
             className="haptic-tap hover-lift"
           >
-            <Sparkles size={14} className="text-accent" />
-            <span>Customize</span>
+            <Sparkles size={16} style={{ color: "var(--accent)" }} />
+            <span style={{ letterSpacing: "0.5px" }}>Customize</span>
           </button>
           <Clock />
         </div>
@@ -423,16 +407,8 @@ export default function DashboardPage() {
             display: "grid",
             gridTemplateColumns: isMobile
               ? "1fr"
-              : density === "compact"
-              ? "repeat(auto-fit, minmax(280px, 1fr))"
-              : "repeat(3, 1fr)",
-            gap: isMobile 
-              ? "16px" 
-              : density === "compact" 
-              ? "12px" 
-              : density === "focus" 
-              ? "32px" 
-              : "24px",
+              : "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "16px",
             padding: 0,
             margin: 0,
             paddingBottom: "80px",
@@ -460,7 +436,7 @@ export default function DashboardPage() {
                     gridColumn: isMobile ? "auto" : (density === "compact" ? "auto" : span)
                   }}
                 >
-                  <div style={{ height: "100%", perspective: "1000px" }} className="gpu-accel">
+                  <div style={{ height: "100%" }} className="gpu-accel">
                     <MemoWidget
                       id={itemId}
                       data={data}
@@ -506,23 +482,23 @@ export default function DashboardPage() {
                 right: 0,
                 top: 0,
                 bottom: 0,
-                width: isMobile ? "100%" : "420px",
-                background: "rgba(12, 12, 22, 0.98)",
-                backdropFilter: "blur(30px)",
-                borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
-                padding: "32px 24px",
+                width: isMobile ? "100%" : "380px",
+                background: "rgba(10, 10, 12, 0.95)",
+                backdropFilter: "blur(20px)",
+                borderLeft: "1px solid rgba(255, 255, 255, 0.05)",
+                padding: "24px",
                 zIndex: 1000,
                 display: "flex",
                 flexDirection: "column",
                 gap: 24,
-                boxShadow: "-10px 0 50px rgba(0,0,0,0.6)",
+                boxShadow: "-10px 0 30px rgba(0,0,0,0.5)",
                 boxSizing: "border-box"
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <Sliders className="text-accent" size={20} />
-                  <h3 style={{ fontFamily: "Syne", fontSize: 18, fontWeight: 900, color: "white", margin: 0 }}>WORKSPACE CONFIG</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Sliders className="text-accent" size={16} />
+                  <h3 style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, color: "white", margin: 0, letterSpacing: 0.5 }}>WORKSPACE</h3>
                 </div>
                 <button
                   onClick={() => setCustomizeOpen(false)}
@@ -542,7 +518,7 @@ export default function DashboardPage() {
 
               {/* Presets */}
               <div>
-                <h4 style={{ fontSize: 11, fontWeight: 900, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>LAYOUT PRESETS</h4>
+                <h4 style={{ fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>LAYOUT PRESETS</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                   {[
                     { id: "standard", label: "Standard" },
@@ -572,7 +548,7 @@ export default function DashboardPage() {
 
               {/* Density */}
               <div>
-                <h4 style={{ fontSize: 11, fontWeight: 900, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>DENSITY SPACING</h4>
+                <h4 style={{ fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>DENSITY SPACING</h4>
                 <div style={{ display: "flex", gap: 8, background: "rgba(0,0,0,0.2)", padding: 4, borderRadius: 10, border: "1px solid rgba(255,255,255,0.04)" }}>
                   {[
                     { id: "compact", label: "Compact" },
@@ -606,7 +582,7 @@ export default function DashboardPage() {
 
               {/* Visibility and Reordering */}
               <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-                <h4 style={{ fontSize: 11, fontWeight: 900, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>REORDER & TOGGLE WIDGETS</h4>
+                <h4 style={{ fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>REORDER & TOGGLE WIDGETS</h4>
                 
                 <div style={{ flex: 1, overflowY: "auto", paddingRight: 4 }} className="custom-scrollbar">
                   <Reorder.Group

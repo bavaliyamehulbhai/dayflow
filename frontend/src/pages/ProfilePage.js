@@ -172,8 +172,8 @@ function ScoreRing({ score, size = 120 }) {
         <div
           style={{
             fontSize: "var(--fs-xl)",
-            fontWeight: 900,
-            fontFamily: "Syne, sans-serif",
+            fontWeight: 700,
+            fontFamily: "Inter, sans-serif",
             color,
           }}
         >
@@ -482,88 +482,51 @@ export default function ProfilePage() {
         paddingBottom: 120,
       }}
     >
-      {/* Immersive Background Layer */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: -1 }}>
-        <AuraOrb
-          color="rgba(124, 109, 250, 0.12)"
-          size="500px"
-          top="-10%"
-          left="-10%"
-          delay={0}
-        />
-        <AuraOrb
-          color="rgba(110, 250, 204, 0.08)"
-          size="400px"
-          top="30%"
-          left="70%"
-          delay={3}
-        />
-        <AuraOrb
-          color="rgba(250, 109, 138, 0.06)"
-          size="350px"
-          top="80%"
-          left="5%"
-          delay={5}
-        />
-      </div>
-
       <div
-        className="dashboard-header-premium"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "16px",
-          padding: isMobile ? "16px" : "20px 24px",
-          background: "var(--surface2)",
-          border: "1px solid var(--border)",
-          borderRadius: "16px",
+          padding: isMobile ? "24px 0 16px" : "40px 0 24px 0",
           marginBottom: "24px",
+          borderBottom: "1px solid var(--border)",
           position: "relative",
-          overflow: "hidden"
         }}
       >
-        <AuraOrb
-          color="var(--accent)"
-          size={isMobile ? 120 : 200}
-          top="-60px"
-          left="-30px"
-          delay={0}
-          duration={isMobile ? 20 : 15}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", zIndex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", zIndex: 1 }}>
           <User
             className="text-accent aura-float"
-            size={isMobile ? 22 : 28}
+            size={isMobile ? 24 : 32}
           />
           <div>
             <h1
-              className="dashboard-title"
               style={{
-                fontSize: isMobile ? "1.25rem" : "1.6rem",
-                fontWeight: 800,
-                fontFamily: "Syne, sans-serif",
+                fontSize: isMobile ? "1.5rem" : "1.85rem",
+                fontWeight: 600,
+                fontFamily: "'Inter', sans-serif",
                 margin: 0,
-                color: "var(--text)"
+                color: "var(--text)",
+                letterSpacing: "-0.03em"
               }}
             >
               Settings
             </h1>
-            <p style={{ fontSize: "0.8rem", color: "var(--text2)", margin: "4px 0 0" }}>
+            <p style={{ fontSize: "0.95rem", color: "var(--text2)", margin: "4px 0 0", fontWeight: 400 }}>
               Configure profile and preferences
             </p>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
-          <MagneticButton
-            className="auth-button magnetic-btn haptic-tap"
+          <button
             onClick={logout}
+            className="haptic-tap"
             style={{
-              height: 42,
+              height: 36,
               padding: "0 16px",
-              borderRadius: 12,
+              borderRadius: 6,
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -571,53 +534,36 @@ export default function ProfilePage() {
               fontWeight: 600,
               border: "1px solid rgba(239, 68, 68, 0.2)",
               color: "var(--red)",
-              background: "rgba(239, 68, 68, 0.05)",
+              background: "transparent",
+              cursor: "pointer",
             }}
           >
             <LogOut size={16} />
             <span>Logout</span>
-          </MagneticButton>
+          </button>
         </div>
       </div>
 
       {/* ─── IDENTITY HERO ─────────────────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-holographic aura-iridescent"
         style={{
           marginBottom: 32,
-          padding: isMobile ? "32px 16px" : "48px 64px",
-          borderRadius: 32,
+          padding: isMobile ? "24px" : "32px 40px",
+          borderRadius: 16,
           position: "relative",
-          overflow: "visible",
+          overflow: "hidden",
           border: "1px solid rgba(255,255,255,0.05)",
           background: "rgba(255,255,255,0.02)",
-          backdropFilter: "blur(30px)",
         }}
       >
-        <div
-          className="aura-pulse"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: "80%",
-            height: "80%",
-            background: "var(--grad-mesh-vibrant)",
-            opacity: 0.1,
-            filter: "blur(80px)",
-            transform: "translate(-50%, -50%)",
-            zIndex: -1,
-          }}
-        />
-
         <div
           style={{
             display: "flex",
             flexDirection: isMobile ? "column" : "row",
             alignItems: "center",
-            gap: isMobile ? 32 : 48,
+            gap: isMobile ? 24 : 32,
             position: "relative",
             zIndex: 10,
             textAlign: isMobile ? "center" : "left",
@@ -628,21 +574,19 @@ export default function ProfilePage() {
             <motion.div
               whileHover={{ scale: 1.05 }}
               style={{
-                width: isMobile ? 100 : 160,
-                height: isMobile ? 100 : 160,
-                borderRadius: "32px",
+                width: isMobile ? 80 : 100,
+                height: isMobile ? 80 : 100,
+                borderRadius: "16px",
                 background: avatarGrad,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontFamily: "Syne, sans-serif",
-                fontWeight: 800,
-                fontSize: isMobile ? "40px" : "64px",
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 600,
+                fontSize: isMobile ? "24px" : "36px",
                 color: "white",
-                boxShadow: `0 20px 60px ${profileForm.avatarGradient === "purple" ? "rgba(124,109,250,0.5)" : "rgba(0,0,0,0.3)"}`,
                 cursor: "pointer",
-                border: "4px solid rgba(255,255,255,0.1)",
-                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(255,255,255,0.1)",
               }}
               onClick={() => setShowGradientPicker((v) => !v)}
             >
@@ -745,26 +689,25 @@ export default function ProfilePage() {
             >
               <div
                 style={{
-                  fontFamily: "Syne, sans-serif",
-                  fontSize: isMobile ? "24px" : "48px",
-                  fontWeight: 800,
-                  letterSpacing: "-0.04em",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: isMobile ? "20px" : "32px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
                   lineHeight: 1,
-                  color: "white",
+                  color: "var(--text)",
                 }}
               >
                 {user?.name}
               </div>
               <div
                 style={{
-                  background: currentTier.config.gradient,
-                  color: currentTier.tier === "gold" || currentTier.tier === "bronze" ? "black" : "white",
-                  padding: "4px 12px",
-                  borderRadius: 50,
+                  background: "var(--surface-solid)",
+                  color: "var(--text)",
+                  border: "1px solid var(--border)",
+                  padding: "4px 10px",
+                  borderRadius: 6,
                   fontSize: 10,
-                  fontWeight: 900,
-                  letterSpacing: 1,
-                  boxShadow: `0 4px 15px ${currentTier.config.glow}`,
+                  fontWeight: 600,
                   display: "flex",
                   alignItems: "center",
                   gap: 4
@@ -805,45 +748,49 @@ export default function ProfilePage() {
               }}
             >
               <div
-                className="glass-badge"
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: 12,
-                  background: "rgba(255,255,255,0.03)",
-                  color: "var(--green)",
-                  fontSize: 11,
-                  fontWeight: 800,
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  background: "var(--surface-solid)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
                 }}
               >
-                <Zap size={12} style={{ marginRight: 8 }} /> {memberDays} CYCLES
+                <Zap size={12} style={{ marginRight: 6, color: "var(--green)" }} /> {memberDays} Cycles
               </div>
               <div
-                className="glass-badge"
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: 12,
-                  background: "rgba(255,255,255,0.03)",
-                  color: "var(--accent)",
-                  fontSize: 11,
-                  fontWeight: 800,
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  background: "var(--surface-solid)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
                 }}
               >
-                <Trophy size={12} style={{ marginRight: 8 }} /> {earnedCount}{" "}
-                ACHIEVEMENTS
+                <Trophy size={12} style={{ marginRight: 6, color: "var(--accent)" }} /> {earnedCount} Achievements
               </div>
               <div
-                className="glass-badge"
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: 12,
-                  background: "rgba(255,255,255,0.03)",
-                  color: "#ff4d7d",
-                  fontSize: 11,
-                  fontWeight: 800,
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  background: "var(--surface-solid)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
                 }}
               >
-                <Flame size={12} style={{ marginRight: 8 }} /> {currentStreak}D
-                STREAK
+                <Flame size={12} style={{ marginRight: 6, color: "#ff4d7d" }} /> {currentStreak}d Streak
               </div>
             </div>
           </div>
@@ -862,8 +809,8 @@ export default function ProfilePage() {
                 style={{
                   fontSize: 11,
                   color: "var(--muted)",
-                  fontWeight: 900,
-                  letterSpacing: 3,
+                  fontWeight: 600,
+                  letterSpacing: 1,
                   textTransform: "uppercase",
                 }}
               >
@@ -871,40 +818,21 @@ export default function ProfilePage() {
               </div>
               <div
                 style={{
-                  fontSize: 48,
-                  fontFamily: "Syne",
-                  fontWeight: 800,
+                  fontSize: 32,
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: 600,
                   lineHeight: 1,
-                  color:
-                    productivityScore > 80 ? "var(--green)" : "var(--text)",
+                  color: productivityScore > 80 ? "var(--green)" : "var(--text)",
                 }}
               >
                 {productivityScore}
-                <span style={{ fontSize: 20, opacity: 0.3, marginLeft: 2 }}>
+                <span style={{ fontSize: 16, opacity: 0.5, marginLeft: 2 }}>
                   /100
                 </span>
               </div>
-              <div
-                className="glass-badge"
-                style={{
-                  background: currentTier.config.gradient,
-                  padding: "6px 12px",
-                  fontSize: 10,
-                  fontWeight: 900,
-                  letterSpacing: 1,
-                  color: currentTier.tier === "gold" || currentTier.tier === "bronze" ? "black" : "white",
-                  borderRadius: 12,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  boxShadow: `0 4px 15px ${currentTier.config.glow}`,
-                }}
-              >
-                <Medal size={12} />
-                <span>{currentTier.label}</span>
-              </div>
             </div>
           )}
+
         </div>
       </motion.div>
 
@@ -912,15 +840,15 @@ export default function ProfilePage() {
       <div
         style={{
           display: "flex",
-          gap: isMobile ? 8 : 8,
-          marginBottom: 40,
-          padding: 6,
-          borderRadius: 24,
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.05)",
+          gap: 8,
+          marginBottom: 32,
+          padding: 4,
+          borderRadius: 8,
+          background: "var(--surface-solid)",
+          border: "1px solid var(--border)",
           width: isMobile ? "100%" : "fit-content",
           maxWidth: "100%",
-          margin: isMobile ? "0 0 32px" : "0 auto 40px",
+          margin: isMobile ? "0 0 24px" : "0 auto 32px",
           overflowX: "auto",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
@@ -937,23 +865,21 @@ export default function ProfilePage() {
               onClick={() => setActiveTab(tab.id)}
               className="haptic-tap"
               style={{
-                padding: isMobile ? "12px 18px" : "14px 28px",
-                borderRadius: 20,
+                padding: isMobile ? "8px 12px" : "10px 16px",
+                borderRadius: 6,
                 border: "none",
-                background: active ? "white" : "transparent",
-                color: active ? "black" : "var(--muted)",
-                fontWeight: 800,
+                background: active ? "var(--surface)" : "transparent",
+                color: active ? "var(--text)" : "var(--muted)",
+                fontWeight: 500,
                 fontSize: 13,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: "all 0.2s",
                 whiteSpace: "nowrap",
                 scrollSnapAlign: "start",
-                boxShadow: active
-                  ? "0 10px 20px rgba(255,255,255,0.1)"
-                  : "none",
+                boxShadow: active ? "0 1px 3px rgba(0,0,0,0.5)" : "none",
                 flexShrink: 0,
               }}
             >
@@ -988,22 +914,20 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="premium-card aura-iridescent"
                     style={{
-                      padding: 32,
-                      borderRadius: 32,
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      background: "rgba(20, 20, 30, 0.95)",
-                      backdropFilter: "blur(30px)",
+                      padding: 24,
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      background: "rgba(255, 255, 255, 0.02)",
                     }}
                   >
                     <div
                       style={{
-                        fontSize: 13,
-                        fontWeight: 900,
+                        fontSize: 11,
+                        fontWeight: 600,
                         color: "var(--muted)",
-                        letterSpacing: 2,
-                        marginBottom: 20,
+                        letterSpacing: 1,
+                        marginBottom: 16,
                         textTransform: "uppercase",
                       }}
                     >
@@ -1037,28 +961,35 @@ export default function ProfilePage() {
                       }}
                     >
                       <button
-                        className="btn glass haptic-tap"
+                        className="haptic-tap"
                         onClick={() => setEditingBio(false)}
                         style={{
-                          borderRadius: 14,
-                          padding: "0 24px",
-                          height: 48,
-                          fontWeight: 800,
+                          borderRadius: 6,
+                          padding: "0 16px",
+                          height: 36,
+                          fontWeight: 600,
+                          background: "transparent",
+                          border: "1px solid var(--border)",
+                          color: "var(--text)",
                         }}
                       >
                         Cancel
                       </button>
                       <button
-                        className="auth-button haptic-tap"
+                        className="haptic-tap"
                         onClick={handleProfileSave}
                         style={{
-                          width: "auto",
-                          padding: "0 32px",
-                          height: 48,
-                          fontSize: 14,
+                          borderRadius: 6,
+                          padding: "0 24px",
+                          height: 36,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          background: "var(--text)",
+                          color: "var(--bg)",
+                          border: "none",
                         }}
                       >
-                        <div className="btn-glint" /> Save Bio
+                        Save Bio
                       </button>
                     </div>
                   </motion.div>
@@ -1066,11 +997,11 @@ export default function ProfilePage() {
               </AnimatePresence>
 
               <div
-                className="premium-card"
                 style={{
-                  padding: isMobile ? 24 : 40,
-                  borderRadius: 32,
+                  padding: isMobile ? 24 : 32,
+                  borderRadius: 16,
                   border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.02)",
                 }}
               >
                 <div
@@ -1078,16 +1009,16 @@ export default function ProfilePage() {
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
-                    marginBottom: 32,
+                    marginBottom: 24,
                   }}
                 >
-                  <User size={20} className="text-accent" />
+                  <User size={18} className="text-accent" />
                   <div
                     style={{
-                      fontSize: 18,
-                      fontWeight: 800,
-                      color: "white",
-                      letterSpacing: -0.5,
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "var(--text)",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Identity Parameters
@@ -1101,11 +1032,9 @@ export default function ProfilePage() {
                   <div className="form-group">
                     <label
                       style={{
-                        fontSize: 11,
-                        fontWeight: 800,
+                        fontSize: 12,
+                        fontWeight: 600,
                         color: "var(--muted)",
-                        textTransform: "uppercase",
-                        letterSpacing: 1.5,
                         marginBottom: 8,
                         display: "block",
                       }}
@@ -1126,11 +1055,9 @@ export default function ProfilePage() {
                   <div className="form-group">
                     <label
                       style={{
-                        fontSize: 11,
-                        fontWeight: 800,
+                        fontSize: 12,
+                        fontWeight: 600,
                         color: "var(--muted)",
-                        textTransform: "uppercase",
-                        letterSpacing: 1.5,
                         marginBottom: 8,
                         display: "block",
                       }}
@@ -1196,11 +1123,11 @@ export default function ProfilePage() {
 
               {/* Growth Stats card */}
               <div
-                className="premium-card aura-iridescent"
                 style={{
-                  padding: isMobile ? 24 : 40,
-                  borderRadius: 32,
+                  padding: isMobile ? 24 : 32,
+                  borderRadius: 16,
                   border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.02)",
                 }}
               >
                 <div
@@ -1208,16 +1135,16 @@ export default function ProfilePage() {
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
-                    marginBottom: 32,
+                    marginBottom: 24,
                   }}
                 >
-                  <TrendingUp size={20} className="text-accent2" />
+                  <TrendingUp size={18} className="text-accent2" />
                   <div
                     style={{
-                      fontSize: 18,
-                      fontWeight: 800,
-                      color: "white",
-                      letterSpacing: -0.5,
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "var(--text)",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Expansion Metrics
@@ -1313,9 +1240,9 @@ export default function ProfilePage() {
                           </div>
                           <span
                             style={{
-                              fontSize: 24,
-                              fontWeight: 900,
-                              fontFamily: "Syne",
+                              fontSize: 20,
+                              fontWeight: 700,
+                              fontFamily: "'Inter', sans-serif",
                               color: s.color,
                             }}
                           >
@@ -1353,7 +1280,7 @@ export default function ProfilePage() {
                           }}
                         >
                           <span>LVL 14</span>
-                          <span>{Math.round(progress)}% TO ASCENSION</span>
+                          <span>{Math.round(progress)}% TO NEXT</span>
                         </div>
                       </div>
                     );
@@ -1363,10 +1290,9 @@ export default function ProfilePage() {
 
               {/* Danger zone */}
               <div
-                className="premium-card"
                 style={{
                   padding: 24,
-                  borderRadius: 24,
+                  borderRadius: 16,
                   border: "1px solid rgba(255,107,107,0.1)",
                   background: "rgba(255,107,107,0.02)",
                 }}
@@ -1418,11 +1344,11 @@ export default function ProfilePage() {
           {activeTab === "security" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
               <div
-                className="premium-card aura-iridescent"
                 style={{
-                  padding: isMobile ? 24 : 40,
-                  borderRadius: 32,
+                  padding: isMobile ? 24 : 32,
+                  borderRadius: 16,
                   border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.02)",
                 }}
               >
                 <div
@@ -1430,16 +1356,16 @@ export default function ProfilePage() {
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
-                    marginBottom: 32,
+                    marginBottom: 24,
                   }}
                 >
-                  <Lock size={20} className="text-accent2" />
+                  <Lock size={18} className="text-accent2" />
                   <div
                     style={{
-                      fontSize: 18,
-                      fontWeight: 800,
-                      color: "white",
-                      letterSpacing: -0.5,
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "var(--text)",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Access Protocol
@@ -1454,11 +1380,9 @@ export default function ProfilePage() {
                     <label
                       style={{
                         fontSize: 12,
-                        fontWeight: 800,
+                        fontWeight: 600,
                         color: "var(--muted)",
-                        textTransform: "uppercase",
-                        letterSpacing: 1.5,
-                        marginBottom: 10,
+                        marginBottom: 8,
                         display: "block",
                       }}
                     >
@@ -1484,11 +1408,9 @@ export default function ProfilePage() {
                     <label
                       style={{
                         fontSize: 12,
-                        fontWeight: 800,
+                        fontWeight: 600,
                         color: "var(--muted)",
-                        textTransform: "uppercase",
-                        letterSpacing: 1.5,
-                        marginBottom: 10,
+                        marginBottom: 8,
                         display: "block",
                       }}
                     >
@@ -1556,11 +1478,9 @@ export default function ProfilePage() {
                     <label
                       style={{
                         fontSize: 12,
-                        fontWeight: 800,
+                        fontWeight: 600,
                         color: "var(--muted)",
-                        textTransform: "uppercase",
-                        letterSpacing: 1.5,
-                        marginBottom: 10,
+                        marginBottom: 8,
                         display: "block",
                       }}
                     >
@@ -1629,10 +1549,9 @@ export default function ProfilePage() {
               </div>
 
               <div
-                className="premium-card"
                 style={{
-                  padding: isMobile ? 24 : 40,
-                  borderRadius: 32,
+                  padding: isMobile ? 24 : 32,
+                  borderRadius: 16,
                   border: "1px solid rgba(255,255,255,0.05)",
                   background: "rgba(130,114,255,0.02)",
                 }}
@@ -1642,19 +1561,19 @@ export default function ProfilePage() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    marginBottom: 32,
+                    marginBottom: 24,
                   }}
                 >
                   <div
                     style={{ display: "flex", alignItems: "center", gap: 12 }}
                   >
-                    <ShieldCheck size={20} className="text-accent" />
+                    <ShieldCheck size={18} className="text-accent" />
                     <div
                       style={{
-                        fontSize: 18,
-                        fontWeight: 800,
-                        color: "white",
-                        letterSpacing: -0.5,
+                        fontSize: 16,
+                        fontWeight: 600,
+                        color: "var(--text)",
+                        letterSpacing: "-0.01em",
                       }}
                     >
                       Fortress Integrity
@@ -1662,9 +1581,9 @@ export default function ProfilePage() {
                   </div>
                   <div
                     style={{
-                      fontSize: 32,
-                      fontWeight: 900,
-                      fontFamily: "Syne",
+                      fontSize: 24,
+                      fontWeight: 700,
+                      fontFamily: "'Inter', sans-serif",
                       color:
                         securityHealth.score >= 70
                           ? "var(--green)"
@@ -1717,12 +1636,10 @@ export default function ProfilePage() {
 
                 <label
                   style={{
-                    fontSize: 11,
-                    fontWeight: 900,
+                    fontSize: 12,
+                    fontWeight: 600,
                     color: "var(--muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: 2,
-                    marginBottom: 20,
+                    marginBottom: 12,
                     display: "block",
                   }}
                 >
@@ -1810,10 +1727,9 @@ export default function ProfilePage() {
               </div>
 
               <div
-                className="premium-card"
                 style={{
                   padding: 24,
-                  borderRadius: 32,
+                  borderRadius: 16,
                   border: "1px solid rgba(255,255,255,0.05)",
                 }}
               >
@@ -1821,10 +1737,9 @@ export default function ProfilePage() {
               </div>
 
               <div
-                className="premium-card"
                 style={{
                   padding: 24,
-                  borderRadius: 32,
+                  borderRadius: 16,
                   border: "1px solid rgba(34,197,94,0.1)",
                   background: "rgba(34,197,94,0.02)",
                 }}
@@ -1840,11 +1755,9 @@ export default function ProfilePage() {
                   <Shield size={18} className="text-green" />
                   <div
                     style={{
-                      fontSize: 15,
-                      fontWeight: 800,
+                      fontSize: 14,
+                      fontWeight: 600,
                       color: "var(--green)",
-                      textTransform: "uppercase",
-                      letterSpacing: 1.5,
                     }}
                   >
                     Active Protocols
@@ -1909,11 +1822,9 @@ export default function ProfilePage() {
                       </span>
                       <span
                         style={{
-                          fontWeight: 900,
+                          fontWeight: 700,
                           color: "var(--green)",
-                          fontSize: 10,
-                          textTransform: "uppercase",
-                          letterSpacing: 1,
+                          fontSize: 11,
                         }}
                       >
                         {s.value}
@@ -1924,10 +1835,9 @@ export default function ProfilePage() {
               </div>
 
               <div
-                className="premium-card"
                 style={{
-                  padding: 32,
-                  borderRadius: 32,
+                  padding: 24,
+                  borderRadius: 16,
                   border: "1px solid rgba(124,109,250,0.1)",
                   background: "rgba(124,109,250,0.02)",
                 }}
@@ -1943,11 +1853,10 @@ export default function ProfilePage() {
                   <Fingerprint size={18} className="text-accent" />
                   <div
                     style={{
-                      fontSize: 15,
-                      fontWeight: 800,
-                      color: "white",
-                      textTransform: "uppercase",
-                      letterSpacing: 1.5,
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "var(--text)",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Cognitive Privacy
@@ -2004,11 +1913,11 @@ export default function ProfilePage() {
           {/* ── APPEARANCE ────────────────────────────── */}
           {activeTab === "appearance" && (
             <div
-              className="premium-card aura-iridescent"
               style={{
-                padding: isMobile ? 24 : 40,
-                borderRadius: 32,
+                padding: isMobile ? 24 : 32,
+                borderRadius: 16,
                 border: "1px solid rgba(255,255,255,0.05)",
+                background: "rgba(255,255,255,0.02)",
               }}
             >
               <div
@@ -2022,10 +1931,10 @@ export default function ProfilePage() {
                 <Palette size={20} className="text-accent" />
                 <div
                   style={{
-                    fontSize: 18,
-                    fontWeight: 800,
-                    color: "white",
-                    letterSpacing: -0.5,
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: "var(--text)",
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   Atmospheric Protocol
@@ -2049,11 +1958,9 @@ export default function ProfilePage() {
                 <label
                   style={{
                     fontSize: 12,
-                    fontWeight: 900,
+                    fontWeight: 600,
                     color: "var(--muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: 2,
-                    marginBottom: 20,
+                    marginBottom: 16,
                     display: "block",
                   }}
                 >
@@ -2117,11 +2024,9 @@ export default function ProfilePage() {
                       <div
                         style={{
                           marginTop: 10,
-                          fontSize: 11,
-                          fontWeight: 800,
-                          color: accent === p.color ? "white" : "var(--muted)",
-                          textTransform: "uppercase",
-                          letterSpacing: 1,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: accent === p.color ? "var(--text)" : "var(--muted)",
                         }}
                       >
                         {p.name}
@@ -2132,11 +2037,11 @@ export default function ProfilePage() {
               </div>
 
               <div
-                className="glass"
                 style={{
                   padding: 24,
-                  borderRadius: 24,
+                  borderRadius: 16,
                   border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.02)",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
@@ -2158,7 +2063,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <div
-                      style={{ fontSize: 14, fontWeight: 800, color: "white" }}
+                      style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}
                     >
                       Luminosity Mode
                     </div>
@@ -2203,11 +2108,10 @@ export default function ProfilePage() {
                 </div>
                 <div
                   style={{
-                    fontFamily: "Syne, sans-serif",
-                    fontSize: 24,
-                    fontWeight: 900,
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 20,
+                    fontWeight: 700,
                     color: "var(--accent)",
-                    textShadow: "0 0 20px var(--accent-glow)",
                   }}
                 >
                   Vibrant Productivity
@@ -2219,11 +2123,11 @@ export default function ProfilePage() {
           {/* ── FOCUS ─────────────────────────────────── */}
           {activeTab === "pomodoro" && (
             <div
-              className="premium-card aura-iridescent"
               style={{
-                padding: isMobile ? 24 : 40,
-                borderRadius: 32,
+                padding: isMobile ? 24 : 32,
+                borderRadius: 16,
                 border: "1px solid rgba(255,255,255,0.05)",
+                background: "rgba(255,255,255,0.02)",
               }}
             >
               <div
@@ -2237,10 +2141,10 @@ export default function ProfilePage() {
                 <Timer size={20} className="text-green" />
                 <div
                   style={{
-                    fontSize: 18,
-                    fontWeight: 800,
-                    color: "white",
-                    letterSpacing: -0.5,
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: "var(--text)",
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   Temporal Calibration
@@ -2319,9 +2223,9 @@ export default function ProfilePage() {
                       <div style={{ textAlign: "right" }}>
                         <span
                           style={{
-                            fontFamily: "Syne",
-                            fontSize: 32,
-                            fontWeight: 900,
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: 24,
+                            fontWeight: 700,
                             color: f.color,
                             lineHeight: 1,
                           }}
@@ -2417,17 +2321,15 @@ export default function ProfilePage() {
                     <div
                       style={{
                         fontSize: 12,
-                        fontWeight: 900,
+                        fontWeight: 600,
                         color: "var(--muted)",
-                        textTransform: "uppercase",
-                        letterSpacing: 1.5,
                         marginBottom: 4,
                       }}
                     >
                       Neural Sequence Total
                     </div>
                     <div
-                      style={{ fontSize: 16, fontWeight: 800, color: "white" }}
+                      style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}
                     >
                       {4 * profileForm.pomodoroWork +
                         3 * profileForm.pomodoroBreak +
@@ -2461,11 +2363,11 @@ export default function ProfilePage() {
           {activeTab === "stats" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
               <div
-                className="premium-card aura-iridescent"
                 style={{
-                  padding: isMobile ? 24 : 40,
-                  borderRadius: 32,
+                  padding: isMobile ? 24 : 32,
+                  borderRadius: 16,
                   border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.02)",
                 }}
               >
                 <div
@@ -2484,21 +2386,19 @@ export default function ProfilePage() {
                     <div
                       style={{
                         fontSize: 12,
-                        fontWeight: 900,
+                        fontWeight: 600,
                         color: "var(--muted)",
-                        textTransform: "uppercase",
-                        letterSpacing: 2,
-                        marginBottom: 8,
+                        marginBottom: 4,
                       }}
                     >
                       Composite Efficiency
                     </div>
                     <div
                       style={{
-                        fontFamily: "Syne",
-                        fontSize: 32,
-                        fontWeight: 800,
-                        color: "white",
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: "var(--text)",
                         marginBottom: 16,
                       }}
                     >
@@ -2544,12 +2444,10 @@ export default function ProfilePage() {
                             style={{
                               display: "flex",
                               justifyContent: "space-between",
-                              fontSize: 11,
+                              fontSize: 12,
                               color: "var(--muted)",
-                              fontWeight: 800,
+                              fontWeight: 600,
                               marginBottom: 8,
-                              textTransform: "uppercase",
-                              letterSpacing: 0.5,
                             }}
                           >
                             <span>{b.label}</span>
@@ -2622,12 +2520,12 @@ export default function ProfilePage() {
                   <motion.div
                     key={i}
                     whileHover={{ y: -5 }}
-                    className="premium-card"
                     style={{
                       padding: 24,
-                      borderRadius: 24,
+                      borderRadius: 16,
                       textAlign: "center",
                       border: "1px solid rgba(255,255,255,0.05)",
+                      background: "rgba(255,255,255,0.02)",
                       minWidth: 0,
                     }}
                   >
@@ -2636,9 +2534,9 @@ export default function ProfilePage() {
                     </div>
                     <div
                       style={{
-                        fontFamily: "Syne",
-                        fontSize: 28,
-                        fontWeight: 900,
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: 24,
+                        fontWeight: 700,
                         color: s.color,
                       }}
                     >
@@ -2680,11 +2578,11 @@ export default function ProfilePage() {
                   }}
                 >
                   <div
-                    className="premium-card"
                     style={{
-                      padding: isMobile ? 20 : 40,
-                      borderRadius: 32,
+                      padding: isMobile ? 20 : 32,
+                      borderRadius: 16,
                       border: "1px solid rgba(255,255,255,0.05)",
+                      background: "rgba(255,255,255,0.02)",
                       position: "relative",
                       overflow: "hidden",
                     }}
@@ -2777,11 +2675,10 @@ export default function ProfilePage() {
                         </div>
                         <div
                           style={{
-                            fontSize: 20,
-                            fontWeight: 900,
-                            color: "white",
-                            marginBottom: 12,
-                            fontFamily: "Syne",
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: "var(--text)",
+                            marginBottom: 8,
                           }}
                         >
                           Sequence Uninitiated
@@ -2847,12 +2744,11 @@ export default function ProfilePage() {
                   style={{ display: "flex", flexDirection: "column", gap: 24 }}
                 >
                   <div
-                    className="premium-card"
                     style={{
                       padding: 24,
-                      borderRadius: 24,
+                      borderRadius: 16,
                       border: "1px solid rgba(255,255,255,0.05)",
-                      background: "rgba(130,114,255,0.03)",
+                      background: "rgba(130,114,255,0.02)",
                     }}
                   >
                     <ProductivityCircle
@@ -2865,11 +2761,11 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div
-                    className="premium-card"
                     style={{
                       padding: 24,
-                      borderRadius: 24,
+                      borderRadius: 16,
                       border: "1px solid rgba(255,255,255,0.05)",
+                      background: "rgba(255,255,255,0.02)",
                     }}
                   >
                     <ActivityTags />
@@ -2883,11 +2779,11 @@ export default function ProfilePage() {
           {activeTab === "badges" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
               <div
-                className="premium-card aura-iridescent"
                 style={{
                   padding: isMobile ? 24 : 32,
-                  borderRadius: 32,
+                  borderRadius: 16,
                   border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.02)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -2925,10 +2821,10 @@ export default function ProfilePage() {
                     </div>
                     <div
                       style={{
-                        fontFamily: "Syne",
-                        fontSize: 32,
-                        fontWeight: 800,
-                        color: "white",
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: "var(--text)",
                       }}
                     >
                       {earnedCount}{" "}
@@ -3042,16 +2938,13 @@ export default function ProfilePage() {
                           whileHover={{ y: -8, scale: 1.02 }}
                           style={{
                             padding: 24,
-                            borderRadius: 24,
+                            borderRadius: 16,
                             textAlign: "center",
                             position: "relative",
                             background: badge.earned
-                              ? `linear-gradient(135deg, ${tc.color}15, transparent)`
+                              ? `rgba(255,255,255,0.05)`
                               : "rgba(255,255,255,0.02)",
-                            border: `1px solid ${badge.earned ? tc.color + "33" : "rgba(255,255,255,0.05)"}`,
-                            boxShadow: badge.earned
-                              ? `0 10px 30px ${tc.glow}`
-                              : "none",
+                            border: `1px solid ${badge.earned ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)"}`,
                             cursor: "pointer",
                           }}
                         >

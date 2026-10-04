@@ -1,59 +1,15 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Eye, EyeOff, Zap, ArrowRight, Check } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useRef } from 'react';
-
-import AuraOrb from '../components/common/AuraOrb';
-
-const Magnetic = ({ children }) => {
-  const ref = useRef(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const isMobile = window.innerWidth <= 768;
-
-  const handleMouseMove = (e) => {
-    if (isMobile) return;
-    const { clientX, clientY } = e;
-    const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const x = clientX - (left + width / 2);
-    const y = clientY - (top + height / 2);
-    setPosition({ x, y });
-  };
-  const handleMouseLeave = () => setPosition({ x: 0, y: 0 });
-  return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      animate={{ x: position.x * 0.3, y: position.y * 0.3 }}
-      transition={{ type: 'spring', stiffness: 150, damping: 15, mass: 0.1 }}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-function getPasswordStrength(password) {
-  if (!password) return { score: 0, label: '', color: '' };
-  let score = 0;
-  if (password.length >= 8) score++;
-  if (password.length >= 12) score++;
-  if (/[A-Z]/.test(password)) score++;
-  if (/[0-9]/.test(password)) score++;
-  if (/[^A-Za-z0-9]/.test(password)) score++;
-  if (score <= 1) return { score, label: 'Weak', color: '#ff6b6b' };
-  if (score === 2) return { score, label: 'Fair', color: '#ffd96d' };
-  if (score === 3) return { score, label: 'Good', color: '#ff9a6d' };
-  if (score === 4) return { score, label: 'Strong', color: '#5ffad1' };
-  return { score, label: 'Crystal', color: '#8272ff' };
-}
+import { Eye, EyeOff, Zap, ArrowRight, ArrowLeft, ShieldCheck, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const { addToast } = useNotifications();
   const navigate = useNavigate();
+
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -61,29 +17,30 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [touched, setTouched] = useState({});
 
-  const strength = getPasswordStrength(form.password);
-  const filledBars = Math.round((strength.score / 5) * 4);
+  const calcStrength = (p) => {
+    let score = 0;
+    if (p.length >= 8) score++;
+    if (/[A-Z]/.test(p)) score++;
+    if (/[0-9]/.test(p)) score++;
+    if (/[^A-Za-z0-9]/.test(p)) score++;
+    return score;
+  };
 
-  const getFieldError = useCallback((field) => {
-    if (!touched[field]) return '';
-    if (field === 'name' && form.name.length < 2) return 'Name must be at least 2 characters';
-    if (field === 'email' && !/^\S+@\S+\.\S+$/.test(form.email)) return 'Enter a valid email address';
-    if (field === 'password') {
-      if (form.password.length < 8) return 'At least 8 characters required';
-      if (!/[A-Z]/.test(form.password)) return 'Must include an uppercase letter';
-      if (!/[0-9]/.test(form.password)) return 'Must include a number';
-    }
-    if (field === 'confirm' && form.confirm && form.password !== form.confirm) return 'Passwords do not match';
-    return '';
-  }, [form, touched]);
+  const getStrengthMeta = (score) => {
+    if (score <= 1) return { label: 'Weak', color: '#f87171' };
+    if (score === 2) return { label: 'Fair', color: '#fb923c' };
+    if (score === 3) return { label: 'Good', color: '#facc15' };
+    return { label: 'Strong', color: '#10b981' };
+  };
 
-  const handleBlur = (f) => setTouched(t => ({ ...t, [f]: true }));
-  const handleChange = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
+  const strengthScore = calcStrength(form.password);
+  const strength = getStrengthMeta(strengthScore);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setTouched({ name: true, email: true, password: true, confirm: true });
+
     if (form.password !== form.confirm) { 
       const msg = 'Passwords do not match.';
       setError(msg); 
@@ -91,18 +48,19 @@ export default function RegisterPage() {
       return; 
     }
     if (form.password.length < 8) { 
-      const msg = 'Security clearance requires 8+ characters.';
+      const msg = 'Password must be at least 8 characters.';
       setError(msg); 
       addToast(msg, 'error');
       return; 
     }
+
     setLoading(true);
     try {
       await register(form.name, form.email, form.password);
-      addToast('Account synchronized. Welcome to DayFlow!', 'success');
-      navigate('/');
+      addToast('Account created! Welcome to DayFlow.', 'success');
+      navigate('/dashboard');
     } catch (err) {
-      const errorMsg = err.response?.data?.error || 'Registration failed. Try different coordinates.';
+      const errorMsg = err.response?.data?.error || 'Registration failed. Please try a different email.';
       setError(errorMsg);
       addToast(errorMsg, 'error');
     } finally {
@@ -110,243 +68,459 @@ export default function RegisterPage() {
     }
   };
 
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const cardRef = useRef(null);
-
-  const handleCardMouseMove = (e) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const x = (e.clientX - centerX) / (rect.width / 2);
-    const y = (e.clientY - centerY) / (rect.height / 2);
-    setMousePos({ x, y });
-  };
-
-  const handleCardMouseLeave = () => setMousePos({ x: 0, y: 0 });
-
-  const EyeBtn = ({ show, onToggle }) => (
-    <button type="button" className="password-eye" onClick={onToggle} tabIndex={-1} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
-      {show ? <EyeOff size={16} /> : <Eye size={16} />}
-    </button>
-  );
-
   return (
-    <div 
-      onMouseMove={handleCardMouseMove}
-      onMouseLeave={handleCardMouseLeave}
-      className="auth-container"
-      style={{ overflow: 'hidden', position: 'relative' }}
-    >
-      {/* Immersive Background Orbs */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        <AuraOrb color="rgba(110, 250, 204, 0.15)" size="600px" top="-10%" left="60%" delay={2} />
-        <AuraOrb color="rgba(124, 109, 250, 0.2)" size="500px" top="50%" left="-10%" delay={0} />
-        <div style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: `radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)`,
-            backgroundSize: '40px 40px',
-            opacity: 0.5,
-            maskImage: 'radial-gradient(circle at 50% 50%, black, transparent 80%)'
-        }} />
+    <div style={{
+      minHeight: '100vh',
+      background: '#09090b',
+      color: '#f4f4f5',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '32px 16px',
+      position: 'relative',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      overflow: 'hidden'
+    }}>
+      {/* Precision Grid Background (Non-blurry, ultra-crisp) */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        zIndex: 0,
+        backgroundImage: `
+          linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+        `,
+        backgroundSize: '48px 48px',
+        maskImage: 'radial-gradient(ellipse 80% 60% at 50% 25%, black 40%, transparent 100%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 25%, black 40%, transparent 100%)'
+      }} />
+
+      {/* Top Ambient Glow Ring */}
+      <div style={{
+        position: 'absolute',
+        top: -120,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 600,
+        height: 300,
+        background: 'radial-gradient(circle, rgba(124, 109, 250, 0.12) 0%, rgba(10, 132, 255, 0.03) 60%, transparent 80%)',
+        pointerEvents: 'none',
+        zIndex: 0
+      }} />
+
+      {/* Back to Home Link */}
+      <div style={{ position: 'absolute', top: 24, left: 24, zIndex: 10 }}>
+        <Link 
+          to="/" 
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 13,
+            fontWeight: 500,
+            color: '#a1a1aa',
+            textDecoration: 'none',
+            padding: '8px 14px',
+            borderRadius: 8,
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.07)',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#a1a1aa';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.07)';
+          }}
+        >
+          <ArrowLeft size={15} />
+          <span>Back to Home</span>
+        </Link>
       </div>
 
       <motion.div
-        ref={cardRef}
-        initial={{ opacity: 0, y: 40, scale: 0.95 }}
-        animate={{ 
-            opacity: 1, 
-            y: 0, 
-            scale: 1,
-            rotateY: (window.innerWidth <= 768) ? 0 : mousePos.x * 12,
-            rotateX: (window.innerWidth <= 768) ? 0 : -mousePos.y * 12,
-        }}
-        transition={{ 
-            rotateY: { type: 'spring', stiffness: 100, damping: 30 },
-            rotateX: { type: 'spring', stiffness: 100, damping: 30 },
-            opacity: { duration: 0.8 },
-            y: { duration: 0.8 }
-        }}
-        style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1, transformStyle: 'preserve-3d' }}
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}
       >
-        {/* Logo & Brand */}
-        <div style={{ textAlign: 'center', marginBottom: 'clamp(16px, 3.5vh, 24px)', transform: 'translateZ(60px)' }}>
-          <Magnetic>
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="auth-logo-icon"
-            >
-              <Zap size={window.innerWidth <= 768 ? 32 : 42} color="white" strokeWidth={2.5} fill="white" />
-            </motion.div>
-          </Magnetic>
-          <motion.div className="auth-title">DayFlow</motion.div>
-          <div style={{ color: 'var(--muted)', fontSize: 'clamp(12px, 1.8vw, 14px)', fontWeight: 600, letterSpacing: '0.02em', opacity: 0.8 }}>
-            Your <span className="holographic-text">Personal Dashboard</span>
+        {/* Brand Header */}
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #7c6dfa 0%, #0a84ff 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 14px rgba(124, 109, 250, 0.35)',
+              border: '1px solid rgba(255, 255, 255, 0.2)'
+            }}>
+              <Zap size={20} color="white" fill="white" />
+            </div>
+            <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.03em', color: '#ffffff' }}>
+              DayFlow
+            </span>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '2px 7px',
+              borderRadius: 6,
+              background: 'rgba(124, 109, 250, 0.15)',
+              color: '#a78bfa',
+              border: '1px solid rgba(124, 109, 250, 0.25)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              v2.0
+            </span>
           </div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff', margin: 0 }}>
+            Create your account
+          </h1>
+          <p style={{ fontSize: 13, color: '#a1a1aa', marginTop: 4, marginBottom: 0 }}>
+            Start mastering your daily output in seconds.
+          </p>
         </div>
 
         {/* Card */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
-          className="auth-card aura-iridescent" 
-          style={{ 
-            transform: 'translateZ(40px)',
-            transformStyle: 'preserve-3d'
-          }}
-        >
-          {/* Internal Glow Orbs */}
-          <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '40%', height: '40%', background: 'var(--accent)', filter: 'blur(60px)', opacity: 0.08, pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40%', height: '40%', background: 'var(--accent2)', filter: 'blur(60px)', opacity: 0.08, pointerEvents: 'none' }} />
-
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            style={{ marginBottom: 24, transform: 'translateZ(30px)' }}
-          >
-            <h2 style={{ 
-              fontSize: 32, 
-              fontWeight: 900, 
-              fontFamily: 'Syne', 
-              letterSpacing: '-0.05em', 
-              lineHeight: 1,
-              background: 'linear-gradient(to right, #fff, rgba(255,255,255,0.7))', 
-              WebkitBackgroundClip: 'text', 
-              WebkitTextFillColor: 'transparent' 
-            }}>Begin Journey</h2>
-            <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 800, marginTop: 4, textTransform: 'uppercase', letterSpacing: 2 }}>Initialize personality core</p>
-          </motion.div>
-
+        <div style={{
+          background: 'linear-gradient(180deg, #121217 0%, #0d0d12 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: 20,
+          padding: '28px 24px',
+          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+        }}>
           {error && (
-            <motion.div 
-              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} 
-              style={{ 
-                background: 'rgba(248, 113, 113, 0.1)', 
-                border: '1px solid rgba(248, 113, 113, 0.2)',
-                color: 'var(--red)',
-                padding: '12px 16px', borderRadius: 14, marginBottom: 24,
-                fontSize: 13, fontWeight: 700, transform: 'translateZ(20px)',
-                display: 'flex', alignItems: 'center', gap: 10
-              }}
-            >
-              <Zap size={14} style={{ transform: 'rotate(180deg)' }} />
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              color: '#f87171',
+              padding: '12px 14px',
+              borderRadius: 10,
+              marginBottom: 18,
+              fontSize: 13,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10
+            }}>
               <span>{error}</span>
-            </motion.div>
+            </div>
           )}
 
-          <motion.form 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            onSubmit={handleSubmit} 
-            style={{ display: 'flex', flexDirection: 'column', gap: 12, transform: 'translateZ(20px)' }}
-          >
-            <div className="form-group">
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ width: 10, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Full Name */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#d4d4d8',
+                marginBottom: 6
+              }}>
                 Full Name
               </label>
               <input
                 type="text"
-                className="auth-input haptic-feedback"
-                placeholder="Enter your name"
+                placeholder="Mehul Bavaliya"
                 value={form.name}
-                onChange={handleChange('name')}
-                onBlur={() => handleBlur('name')}
-                required autoFocus autoComplete="name"
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                required
+                autoFocus
+                autoComplete="name"
+                style={{
+                  width: '100%',
+                  height: 42,
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 10,
+                  padding: '0 14px',
+                  fontSize: 14,
+                  color: '#ffffff',
+                  outline: 'none',
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#7c6dfa';
+                  e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
-              {getFieldError('name') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('name')}</div>}
             </div>
 
-            <div className="form-group">
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ width: 10, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
-                Email
+            {/* Email Address */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#d4d4d8',
+                marginBottom: 6
+              }}>
+                Email address
               </label>
               <input
                 type="email"
-                className="auth-input haptic-feedback"
-                placeholder="Enter your email"
+                placeholder="name@example.com"
                 value={form.email}
-                onChange={handleChange('email')}
-                onBlur={() => handleBlur('email')}
-                required autoComplete="email"
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                required
+                autoComplete="email"
+                style={{
+                  width: '100%',
+                  height: 42,
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 10,
+                  padding: '0 14px',
+                  fontSize: 14,
+                  color: '#ffffff',
+                  outline: 'none',
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#7c6dfa';
+                  e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
-              {getFieldError('email') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('email')}</div>}
             </div>
 
-            <div className="form-group">
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ width: 10, height: 1.5, background: 'var(--accent)', borderRadius: 1 }}></span>
+            {/* Password */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#d4d4d8',
+                marginBottom: 6
+              }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className="auth-input haptic-feedback"
-                  placeholder="Create a password"
+                  placeholder="At least 8 characters"
                   value={form.password}
-                  onChange={handleChange('password')}
-                  onBlur={() => handleBlur('password')}
-                  autoComplete="new-password" 
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  required
+                  autoComplete="new-password"
+                  style={{
+                    width: '100%',
+                    height: 42,
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 10,
+                    padding: '0 40px 0 14px',
+                    fontSize: 14,
+                    color: '#ffffff',
+                    outline: 'none',
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#7c6dfa';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    e.target.style.boxShadow = 'none';
+                  }}
                 />
-                <EyeBtn show={showPassword} onToggle={() => setShowPassword(v => !v)} />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#71717a',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 4
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
+
+              {/* Password Strength Indicator */}
               {form.password && (
                 <div style={{ marginTop: 8 }}>
-                  <div style={{ display: 'flex', gap: 4, height: 4, marginBottom: 8 }}>
-                    {[0, 1, 2, 3].map(i => (
-                      <div key={i} style={{ flex: 1, borderRadius: 2, background: i < filledBars ? strength.color : 'rgba(255,255,255,0.05)', transition: 'all 0.3s ease' }} />
+                  <div style={{ display: 'flex', gap: 4, height: 4, marginBottom: 4 }}>
+                    {[1, 2, 3, 4].map(idx => (
+                      <div 
+                        key={idx} 
+                        style={{ 
+                          flex: 1, 
+                          borderRadius: 2, 
+                          background: idx <= strengthScore ? strength.color : 'rgba(255,255,255,0.06)',
+                          transition: 'background 0.3s'
+                        }} 
+                      />
                     ))}
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: strength.color, textTransform: 'uppercase', letterSpacing: '1px' }}>{strength.label} Strength</span>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: strength.color, textAlign: 'right' }}>
+                    {strength.label} password
+                  </div>
                 </div>
               )}
-              {getFieldError('password') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('password')}</div>}
             </div>
 
-            <div className="form-group">
-              <label style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', letterSpacing: '1.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ width: 10, height: 1.5, background: 'var(--accent2)', borderRadius: 1 }}></span>
+            {/* Confirm Password */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#d4d4d8',
+                marginBottom: 6
+              }}>
                 Confirm Password
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showConfirm ? 'text' : 'password'}
-                  className="auth-input haptic-feedback"
-                  placeholder="Confirm your password"
+                  placeholder="Repeat your password"
                   value={form.confirm}
-                  onChange={handleChange('confirm')}
-                  onBlur={() => handleBlur('confirm')}
-                  autoComplete="new-password" 
+                  onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))}
+                  required
+                  autoComplete="new-password"
+                  style={{
+                    width: '100%',
+                    height: 42,
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 10,
+                    padding: '0 40px 0 14px',
+                    fontSize: 14,
+                    color: '#ffffff',
+                    outline: 'none',
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#7c6dfa';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    e.target.style.boxShadow = 'none';
+                  }}
                 />
-                <EyeBtn show={showConfirm} onToggle={() => setShowConfirm(v => !v)} />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(v => !v)}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#71717a',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 4
+                  }}
+                >
+                  {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-              {getFieldError('confirm') && <div style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600, marginTop: 4 }}>{getFieldError('confirm')}</div>}
             </div>
 
-            <motion.button
-              type="submit" disabled={loading}
-              className="auth-button haptic-feedback"
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                marginTop: 6,
+                width: '100%',
+                height: 44,
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 4px 14px rgba(124, 109, 250, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                transition: 'opacity 0.2s, transform 0.1s'
+              }}
             >
-              <div className="btn-glint" />
-              {loading
-                ? <div className="loading-spinner" style={{ width: 24, height: 24, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                : <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>CREATE ACCOUNT <ArrowRight size={22} strokeWidth={2.5} /></span>
-              }
-            </motion.button>
-          </motion.form>
+              {loading ? (
+                <span>Creating workspace...</span>
+              ) : (
+                <>
+                  <span>Create Account</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </form>
 
-            <div className="auth-footer">
-              Already have an account? <Link to="/login">Login here</Link>
-            </div>
-        </motion.div>
+          {/* Card Footer Link */}
+          <div style={{
+            marginTop: 20,
+            textAlign: 'center',
+            fontSize: 13,
+            color: '#a1a1aa'
+          }}>
+            Already have an account?{' '}
+            <Link 
+              to="/login" 
+              style={{ 
+                color: '#a78bfa', 
+                fontWeight: 600, 
+                textDecoration: 'none' 
+              }}
+              onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+            >
+              Sign in
+            </Link>
+          </div>
+        </div>
+
+        {/* Security / System status bottom badge */}
+        <div style={{
+          marginTop: 18,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          fontSize: 11,
+          color: '#52525b',
+          fontWeight: 500
+        }}>
+          <ShieldCheck size={14} color="#10b981" />
+          <span>No credit card required · Free tier forever</span>
+        </div>
       </motion.div>
-
     </div>
   );
 }

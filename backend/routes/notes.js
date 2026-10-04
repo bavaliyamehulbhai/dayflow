@@ -37,6 +37,14 @@ router.get("/", cacheMiddleware(60), async (req, res) => {
     const filter = { user: req.user._id, isArchived: archived === "true" };
 
     if (tag) filter.tags = tag;
+    if (search && typeof search === "string" && search.trim()) {
+      const q = search.trim();
+      filter.$or = [
+        { title: { $regex: q, $options: "i" } },
+        { content: { $regex: q, $options: "i" } },
+        { tags: { $regex: q, $options: "i" } },
+      ];
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const notes = await Note.find(filter)

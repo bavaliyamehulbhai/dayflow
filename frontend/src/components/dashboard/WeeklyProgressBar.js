@@ -24,22 +24,23 @@ const WeeklyProgressBar = ({ progress = {} }) => {
             width: '40px', 
             height: '40px', 
             borderRadius: '12px', 
-            background: `${progressColor}15`, 
+            background: `linear-gradient(135deg, ${progressColor}22, ${progressColor}05)`,
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
             border: `1px solid ${progressColor}33`,
-            color: progressColor
+            color: progressColor,
+            boxShadow: `0 0 20px ${progressColor}11`
           }}>
             <Target size={20} />
           </div>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text)', fontFamily: 'Syne' }}>Weekly Goal</div>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text)', fontFamily: "'Inter', sans-serif" }}>Weekly Goal</div>
             <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>Efficiency Protocol</div>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '20px', fontWeight: '900', color: percentage >= 100 ? '#ffca28' : 'var(--text)', fontFamily: 'Syne' }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: percentage >= 100 ? '#ffca28' : 'var(--text)', fontFamily: "'Inter', sans-serif" }}>
             {completed}<span style={{ fontSize: '12px', color: 'var(--muted)', marginLeft: '4px' }}>/ {goal}</span>
           </div>
           <div style={{ fontSize: '10px', color: progressColor, fontWeight: '800' }}>{percentage}% COMPLETE</div>
@@ -50,11 +51,12 @@ const WeeklyProgressBar = ({ progress = {} }) => {
       <div style={{ 
         height: '12px', 
         width: '100%', 
-        background: 'rgba(0,0,0,0.2)', 
+        background: 'rgba(0,0,0,0.4)', 
         borderRadius: '100px', 
         position: 'relative',
         overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.05)'
+        border: '1px solid rgba(255,255,255,0.05)',
+        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
       }}>
         <motion.div 
           initial={{ width: 0 }}

@@ -92,12 +92,13 @@ const ProductivityCircle = ({ stats }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {categories.map((cat, idx) => (
                     <div key={idx} style={{
-                        padding: '12px 16px',
-                        background: 'rgba(255,255,255,0.02)',
+                        padding: '14px 18px',
+                        background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
                         borderRadius: 16,
-                        border: '1px solid rgba(255,255,255,0.05)',
-                        opacity: cat.count > 0 ? 1 : 0.3,
-                        transition: 'all 0.3s ease'
+                        border: '1px solid rgba(255,255,255,0.04)',
+                        opacity: cat.count > 0 ? 1 : 0.4,
+                        transition: 'all 0.3s ease',
+                        boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <div style={{ width: 6, height: 6, borderRadius: '50%', background: cat.color, boxShadow: `0 0 10px ${cat.color}` }} />

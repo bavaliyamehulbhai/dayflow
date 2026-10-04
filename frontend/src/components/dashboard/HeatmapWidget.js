@@ -63,7 +63,7 @@ const HeatmapWidget = ({ activityData, isMobile, navigate, selectedLog, setSelec
                       <s.icon size={14} style={{ color: 'var(--accent)' }} />
                       <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</span>
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.02em' }}>{s.value}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Inter', sans-serif", letterSpacing: '-0.02em' }}>{s.value}</div>
                     <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.sub}</div>
                   </div>
                 ))}
@@ -73,53 +73,78 @@ const HeatmapWidget = ({ activityData, isMobile, navigate, selectedLog, setSelec
         )}
       </AnimatePresence>
 
-      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
+      <div style={{ 
+        borderTop: '1px solid rgba(255,255,255,0.05)', 
+        paddingTop: 24, 
+        marginTop: 24,
+        position: 'relative'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: isMobile ? '1.2rem' : '2.0rem', fontWeight: 800, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.06em', margin: 0, lineHeight: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' }} />
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+                Activity Logs
+              </div>
+            </div>
+            <h1 style={{ 
+              fontSize: isMobile ? '1.4rem' : '2.0rem', 
+              fontWeight: 900, 
+              fontFamily: "'Syne', sans-serif", 
+              letterSpacing: '-0.04em', 
+              margin: 0, 
+              lineHeight: 1,
+              background: 'linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>
               Mission Control
             </h1>
-            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--muted)', marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-              Activity Logs
-            </div>
           </div>
           <MagneticButton 
-            className="btn btn-sm btn-ghost haptic-feedback" 
+            className="btn btn-sm btn-ghost haptic-feedback hover-lift" 
             onClick={() => navigate('/profile')}
             style={{ 
-              background: 'rgba(255,255,255,0.02)', 
-              border: '1px solid rgba(255,255,255,0.05)',
-              padding: '8px 16px',
-              borderRadius: '20px'
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))', 
+              border: '1px solid rgba(255,255,255,0.1)',
+              padding: '10px 18px',
+              borderRadius: '14px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#fff',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)'
             }}
           >
-            Full Profile <ArrowRight size={14} style={{ marginLeft: 6 }} />
+            Full Profile <ArrowRight size={14} style={{ marginLeft: 6, color: 'var(--accent)' }} />
           </MagneticButton>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {(Array.isArray(activityData) ? activityData : []).slice(-3).reverse().map((log, i) => (
             <div key={log.date} style={{
               display: 'grid',
               gridTemplateColumns: '1fr auto',
-              padding: '10px 14px',
-              background: 'rgba(255,255,255,0.02)',
-              borderRadius: '12px',
+              padding: '14px 18px',
+              background: 'rgba(0,0,0,0.2)',
+              borderRadius: '16px',
               alignItems: 'center',
-              border: '1px solid rgba(255,255,255,0.04)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              border: '1px solid rgba(255,255,255,0.03)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
             }} className="hover-lift">
-              <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                 {safeFormat(log.date, 'MMMM do', 'N/A')}
               </span>
               <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent3)', fontFamily: 'Syne, sans-serif', letterSpacing: '0.02em' }}>{log.tasksCompleted} execs</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                  {log.tasksCompleted} execs
+                </span>
                 <div style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 3,
+                  width: 12,
+                  height: 12,
+                  borderRadius: 4,
                   background: ['var(--surface3)', 'var(--accent)', 'var(--accent4)', 'var(--accent3)', 'linear-gradient(135deg, var(--accent), var(--accent2))'][log.intensity || 0],
-                  border: '1px solid var(--border)'
+                  border: '1px solid rgba(255,255,255,0.1)'
                 }} />
               </div>
             </div>
