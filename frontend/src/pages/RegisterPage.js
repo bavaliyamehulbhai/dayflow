@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Eye, EyeOff, Zap, ArrowRight, ArrowLeft, ShieldCheck, Check } from 'lucide-react';
+import { Eye, EyeOff, Zap, ArrowRight, ArrowLeft, ShieldCheck, Check, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function RegisterPage() {
@@ -15,14 +15,20 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [touched, setTouched] = useState({});
 
-  const calcStrength = (p) => {
+  // Validation criteria aligned with backend rules
+  const hasMinLength = form.password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(form.password);
+  const hasNumber = /[0-9]/.test(form.password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(form.password);
+  const passwordsMatch = Boolean(form.confirm && form.password === form.confirm);
+
+  const calcStrength = () => {
     let score = 0;
-    if (p.length >= 8) score++;
-    if (/[A-Z]/.test(p)) score++;
-    if (/[0-9]/.test(p)) score++;
-    if (/[^A-Za-z0-9]/.test(p)) score++;
+    if (hasMinLength) score++;
+    if (hasUppercase) score++;
+    if (hasNumber) score++;
+    if (hasSpecial) score++;
     return score;
   };
 
@@ -33,30 +39,41 @@ export default function RegisterPage() {
     return { label: 'Strong', color: '#10b981' };
   };
 
-  const strengthScore = calcStrength(form.password);
+  const strengthScore = calcStrength();
   const strength = getStrengthMeta(strengthScore);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setTouched({ name: true, email: true, password: true, confirm: true });
 
-    if (form.password !== form.confirm) { 
-      const msg = 'Passwords do not match.';
-      setError(msg); 
+    if (!hasMinLength) {
+      const msg = 'Password must be at least 8 characters long.';
+      setError(msg);
       addToast(msg, 'error');
-      return; 
+      return;
     }
-    if (form.password.length < 8) { 
-      const msg = 'Password must be at least 8 characters.';
-      setError(msg); 
+    if (!hasUppercase) {
+      const msg = 'Password must contain at least one uppercase letter (A-Z).';
+      setError(msg);
       addToast(msg, 'error');
-      return; 
+      return;
+    }
+    if (!hasNumber) {
+      const msg = 'Password must contain at least one number (0-9).';
+      setError(msg);
+      addToast(msg, 'error');
+      return;
+    }
+    if (!passwordsMatch) {
+      const msg = 'Passwords do not match.';
+      setError(msg);
+      addToast(msg, 'error');
+      return;
     }
 
     setLoading(true);
     try {
-      await register(form.name, form.email, form.password);
+      await register(form.name.trim(), form.email.trim(), form.password);
       addToast('Account created! Welcome to DayFlow.', 'success');
       navigate('/dashboard');
     } catch (err) {
@@ -82,7 +99,7 @@ export default function RegisterPage() {
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       overflow: 'hidden'
     }}>
-      {/* Precision Grid Background (Non-blurry, ultra-crisp) */}
+      {/* Precision Grid Background */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -97,7 +114,7 @@ export default function RegisterPage() {
         WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 25%, black 40%, transparent 100%)'
       }} />
 
-      {/* Top Ambient Glow Ring */}
+      {/* Top Ambient Glow */}
       <div style={{
         position: 'absolute',
         top: -120,
@@ -211,6 +228,7 @@ export default function RegisterPage() {
               alignItems: 'center',
               gap: 10
             }}>
+              <AlertCircle size={15} style={{ flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
@@ -229,9 +247,12 @@ export default function RegisterPage() {
               </label>
               <input
                 type="text"
-                placeholder="Mehul Bavaliya"
+                placeholder="Alex Morgan"
                 value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                onChange={e => {
+                  setForm(f => ({ ...f, name: e.target.value }));
+                  if (error) setError('');
+                }}
                 required
                 autoFocus
                 autoComplete="name"
@@ -274,7 +295,10 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="name@example.com"
                 value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                onChange={e => {
+                  setForm(f => ({ ...f, email: e.target.value }));
+                  if (error) setError('');
+                }}
                 required
                 autoComplete="email"
                 style={{
@@ -315,9 +339,12 @@ export default function RegisterPage() {
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="At least 8 characters"
+                  placeholder="Min 8 chars, 1 uppercase, 1 number"
                   value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  onChange={e => {
+                    setForm(f => ({ ...f, password: e.target.value }));
+                    if (error) setError('');
+                  }}
                   required
                   autoComplete="new-password"
                   style={{
@@ -363,10 +390,10 @@ export default function RegisterPage() {
                 </button>
               </div>
 
-              {/* Password Strength Indicator */}
+              {/* Password Strength Meter & Interactive Requirement Checklist */}
               {form.password && (
                 <div style={{ marginTop: 8 }}>
-                  <div style={{ display: 'flex', gap: 4, height: 4, marginBottom: 4 }}>
+                  <div style={{ display: 'flex', gap: 4, height: 4, marginBottom: 8 }}>
                     {[1, 2, 3, 4].map(idx => (
                       <div 
                         key={idx} 
@@ -379,8 +406,55 @@ export default function RegisterPage() {
                       />
                     ))}
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: strength.color, textAlign: 'right' }}>
-                    {strength.label} password
+
+                  {/* Real-time Requirement Badges */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '4px 8px',
+                    fontSize: 11,
+                    marginTop: 6
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      color: hasMinLength ? '#10b981' : '#71717a',
+                      fontWeight: 600
+                    }}>
+                      <Check size={12} strokeWidth={hasMinLength ? 3 : 2} />
+                      <span>8+ characters</span>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      color: hasUppercase ? '#10b981' : '#71717a',
+                      fontWeight: 600
+                    }}>
+                      <Check size={12} strokeWidth={hasUppercase ? 3 : 2} />
+                      <span>1 uppercase (A-Z)</span>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      color: hasNumber ? '#10b981' : '#71717a',
+                      fontWeight: 600
+                    }}>
+                      <Check size={12} strokeWidth={hasNumber ? 3 : 2} />
+                      <span>1 number (0-9)</span>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      color: passwordsMatch ? '#10b981' : '#71717a',
+                      fontWeight: 600
+                    }}>
+                      <Check size={12} strokeWidth={passwordsMatch ? 3 : 2} />
+                      <span>Passwords match</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -402,14 +476,19 @@ export default function RegisterPage() {
                   type={showConfirm ? 'text' : 'password'}
                   placeholder="Repeat your password"
                   value={form.confirm}
-                  onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))}
+                  onChange={e => {
+                    setForm(f => ({ ...f, confirm: e.target.value }));
+                    if (error) setError('');
+                  }}
                   required
                   autoComplete="new-password"
                   style={{
                     width: '100%',
                     height: 42,
                     background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    border: form.confirm && !passwordsMatch
+                      ? '1px solid rgba(239, 68, 68, 0.5)'
+                      : '1px solid rgba(255, 255, 255, 0.08)',
                     borderRadius: 10,
                     padding: '0 40px 0 14px',
                     fontSize: 14,
@@ -419,11 +498,11 @@ export default function RegisterPage() {
                     boxSizing: 'border-box'
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = '#7c6dfa';
+                    e.target.style.borderColor = form.confirm && !passwordsMatch ? '#ef4444' : '#7c6dfa';
                     e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    e.target.style.borderColor = form.confirm && !passwordsMatch ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255, 255, 255, 0.08)';
                     e.target.style.boxShadow = 'none';
                   }}
                 />

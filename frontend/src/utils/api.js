@@ -50,7 +50,11 @@ export const authAPI = {
   revokeAllSessions: () => api.delete('/auth/sessions/revoke/all'),
   exportData: () => api.get('/auth/export', { responseType: 'blob' }),
   deleteAccount: () => api.delete('/auth/account'),
-  updateDashboardLayout: (layout) => api.put('/auth/preferences/layout', { layout })
+  updateDashboardLayout: (layout) => api.put('/auth/preferences/layout', { layout }),
+  setup2FA: () => api.post('/auth/2fa/setup'),
+  verify2FA: (token) => api.post('/auth/2fa/verify', { token }),
+  disable2FA: (password) => api.post('/auth/2fa/disable', { password }),
+  login2FA: (data) => api.post('/auth/2fa/login', data),
 };
 
 // ─── Tasks ────────────────────────────────────────────────────────────────────
@@ -73,6 +77,7 @@ export const habitsAPI = {
   update: (id, data) => api.put(`/habits/${id}`, data),
   delete: (id) => api.delete(`/habits/${id}`),
   complete: (id, data) => api.post(`/habits/${id}/complete`, data),
+  reorder: (habitIds) => api.put('/habits/reorder', { habitIds }),
   stats: (id) => api.get(`/habits/${id}/stats`)
 };
 
@@ -89,7 +94,9 @@ export const scheduleAPI = {
 export const pomodoroAPI = {
   getAll: (params) => api.get('/pomodoro', { params }),
   start: (data) => api.post('/pomodoro/start', data),
+  record: (data) => api.post('/pomodoro/record', data),
   complete: (id, data) => api.patch(`/pomodoro/${id}/complete`, data),
+  delete: (id) => api.delete(`/pomodoro/${id}`),
   stats: (params) => api.get('/pomodoro/stats', { params })
 };
 

@@ -12,10 +12,10 @@ const ScheduleWidget = ({ data, navigate }) => {
             const eid = getSafeId(ev, `event-${i}`);
             const now = new Date();
             const nowMin = now.getHours() * 60 + now.getMinutes();
-            const [sh, sm] = ev.startTime.split(':').map(Number);
+            const [sh = 0, sm = 0] = (ev?.startTime || '0:0').split(':').map(Number);
             const startMin = sh * 60 + sm;
-            const isCurrent = ev.endTime ? (() => { const [eh, em] = ev.endTime.split(':').map(Number); return nowMin >= startMin && nowMin < eh * 60 + em; })() : false;
-            const isPast = ev.endTime ? (() => { const [eh, em] = ev.endTime.split(':').map(Number); return nowMin >= eh * 60 + em; })() : false;
+            const isCurrent = ev?.endTime ? (() => { const [eh = 0, em = 0] = ev.endTime.split(':').map(Number); return nowMin >= startMin && nowMin < eh * 60 + em; })() : false;
+            const isPast = ev?.endTime ? (() => { const [eh = 0, em = 0] = ev.endTime.split(':').map(Number); return nowMin >= eh * 60 + em; })() : (nowMin >= startMin + 30);
 
             return (
               <div key={eid} style={{

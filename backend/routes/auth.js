@@ -271,11 +271,22 @@ router.get("/verify-email/:token", async (req, res) => {
 // ─── List Active Sessions ─────────────────────────────────────────────────────
 router.get("/sessions", protect, async (req, res) => {
   try {
+    const currentRefreshToken = req.cookies.refreshToken;
     const sessions = await Session.find({
       user: req.user._id,
       expiresAt: { $gt: new Date() },
     }).sort({ lastActive: -1 });
-    res.json({ success: true, sessions });
+
+    const formattedSessions = sessions.map((s) => {
+      const sObj = s.toObject();
+      sObj.isCurrent = Boolean(
+        currentRefreshToken && s.refreshToken === currentRefreshToken
+      );
+      delete sObj.refreshToken; // Do not leak refresh token hashes to client
+      return sObj;
+    });
+
+    res.json({ success: true, sessions: formattedSessions });
   } catch (err) {
     res.status(500).json({ error: "Error fetching sessions." });
   }
@@ -411,6 +422,48 @@ router.post("/2fa/verify", protect, async (req, res) => {
   }
 });
 
+// ─── 2FA Disable ──────────────────────────────────────────────────────────────
+router.post("/2fa/disable", protect, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res
+        .status(400)
+        .json({ error: "Password is required to disable 2FA." });
+    }
+
+    const user = await User.findById(req.user._id).select("+password");
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Incorrect password." });
+    }
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = undefined;
+    user.twoFactorRecoveryCodes = undefined;
+    await user.save();
+
+    await logSecurityEvent({
+      userId: user._id,
+      action: "2FA_DISABLE",
+      req,
+    });
+
+    res.json({
+      success: true,
+      message: "2FA has been disabled successfully.",
+      user: user.toJSON(),
+    });
+  } catch (err) {
+    console.error("Error disabling 2FA:", err);
+    res.status(500).json({ error: "Error disabling 2FA." });
+  }
+});
+
 // ─── 2FA Login ────────────────────────────────────────────────────────────────
 router.post("/2fa/login", async (req, res) => {
   try {
@@ -541,11 +594,71 @@ router.put("/profile", protect, async (req, res) => {
   try {
     const { name, preferences, bio, avatarGradient } = req.body;
     const updates = {};
-    if (name) updates.name = name.trim();
+    if (name !== undefined) updates.name = name.trim();
     if (bio !== undefined) updates.bio = bio.trim().slice(0, 250);
-    if (avatarGradient) updates.avatarGradient = avatarGradient;
-    if (preferences)
-      updates.preferences = { ...req.user.preferences, ...preferences };
+    if (avatarGradient !== undefined) updates.avatarGradient = avatarGradient;
+
+    if (preferences && typeof preferences === "object") {
+      const currentPrefs = req.user.preferences?.toObject
+        ? req.user.preferences.toObject()
+        : { ...(req.user.preferences || {}) };
+
+      const safePrefs = { ...currentPrefs };
+
+      if (preferences.theme && ["dark", "light"].includes(preferences.theme)) {
+        safePrefs.theme = preferences.theme;
+      }
+      if (
+        preferences.pomodoroWork !== undefined &&
+        !isNaN(preferences.pomodoroWork)
+      ) {
+        safePrefs.pomodoroWork = Math.max(
+          1,
+          Math.min(180, parseInt(preferences.pomodoroWork, 10))
+        );
+      }
+      if (
+        preferences.pomodoroBreak !== undefined &&
+        !isNaN(preferences.pomodoroBreak)
+      ) {
+        safePrefs.pomodoroBreak = Math.max(
+          1,
+          Math.min(60, parseInt(preferences.pomodoroBreak, 10))
+        );
+      }
+      if (
+        preferences.pomodoroLong !== undefined &&
+        !isNaN(preferences.pomodoroLong)
+      ) {
+        safePrefs.pomodoroLong = Math.max(
+          1,
+          Math.min(120, parseInt(preferences.pomodoroLong, 10))
+        );
+      }
+      if (
+        preferences.weekStart &&
+        ["sun", "mon"].includes(preferences.weekStart)
+      ) {
+        safePrefs.weekStart = preferences.weekStart;
+      }
+      if (
+        preferences.weeklyGoal !== undefined &&
+        !isNaN(preferences.weeklyGoal)
+      ) {
+        safePrefs.weeklyGoal = Math.max(
+          1,
+          Math.min(100, parseInt(preferences.weeklyGoal, 10))
+        );
+      }
+      if (preferences.timezone) {
+        safePrefs.timezone = String(preferences.timezone);
+      }
+      if (Array.isArray(preferences.dashboardLayout)) {
+        safePrefs.dashboardLayout = preferences.dashboardLayout;
+      }
+
+      updates.preferences = safePrefs;
+    }
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, {
       new: true,
@@ -563,6 +676,7 @@ router.put("/profile", protect, async (req, res) => {
 
     res.json({ success: true, user });
   } catch (err) {
+    console.error("Profile update error:", err);
     res.status(500).json({ error: "Server error updating profile." });
   }
 });

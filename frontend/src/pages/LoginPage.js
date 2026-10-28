@@ -1,38 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Eye, EyeOff, Lock, Zap, ArrowRight, ArrowLeft, ShieldCheck } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Eye, EyeOff, Lock, Zap, ArrowRight, ArrowLeft, ShieldCheck, Fingerprint } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, login2FA } = useAuth();
   const { addToast } = useNotifications();
   const navigate = useNavigate();
+
+  const [step, setStep] = useState('credentials'); // 'credentials' | '2fa'
   const [form, setForm] = useState({ email: '', password: '' });
+  const [twoFactorData, setTwoFactorData] = useState({ userId: '', code: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [lockInfo, setLockInfo] = useState(null);
+  const [lockUntil, setLockUntil] = useState(null);
+  const [lockCountdown, setLockCountdown] = useState(0);
 
-  const handleSubmit = async (e) => {
+  // Live countdown timer for account lockout
+  useEffect(() => {
+    if (!lockUntil) return;
+    const updateCountdown = () => {
+      const diff = Math.max(0, Math.ceil((lockUntil.getTime() - Date.now()) / 1000));
+      setLockCountdown(diff);
+      if (diff <= 0) {
+        setLockUntil(null);
+        setError('');
+      }
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [lockUntil]);
+
+  const handleCredentialsSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLockInfo(null);
     setLoading(true);
+
     try {
-      await login(form.email, form.password);
+      const res = await login(form.email, form.password);
+
+      // Handle Two-Factor Authentication requirement
+      if (res?.twoFactorRequired) {
+        setTwoFactorData({ userId: res.userId, code: '' });
+        setStep('2fa');
+        addToast('Two-Factor Authentication required', 'info');
+        return;
+      }
+
       addToast('Synchronizing workspace...', 'success');
       navigate('/dashboard');
     } catch (err) {
       const data = err.response?.data;
       const errorMsg = data?.error || 'Login failed. Please verify credentials.';
-      if (err.response?.status === 423) {
-        setLockInfo(data?.lockedUntil ? new Date(data.lockedUntil) : null);
-        setError(errorMsg);
-      } else {
-        setError(errorMsg);
+      if (err.response?.status === 423 && data?.lockedUntil) {
+        setLockUntil(new Date(data.lockedUntil));
       }
+      setError(errorMsg);
+      addToast(errorMsg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handle2FASubmit = async (e) => {
+    e.preventDefault();
+    if (!twoFactorData.code || twoFactorData.code.trim().length < 6) {
+      setError('Please enter a valid 6-digit code or recovery code.');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+
+    try {
+      await login2FA(twoFactorData.userId, twoFactorData.code.trim());
+      addToast('Authentication verified! Welcome back.', 'success');
+      navigate('/dashboard');
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Invalid 2FA verification code.';
+      setError(errorMsg);
       addToast(errorMsg, 'error');
     } finally {
       setLoading(false);
@@ -40,6 +90,7 @@ export default function LoginPage() {
   };
 
   const handleDemo = async () => {
+    setError('');
     setLoading(true);
     try {
       await login('demo@dayflow.app', 'Demo123!');
@@ -68,7 +119,7 @@ export default function LoginPage() {
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       overflow: 'hidden'
     }}>
-      {/* Precision Grid Background (Non-blurry, ultra-crisp) */}
+      {/* Precision Grid Background */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -83,7 +134,7 @@ export default function LoginPage() {
         WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 30%, black 40%, transparent 100%)'
       }} />
 
-      {/* Top Ambient Glow Ring */}
+      {/* Top Ambient Glow */}
       <div style={{
         position: 'absolute',
         top: -120,
@@ -168,10 +219,12 @@ export default function LoginPage() {
             </span>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff', margin: 0 }}>
-            Welcome back
+            {step === '2fa' ? 'Security Checkpoint' : 'Welcome back'}
           </h1>
           <p style={{ fontSize: 13, color: '#a1a1aa', marginTop: 4, marginBottom: 0 }}>
-            Enter your credentials to access your workspace.
+            {step === '2fa'
+              ? 'Enter the 6-digit verification code from your authenticator app.'
+              : 'Enter your credentials to access your workspace.'}
           </p>
         </div>
 
@@ -183,7 +236,31 @@ export default function LoginPage() {
           padding: '28px 24px',
           boxShadow: '0 24px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
         }}>
-          {error && (
+          {/* Lockout Warning Banner with dynamic countdown */}
+          {lockCountdown > 0 && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#fca5a5',
+              padding: '12px 14px',
+              borderRadius: 10,
+              marginBottom: 18,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10
+            }}>
+              <Lock size={16} color="#f87171" style={{ flexShrink: 0 }} />
+              <div>
+                <div style={{ fontWeight: 700 }}>Account Locked</div>
+                <div style={{ fontSize: 11, opacity: 0.85 }}>
+                  Cooldown active: {Math.floor(lockCountdown / 60)}m {lockCountdown % 60}s remaining.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {error && lockCountdown <= 0 && (
             <div style={{
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.25)',
@@ -202,194 +279,355 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Email Field */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: 12,
-                fontWeight: 600,
-                color: '#d4d4d8',
-                marginBottom: 6
-              }}>
-                Email address
-              </label>
-              <input
-                type="email"
-                placeholder="name@example.com"
-                value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                required
-                autoFocus
-                autoComplete="email"
-                style={{
-                  width: '100%',
-                  height: 44,
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: 10,
-                  padding: '0 14px',
-                  fontSize: 14,
-                  color: '#ffffff',
-                  outline: 'none',
-                  transition: 'border-color 0.2s, box-shadow 0.2s',
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#7c6dfa';
-                  e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
+          <AnimatePresence mode="wait">
+            {step === 'credentials' ? (
+              <motion.form
+                key="step-credentials"
+                initial={{ opacity: 0, x: -15 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 15 }}
+                transition={{ duration: 0.2 }}
+                onSubmit={handleCredentialsSubmit}
+                style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+              >
+                {/* Email Field */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#d4d4d8',
+                    marginBottom: 6
+                  }}>
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={form.email}
+                    onChange={e => {
+                      setForm(f => ({ ...f, email: e.target.value }));
+                      if (error) setError('');
+                    }}
+                    required
+                    autoFocus
+                    autoComplete="email"
+                    style={{
+                      width: '100%',
+                      height: 44,
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: 10,
+                      padding: '0 14px',
+                      fontSize: 14,
+                      color: '#ffffff',
+                      outline: 'none',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#7c6dfa';
+                      e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
 
-            {/* Password Field */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: 12,
-                fontWeight: 600,
-                color: '#d4d4d8',
-                marginBottom: 6
-              }}>
-                Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  required
-                  autoComplete="current-password"
+                {/* Password Field */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#d4d4d8',
+                    marginBottom: 6
+                  }}>
+                    Password
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={form.password}
+                      onChange={e => {
+                        setForm(f => ({ ...f, password: e.target.value }));
+                        if (error) setError('');
+                      }}
+                      required
+                      autoComplete="current-password"
+                      style={{
+                        width: '100%',
+                        height: 44,
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: 10,
+                        padding: '0 40px 0 14px',
+                        fontSize: 14,
+                        color: '#ffffff',
+                        outline: 'none',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#7c6dfa';
+                        e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#71717a',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 4
+                      }}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading || lockCountdown > 0}
                   style={{
+                    marginTop: 4,
                     width: '100%',
                     height: 44,
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
                     borderRadius: 10,
-                    padding: '0 40px 0 14px',
+                    background: lockCountdown > 0
+                      ? 'rgba(255, 255, 255, 0.05)'
+                      : 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                    color: lockCountdown > 0 ? '#71717a' : '#ffffff',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    boxShadow: lockCountdown > 0
+                      ? 'none'
+                      : '0 4px 14px rgba(124, 109, 250, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
                     fontSize: 14,
-                    color: '#ffffff',
-                    outline: 'none',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#7c6dfa';
-                    e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  style={{
-                    position: 'absolute',
-                    right: 12,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: '#71717a',
-                    cursor: 'pointer',
+                    fontWeight: 700,
+                    cursor: (loading || lockCountdown > 0) ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    padding: 4
+                    justifyContent: 'center',
+                    gap: 8,
+                    transition: 'opacity 0.2s, transform 0.1s'
                   }}
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {loading ? (
+                    <span>Authenticating...</span>
+                  ) : lockCountdown > 0 ? (
+                    <span>Temporarily Locked</span>
+                  ) : (
+                    <>
+                      <span>Sign In to Workspace</span>
+                      <ArrowRight size={16} />
+                    </>
+                  )}
                 </button>
-              </div>
-            </div>
+              </motion.form>
+            ) : (
+              <motion.form
+                key="step-2fa"
+                initial={{ opacity: 0, x: 15 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -15 }}
+                transition={{ duration: 0.2 }}
+                onSubmit={handle2FASubmit}
+                style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+              >
+                <div style={{
+                  padding: '16px',
+                  borderRadius: 12,
+                  background: 'rgba(124, 109, 250, 0.06)',
+                  border: '1px solid rgba(124, 109, 250, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12
+                }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: 'rgba(124, 109, 250, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--accent)',
+                    flexShrink: 0
+                  }}>
+                    <Fingerprint size={20} />
+                  </div>
+                  <div style={{ fontSize: 12, color: '#d4d4d8', lineHeight: 1.4 }}>
+                    Please enter the code generated by your Authenticator app (or an 8-character recovery code).
+                  </div>
+                </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                marginTop: 4,
-                width: '100%',
-                height: 44,
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
-                color: '#ffffff',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                boxShadow: '0 4px 14px rgba(124, 109, 250, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                transition: 'opacity 0.2s, transform 0.1s'
-              }}
-            >
-              {loading ? (
-                <span>Authenticating...</span>
-              ) : (
-                <>
-                  <span>Sign In to Workspace</span>
-                  <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </form>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: '#d4d4d8',
+                    marginBottom: 8,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase'
+                  }}>
+                    Security Passcode
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={10}
+                    placeholder="000000"
+                    value={twoFactorData.code}
+                    onChange={e => {
+                      setTwoFactorData(prev => ({ ...prev, code: e.target.value.toUpperCase() }));
+                      if (error) setError('');
+                    }}
+                    required
+                    autoFocus
+                    style={{
+                      width: '100%',
+                      height: 52,
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      borderRadius: 12,
+                      padding: '0 16px',
+                      fontSize: 22,
+                      fontWeight: 800,
+                      letterSpacing: 6,
+                      textAlign: 'center',
+                      color: '#ffffff',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#7c6dfa';
+                      e.target.style.boxShadow = '0 0 0 2px rgba(124, 109, 250, 0.2)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || twoFactorData.code.trim().length < 6}
+                  style={{
+                    marginTop: 4,
+                    width: '100%',
+                    height: 46,
+                    borderRadius: 10,
+                    background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    boxShadow: '0 4px 14px rgba(124, 109, 250, 0.35)',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: (loading || twoFactorData.code.trim().length < 6) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8
+                  }}
+                >
+                  {loading ? 'Verifying Code...' : 'Verify & Enter Workspace'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('credentials');
+                    setError('');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#a1a1aa',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: '6px',
+                    textAlign: 'center',
+                    marginTop: -4
+                  }}
+                  onMouseEnter={(e) => e.target.style.color = '#ffffff'}
+                  onMouseLeave={(e) => e.target.style.color = '#a1a1aa'}
+                >
+                  ← Back to Email & Password
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
 
           {/* Divider */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            margin: '20px 0'
-          }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.06)' }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              or quick access
-            </span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.06)' }} />
-          </div>
+          {step === 'credentials' && (
+            <>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                margin: '20px 0'
+              }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.06)' }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  or quick access
+                </span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.06)' }} />
+              </div>
 
-          {/* Demo Button */}
-          <button
-            type="button"
-            onClick={handleDemo}
-            disabled={loading}
-            style={{
-              width: '100%',
-              height: 42,
-              borderRadius: 10,
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#e4e4e7',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              transition: 'background 0.2s, border-color 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-            }}
-          >
-            <Zap size={14} color="#f59e0b" fill="#f59e0b" />
-            <span>Launch Instant Demo Workspace</span>
-          </button>
+              {/* Demo Button */}
+              <button
+                type="button"
+                onClick={handleDemo}
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  height: 42,
+                  borderRadius: 10,
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  color: '#e4e4e7',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  transition: 'background 0.2s, border-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                }}
+              >
+                <Zap size={14} color="#f59e0b" fill="#f59e0b" />
+                <span>Launch Instant Demo Workspace</span>
+              </button>
+            </>
+          )}
 
           {/* Card Footer Link */}
           <div style={{

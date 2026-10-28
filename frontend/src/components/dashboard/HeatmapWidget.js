@@ -120,35 +120,51 @@ const HeatmapWidget = ({ activityData, isMobile, navigate, selectedLog, setSelec
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {(Array.isArray(activityData) ? activityData : []).slice(-3).reverse().map((log, i) => (
-            <div key={log.date} style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr auto',
-              padding: '14px 18px',
-              background: 'rgba(0,0,0,0.2)',
-              borderRadius: '16px',
-              alignItems: 'center',
-              border: '1px solid rgba(255,255,255,0.03)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-            }} className="hover-lift">
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                {safeFormat(log.date, 'MMMM do', 'N/A')}
-              </span>
-              <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                  {log.tasksCompleted} execs
-                </span>
-                <div style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 4,
-                  background: ['var(--surface3)', 'var(--accent)', 'var(--accent4)', 'var(--accent3)', 'linear-gradient(135deg, var(--accent), var(--accent2))'][log.intensity || 0],
-                  border: '1px solid rgba(255,255,255,0.1)'
-                }} />
-              </div>
-            </div>
-          ))}
+          {(() => {
+            const activeLogs = (Array.isArray(activityData) ? activityData : [])
+              .filter(log => ((log.tasksCompleted || 0) + (log.habitsCompleted || 0) + (log.scheduleEventsCompleted || 0) + (log.pomodoros || 0)) > 0);
+
+            if (activeLogs.length === 0) {
+              return (
+                <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12, padding: '16px 0' }}>
+                  No executions logged yet. Complete tasks or rituals to illuminate your tracker.
+                </div>
+              );
+            }
+
+            return activeLogs.slice(-3).reverse().map((log) => {
+              const execs = (log.tasksCompleted || 0) + (log.habitsCompleted || 0) + (log.scheduleEventsCompleted || 0) + (log.pomodoros || 0);
+              return (
+                <div key={log.date} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr auto',
+                  padding: '14px 18px',
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: '16px',
+                  alignItems: 'center',
+                  border: '1px solid rgba(255,255,255,0.03)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                }} className="hover-lift">
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                    {safeFormat(log.date, 'MMMM do', 'N/A')}
+                  </span>
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                      {execs} {execs === 1 ? 'exec' : 'execs'}
+                    </span>
+                    <div style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: 4,
+                      background: ['var(--surface3)', 'var(--accent)', 'var(--accent4)', 'var(--accent3)', 'linear-gradient(135deg, var(--accent), var(--accent2))'][log.intensity || 0],
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }} />
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
     </WidgetWrapper>

@@ -28,8 +28,6 @@ import {
   LayoutGrid
 } from "lucide-react";
 import { motion, Reorder, AnimatePresence } from "framer-motion";
-
-export const DashboardDensityContext = React.createContext('comfortable');
 import Skeleton from "../components/Skeleton";
 import GuidedTour from "../components/common/GuidedTour";
 import { getSafeId } from "../utils/idUtils";
@@ -46,6 +44,8 @@ import HabitsWidget from "../components/dashboard/HabitsWidget";
 import NotesWidget from "../components/dashboard/NotesWidget";
 import NotificationsWidget from "../components/dashboard/NotificationsWidget";
 import WeeklyProgressBar from "../components/dashboard/WeeklyProgressBar";
+
+export const DashboardDensityContext = React.createContext('comfortable');
 
 const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
 
@@ -183,11 +183,26 @@ export default function DashboardPage() {
   // Layout visibilities and density custom states
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState(() => {
-    const saved = localStorage.getItem("df_dashboard_visible_widgets");
-    return saved ? JSON.parse(saved) : DEFAULT_LAYOUT;
+    try {
+      const saved = localStorage.getItem("df_dashboard_visible_widgets");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter(id => DEFAULT_LAYOUT.includes(id));
+          return valid.length > 0 ? valid : DEFAULT_LAYOUT;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to parse saved active widgets:", e);
+    }
+    return DEFAULT_LAYOUT;
   });
   const [density, setDensity] = useState(() => {
-    return localStorage.getItem("df_dashboard_density") || "comfortable";
+    try {
+      return localStorage.getItem("df_dashboard_density") || "comfortable";
+    } catch {
+      return "comfortable";
+    }
   });
 
   useEffect(() => {
@@ -422,7 +437,7 @@ export default function DashboardPage() {
               return (
                 <motion.div
                   key={safeKey}
-                  layoutId={safeKey}
+                  layout
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}

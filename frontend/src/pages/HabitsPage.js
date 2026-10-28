@@ -3,25 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { habitsAPI } from "../utils/api";
 import { useNotifications } from "../context/NotificationContext";
 import { safeFormat, safeToLocalISO } from "../utils/dateUtils";
-
-const localSubDays = (date, amount) => {
-  const d = new Date(date);
-  d.setDate(d.getDate() - amount);
-  return d;
-};
-
-const localEachDayOfInterval = ({ start, end }) => {
-  const dates = [];
-  let d = new Date(start);
-  d.setHours(0, 0, 0, 0);
-  const e = new Date(end);
-  e.setHours(0, 0, 0, 0);
-  while (d <= e) {
-    dates.push(new Date(d));
-    d.setDate(d.getDate() + 1);
-  }
-  return dates;
-};
 import { getSafeId } from "../utils/idUtils";
 import {
   Plus,
@@ -57,6 +38,25 @@ import Celebration from "../components/Celebration";
 import ShortcutsHelp from "../components/layout/ShortcutsHelp";
 import MobileBottomSheet from "../components/common/MobileBottomSheet";
 
+const localSubDays = (date, amount) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() - amount);
+  return d;
+};
+
+const localEachDayOfInterval = ({ start, end }) => {
+  const dates = [];
+  let d = new Date(start);
+  d.setHours(0, 0, 0, 0);
+  const e = new Date(end);
+  e.setHours(0, 0, 0, 0);
+  while (d <= e) {
+    dates.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+};
+
 const ICONS = [
   "⭐",
   "💪",
@@ -89,6 +89,7 @@ const FREQ = [
   { value: "daily", label: "Every day" },
   { value: "weekdays", label: "Weekdays only" },
   { value: "weekends", label: "Weekends only" },
+  { value: "custom", label: "Custom days" },
 ];
 
 function useWindowWidth() {
@@ -111,6 +112,7 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
     icon: habit?.icon || "⭐",
     color: habit?.color || "#7c6dfa",
     frequency: habit?.frequency || "daily",
+    customDays: habit?.customDays || [1, 2, 3, 4, 5],
     targetCount: habit?.targetCount || 1,
     unit: habit?.unit || "times",
   });
@@ -131,7 +133,8 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
           overflowY: "auto",
         }}
       >
-        <div className="form-group mb-8">
+        {/* Title */}
+        <div className="form-group mb-6">
           <label
             style={{
               fontSize: 10,
@@ -139,7 +142,7 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
               color: "var(--muted)",
               letterSpacing: 0.5,
               textTransform: "uppercase",
-              marginBottom: 12,
+              marginBottom: 8,
               display: "block",
             }}
           >
@@ -164,7 +167,8 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
           />
         </div>
 
-        <div className="form-group mb-8">
+        {/* Icon Picker */}
+        <div className="form-group mb-6">
           <label
             style={{
               fontSize: 10,
@@ -172,7 +176,49 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
               color: "var(--muted)",
               letterSpacing: 0.5,
               textTransform: "uppercase",
-              marginBottom: 12,
+              marginBottom: 8,
+              display: "block",
+            }}
+          >
+            Ritual Icon
+          </label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", maxHeight: 110, overflowY: "auto", padding: "4px 2px" }}>
+            {ICONS.map((emoji) => (
+              <motion.button
+                key={emoji}
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setForm((f) => ({ ...f, icon: emoji }))}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 8,
+                  fontSize: 18,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: form.icon === emoji ? `${form.color}25` : "rgba(255,255,255,0.03)",
+                  border: form.icon === emoji ? `2px solid ${form.color}` : "1px solid var(--border)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {emoji}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="form-group mb-6">
+          <label
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: "var(--muted)",
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+              marginBottom: 8,
               display: "block",
             }}
           >
@@ -183,25 +229,26 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
             onChange={(e) =>
               setForm((f) => ({ ...f, description: e.target.value }))
             }
-            placeholder="Add context..."
-            rows={3}
-              style={{
-                height: "auto",
-                minHeight: 80,
-                padding: "12px 16px",
-                borderRadius: 6,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid var(--border)",
-                fontSize: 14,
-                width: "100%",
-                color: "var(--text)",
-                outline: "none",
-                resize: "vertical"
-              }}
+            placeholder="Add context or notes..."
+            rows={2}
+            style={{
+              height: "auto",
+              minHeight: 64,
+              padding: "10px 14px",
+              borderRadius: 6,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid var(--border)",
+              fontSize: 13,
+              width: "100%",
+              color: "var(--text)",
+              outline: "none",
+              resize: "vertical"
+            }}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mb-8">
+        {/* Frequency & Target */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="form-group">
             <label
               style={{
@@ -210,7 +257,7 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
                 color: "var(--muted)",
                 letterSpacing: 0.5,
                 textTransform: "uppercase",
-                marginBottom: 10,
+                marginBottom: 8,
                 display: "block",
               }}
             >
@@ -221,10 +268,10 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
                 height: 44,
                 borderRadius: 6,
                 width: "100%",
-                fontSize: 14,
+                fontSize: 13,
                 background: "rgba(255,255,255,0.03)",
                 border: "1px solid var(--border)",
-                padding: "0 12px",
+                padding: "0 10px",
                 color: "var(--text)",
                 outline: "none"
               }}
@@ -248,19 +295,20 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
                 color: "var(--muted)",
                 letterSpacing: 0.5,
                 textTransform: "uppercase",
-                marginBottom: 10,
+                marginBottom: 8,
                 display: "block",
               }}
             >
-              Daily Target
+              Daily Target & Unit
             </label>
-            <div className="flex gap-4 items-center">
+            <div className="flex gap-2 items-center">
               <input
                 type="number"
+                min="1"
                 style={{
                   height: 44,
                   borderRadius: 6,
-                  width: "100%",
+                  width: 60,
                   background: "rgba(255,255,255,0.03)",
                   border: "1px solid var(--border)",
                   fontSize: 14,
@@ -272,36 +320,106 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    targetCount: parseInt(e.target.value) || 1,
+                    targetCount: Math.max(1, parseInt(e.target.value) || 1),
                   }))
                 }
               />
-              <span
+              <input
+                type="text"
+                placeholder="times, mins, pages..."
                 style={{
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: "var(--text2)",
+                  height: 44,
+                  borderRadius: 6,
+                  flex: 1,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid var(--border)",
+                  fontSize: 13,
+                  padding: "0 10px",
+                  color: "var(--text)",
+                  outline: "none"
                 }}
-              >
-                {form.unit}
-              </span>
+                value={form.unit}
+                onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+              />
             </div>
           </div>
         </div>
 
-        <div className="form-group mb-10">
+        {/* Custom Days Selector if custom frequency */}
+        {form.frequency === "custom" && (
+          <div className="form-group mb-6">
+            <label
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "var(--muted)",
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+                marginBottom: 8,
+                display: "block",
+              }}
+            >
+              Active Days
+            </label>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[
+                { day: 1, label: "M" },
+                { day: 2, label: "T" },
+                { day: 3, label: "W" },
+                { day: 4, label: "T" },
+                { day: 5, label: "F" },
+                { day: 6, label: "S" },
+                { day: 0, label: "S" },
+              ].map(({ day, label }, i) => {
+                const isSelected = form.customDays?.includes(day);
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      const current = form.customDays || [];
+                      const next = isSelected
+                        ? current.filter((d) => d !== day)
+                        : [...current, day];
+                      setForm((f) => ({ ...f, customDays: next }));
+                    }}
+                    style={{
+                      flex: 1,
+                      height: 36,
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      background: isSelected ? form.color : "rgba(255,255,255,0.03)",
+                      color: isSelected ? "#fff" : "var(--muted)",
+                      border: isSelected ? `1px solid ${form.color}` : "1px solid var(--border)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Atmosphere (Color) */}
+        <div className="form-group mb-6">
           <label
             style={{
-              fontSize: 12,
-              fontWeight: 500,
-              color: "var(--text2)",
-              marginBottom: 12,
+              fontSize: 10,
+              fontWeight: 600,
+              color: "var(--muted)",
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+              marginBottom: 8,
               display: "block",
             }}
           >
             Atmosphere (Color)
           </label>
-          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+          <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
             {COLORS.map((c) => (
               <motion.button
                 key={c}
@@ -322,9 +440,7 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
                   position: "relative",
                   cursor: "pointer"
                 }}
-              >
-
-              </motion.button>
+              />
             ))}
           </div>
         </div>
@@ -473,22 +589,21 @@ const RitualCard = ({
         start: localSubDays(new Date(), daysToShow - 1),
         end: new Date(),
       }),
-    [],
+    [today],
   );
 
   const completionStatus = React.useMemo(
     () =>
       last7.map((d) => {
-        const dateStr = safeFormat(d, "yyyy-MM-dd");
-        const todayStr = safeFormat(new Date(), "yyyy-MM-dd");
+        const dateStr = safeToLocalISO(d);
         return {
           dateStr,
           done: isCompleted(habit, dateStr),
-          isToday: dateStr === todayStr,
+          isToday: dateStr === today,
           label: safeFormat(d, "MMM d"),
         };
       }),
-    [habit.completions, today, last7],
+    [habit.completions, today, last7, isCompleted],
   );
 
   const isTodayCompleted = React.useMemo(
@@ -665,6 +780,7 @@ const MobileRitualCard = ({
   onDelete,
 }) => {
   const x = useMotionValue(0);
+  const isDraggingRef = React.useRef(false);
   const background = useTransform(
     x,
     [-100, 0, 100],
@@ -714,7 +830,13 @@ const MobileRitualCard = ({
           overflow: "hidden",
           background: completed ? `color-mix(in srgb, ${habit.color} 15%, var(--surface-solid))` : "var(--surface-solid)",
         }}
+        onDragStart={() => {
+          isDraggingRef.current = true;
+        }}
         onDragEnd={(e, info) => {
+          setTimeout(() => {
+            isDraggingRef.current = false;
+          }, 150);
           if (info.offset.x > 80) {
             onComplete({ id: getSafeId(habit), date: today });
           } else if (info.offset.x < -80) {
@@ -722,7 +844,11 @@ const MobileRitualCard = ({
           }
         }}
         className="haptic-tap"
-        onClick={() => onEdit(habit)}
+        onClick={() => {
+          if (!isDraggingRef.current) {
+            onEdit(habit);
+          }
+        }}
       >
         <div className="btn-glint" style={{ opacity: 0.05 }} />
         <div
@@ -900,12 +1026,30 @@ export default function HabitsPage() {
           if ((h._id === id) || (h.id === id)) {
             const hasDate = h.completions?.some(c => c.date === date);
             let newCompletions = h.completions || [];
+            let currentStreak = h.streak?.current || 0;
+            let longestStreak = h.streak?.longest || 0;
+
             if (hasDate) {
               newCompletions = newCompletions.filter(c => c.date !== date);
+              if (date === today) {
+                currentStreak = Math.max(0, currentStreak - 1);
+              }
             } else {
               newCompletions = [...newCompletions, { date }];
+              if (date === today) {
+                currentStreak += 1;
+                longestStreak = Math.max(longestStreak, currentStreak);
+              }
             }
-            return { ...h, completions: newCompletions };
+            return {
+              ...h,
+              completions: newCompletions,
+              streak: {
+                ...(h.streak || {}),
+                current: currentStreak,
+                longest: longestStreak
+              }
+            };
           }
           return h;
         }));

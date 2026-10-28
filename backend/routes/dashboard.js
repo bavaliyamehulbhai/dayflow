@@ -28,6 +28,7 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
       taskStats,
       todayTasks,
       overdueTasks,
+      upcomingTasks,
       todayEvents,
       activeHabits,
       todayPomos,
@@ -59,6 +60,12 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
         status: { $nin: ['completed', 'cancelled'] },
         dueDate: { $lt: todayStart }
       }),
+      // Upcoming tasks due within the next 48 hours
+      Task.find({
+        user: req.user._id,
+        status: { $in: ['pending', 'in-progress'] },
+        dueDate: { $gte: now, $lte: new Date(now.getTime() + 48 * 3600000) }
+      }).sort({ dueDate: 1 }).limit(10).lean(),
       // Today's events
       Schedule.find({ user: req.user._id, date: today }).sort({ startTime: 1 }).lean(),
       // Active habits
@@ -82,7 +89,7 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
       name: h.name,
       color: h.color,
       icon: h.icon,
-      streak: h.streak,
+      streak: h.streak || { current: 0, longest: 0 },
       completedToday: h.completions.some(c => c.date === today)
     }));
     const habitsCompleted = habitSummary.filter(h => h.completedToday).length;
@@ -99,7 +106,20 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
 
     const weekPomos = await Pomodoro.aggregate([
       { $match: { user: req.user._id, completed: true, type: 'work', date: { $in: last7 } } },
-      { $group: { _id: '$date', count: { $sum: 1 }, minutes: { $sum: { $divide: ['$actualDuration', 60] } } } }
+      { 
+        $group: { 
+          _id: '$date', 
+          count: { $sum: 1 }, 
+          minutes: { 
+            $sum: { 
+              $ifNull: [
+                { $divide: ['$actualDuration', 60] }, 
+                { $ifNull: ['$duration', 0] }
+              ] 
+            } 
+          } 
+        } 
+      }
     ]);
 
     const weekCompletedTasks = await Task.aggregate([
@@ -114,7 +134,7 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
     });
 
     const weeklyTasksCompleted = weekData.reduce((acc, day) => acc + (day.tasksCompleted || 0), 0);
-    const weeklyGoal = user.preferences?.weeklyGoal || 30;
+    const weeklyGoal = user?.preferences?.weeklyGoal || 30;
     const safeGoal = Math.max(1, weeklyGoal);
     const weeklyProgress = {
       completed: weeklyTasksCompleted,
@@ -125,8 +145,8 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
     res.json({
       success: true,
       dashboard: {
-        user: { name: user.name, stats: user.stats, preferences: user.preferences },
-        tasks: { summary: taskSummary, today: todayTasks, overdue: overdueTasks },
+        user: { name: user?.name || '', stats: user?.stats || {}, preferences: user?.preferences || {} },
+        tasks: { summary: taskSummary, today: todayTasks, overdue: overdueTasks, upcoming: upcomingTasks },
         schedule: { today: todayEvents },
         habits: { list: habitSummary, total: activeHabits.length, completedToday: habitsCompleted },
         pomodoro: { todayCount: todayPomos.length, todayMinutes: focusMinutesToday },
@@ -176,19 +196,30 @@ router.get('/activity/12m', cacheMiddleware(300), async (req, res) => {
       : (currentWeekScore > 0 ? 100 : 0);
 
     // --- MILESTONES & RECORDS ---
-    const activeDays = logs.filter(l => (l.score || 0) > 0);
+    const hasCompletedWork = (l) => ((l.tasksCompleted || 0) + (l.habitsCompleted || 0) + (l.scheduleEventsCompleted || 0) + (l.pomodoros || 0)) > 0;
+    
+    // Sanitize logs so days without completed work are strictly inert
+    const sanitizedLogs = logs.map(l => {
+      const work = (l.tasksCompleted || 0) + (l.habitsCompleted || 0) + (l.scheduleEventsCompleted || 0) + (l.pomodoros || 0);
+      if (work === 0) {
+        return { ...l, score: 0, intensity: 0 };
+      }
+      return l;
+    });
+
+    const activeDays = sanitizedLogs.filter(hasCompletedWork);
     const personalBestSingleDay = activeDays.length > 0
-      ? Math.max(...activeDays.map(l => l.score))
+      ? Math.max(...activeDays.map(l => l.score || 0))
       : 0;
 
-    // Highest Intensity Streak logic already in ProfilePage but lets send Record data
-    const sortedLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+    // Highest Intensity Streak logic requiring daily execution
+    const sortedLogs = [...sanitizedLogs].sort((a, b) => a.date.localeCompare(b.date));
     let maxStreak = 0;
     let currentStreak = 0;
     let lastDate = null;
 
     sortedLogs.forEach(log => {
-      if (log.score > 0) {
+      if (hasCompletedWork(log)) {
         if (!lastDate) { currentStreak = 1; }
         else {
           const diff = (new Date(log.date) - new Date(lastDate)) / 86400000;
@@ -202,8 +233,8 @@ router.get('/activity/12m', cacheMiddleware(300), async (req, res) => {
 
     res.json({
       success: true,
-      logs,
-      activity: logs,
+      logs: sanitizedLogs,
+      activity: sanitizedLogs,
       analytics: {
         growth,
         currentWeekScore,

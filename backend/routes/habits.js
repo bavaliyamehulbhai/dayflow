@@ -13,27 +13,60 @@ router.use(protect);
 
 // ─── Validation ──────────────────────────────────────────────────────────────
 const habitValidation = [
-  sanitizeFields(['name', 'description', 'icon']),
+  sanitizeFields(['name', 'description', 'icon', 'unit']),
   body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Name 1-100 characters'),
   body('description').optional().trim().isLength({ max: 500 }),
-  body('frequency').optional().isIn(['daily', 'weekly', 'weekdays', 'weekends', 'custom']),
-  body('color').optional().matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).withMessage('Invalid color hex')
+  body('frequency').optional().isIn(['daily', 'weekdays', 'weekends', 'custom']).withMessage('Invalid frequency'),
+  body('color').optional().matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).withMessage('Invalid color hex'),
+  body('targetCount').optional().isInt({ min: 1 }).withMessage('Target count must be at least 1'),
+  body('unit').optional().trim().isLength({ max: 20 }).withMessage('Unit cannot exceed 20 characters'),
+  body('customDays').optional().isArray().withMessage('Custom days must be an array of day numbers')
 ];
 
 // GET all habits
 router.get('/', cacheMiddleware(60), async (req, res) => {
   try {
-    console.log(`[HABITS] Fetching for user: ${req.user?._id}`);
     const habits = await Habit.find({ user: req.user._id, isActive: true })
       .sort({ order: 1, createdAt: 1 })
       .lean();
-    console.log(`[HABITS] Found ${habits?.length || 0} habits`);
     res.json({ success: true, habits });
   } catch (err) {
     console.error('[GET HABITS ERROR]', err);
     res.status(500).json({ error: 'Error fetching habits.', details: err.message });
   }
 });
+
+// REORDER habits
+router.put('/reorder',
+  [
+    body('habitIds').isArray({ min: 1 }).withMessage('Array of habit IDs required')
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+
+      const { habitIds } = req.body;
+      const validIds = habitIds.filter(id => mongoose.Types.ObjectId.isValid(id));
+
+      const bulkOps = validIds.map((id, index) => ({
+        updateOne: {
+          filter: { _id: id, user: req.user._id },
+          update: { $set: { order: index } }
+        }
+      }));
+
+      if (bulkOps.length > 0) {
+        await Habit.bulkWrite(bulkOps);
+      }
+      clearCache(req.user._id);
+      res.json({ success: true, message: 'Habits reordered.' });
+    } catch (err) {
+      console.error('[HABIT REORDER ERROR]', err);
+      res.status(500).json({ error: 'Error reordering habits.' });
+    }
+  }
+);
 
 // CREATE habit
 router.post('/', habitValidation, async (req, res) => {
@@ -56,6 +89,10 @@ router.put('/:id', habitValidation, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid ritual identifier.' });
+    }
+
     const updates = { ...req.body };
     delete updates.user;
     delete updates.completions;
@@ -76,6 +113,10 @@ router.put('/:id', habitValidation, async (req, res) => {
 // DELETE habit
 router.delete('/:id', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid ritual identifier.' });
+    }
+
     const habit = await Habit.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
       { isActive: false },
@@ -127,6 +168,7 @@ router.post('/:id/complete',
         // Log negative activity only if the completion was for today
         if (date === todayStr) {
           await logActivity(req.user._id, { habitsCompleted: -1 });
+          await updateStreak(req.user._id);
         }
       } else {
         // Add completion
@@ -138,31 +180,63 @@ router.post('/:id/complete',
         }
       }
 
-      // Recalculate streak: Walk backwards from the most recent completion
-      // Optimization: Only scan if completions exist
-      const completedDates = [...new Set(habit.completions.map(c => c.date))].sort();
-      const lastCompleted = completedDates[completedDates.length - 1];
-      
+      // Helper to check if a specific calendar day is scheduled for this habit
+      const isScheduledDay = (dStr) => {
+        const dObj = new Date(dStr + 'T12:00:00Z');
+        const dayOfWeek = dObj.getUTCDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+        if (habit.frequency === 'weekdays') {
+          return dayOfWeek >= 1 && dayOfWeek <= 5;
+        }
+        if (habit.frequency === 'weekends') {
+          return dayOfWeek === 0 || dayOfWeek === 6;
+        }
+        if (habit.frequency === 'custom' && Array.isArray(habit.customDays) && habit.customDays.length > 0) {
+          return habit.customDays.includes(dayOfWeek);
+        }
+        return true; // daily
+      };
+
+      const completedDatesSet = new Set(habit.completions.map(c => c.date));
+      const sortedCompleted = [...completedDatesSet].sort();
+      const lastCompleted = sortedCompleted[sortedCompleted.length - 1];
+
       let streak = 0;
       if (lastCompleted) {
-        let current = lastCompleted;
-        // Check if last completion is today or yesterday to maintain streak
-        const yesterday = new Date(); 
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yestYear = yesterday.getFullYear();
-        const yestMonth = String(yesterday.getMonth() + 1).padStart(2, '0');
-        const yestDay = String(yesterday.getDate()).padStart(2, '0');
-        const yestStr = `${yestYear}-${yestMonth}-${yestDay}`;
+        // Find the most recent scheduled day on or before today
+        let checkDate = new Date();
+        let mostRecentScheduled = null;
+        for (let i = 0; i < 7; i++) {
+          const cY = checkDate.getFullYear();
+          const cM = String(checkDate.getMonth() + 1).padStart(2, '0');
+          const cD = String(checkDate.getDate()).padStart(2, '0');
+          const cStr = `${cY}-${cM}-${cD}`;
+          if (isScheduledDay(cStr)) {
+            mostRecentScheduled = cStr;
+            break;
+          }
+          checkDate.setDate(checkDate.getDate() - 1);
+        }
 
-        // Only calculate if the last completion is recent enough to sustain a streak
-        if (lastCompleted === todayStr || lastCompleted === yestStr) {
-          while (completedDates.includes(current)) {
-            streak++;
-            let d = new Date(current + 'T12:00:00Z'); 
+        // Streak is alive if completed today OR completed on the most recent scheduled day
+        const canSustainStreak = (lastCompleted === todayStr) || (mostRecentScheduled && lastCompleted === mostRecentScheduled);
+
+        if (canSustainStreak) {
+          let curr = lastCompleted;
+          let safety = 0;
+          while (safety < 1000) {
+            safety++;
+            if (isScheduledDay(curr)) {
+              if (completedDatesSet.has(curr)) {
+                streak++;
+              } else {
+                // Missed a scheduled day; streak ends
+                break;
+              }
+            }
+            // Step back 1 day
+            const d = new Date(curr + 'T12:00:00Z');
             d.setUTCDate(d.getUTCDate() - 1);
-            current = d.toISOString().split('T')[0];
-            // Safety break for extremely large data
-            if (streak > 1000) break; 
+            curr = d.toISOString().split('T')[0];
           }
         }
       }
@@ -189,6 +263,10 @@ router.post('/:id/complete',
 // GET habit stats
 router.get('/:id/stats', cacheMiddleware(120), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid ritual identifier.' });
+    }
+
     const habit = await Habit.findOne({ _id: req.params.id, user: req.user._id });
     if (!habit) return res.status(404).json({ error: 'Habit not found.' });
 

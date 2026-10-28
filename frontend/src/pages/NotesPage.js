@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { notesAPI } from "../utils/api";
+import { notesAPI, tasksAPI } from "../utils/api";
 import { useNotifications } from "../context/NotificationContext";
 import { safeFormat } from "../utils/dateUtils";
 import { getSafeId } from "../utils/idUtils";
@@ -15,13 +15,13 @@ import {
   Zap,
   Activity,
   X,
+  Archive,
+  ArchiveRestore,
+  CheckSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfirmDialog from "../components/ConfirmDialog";
 import SensitivityShield from "../components/layout/SensitivityShield";
-import MagneticButton from "../components/common/MagneticButton";
-import AuraOrb from "../components/common/AuraOrb";
-import MobileBottomSheet from "../components/common/MobileBottomSheet";
 
 const NOTE_COLORS = [
   { label: "Indigo", value: "#7c6dfa" },
@@ -40,15 +40,33 @@ const containerVariants = {
   },
 };
 
-function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
-  const { addToast } = useNotifications();
+function NoteEditor({
+  note,
+  onClose,
+  onSave,
+  onPin,
+  onArchive,
+  isMobile,
+  isEmbedded = false,
+}) {
   const [title, setTitle] = useState(note?.title || "");
   const [content, setContent] = useState(note?.content || "");
   const [color, setColor] = useState(note?.color || "#7c6dfa");
   const [tags, setTags] = useState(note?.tags?.join(", ") || "");
+  const [linkedTask, setLinkedTask] = useState(
+    note?.linkedTask?._id || note?.linkedTask || ""
+  );
   const [isSyncing, setIsSyncing] = useState(false);
   const saveTimer = useRef(null);
+  const isDirtyRef = useRef(false);
   const isDraft = note?._isDraft;
+
+  // Fetch available tasks to allow linking notes to tasks
+  const { data: tasksList = [] } = useQuery({
+    queryKey: ["tasks-minimal"],
+    queryFn: () => tasksAPI.getAll({ limit: 100 }).then((r) => r.data.tasks || []),
+  });
+
   const canCreate =
     title.trim() ||
     content.trim() ||
@@ -57,41 +75,64 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
       .map((t) => t.trim())
       .filter(Boolean).length > 0;
 
+  const currentPayload = {
+    title,
+    content,
+    color,
+    tags: tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean),
+    linkedTask: linkedTask || null,
+  };
+
+  const payloadRef = useRef(currentPayload);
+  payloadRef.current = currentPayload;
+
   useEffect(() => {
     setTitle(note?.title || "");
     setContent(note?.content || "");
     setColor(note?.color || "#7c6dfa");
     setTags(note?.tags?.join(", ") || "");
+    setLinkedTask(note?.linkedTask?._id || note?.linkedTask || "");
+    isDirtyRef.current = false;
   }, [note]);
 
   useEffect(() => {
     if (isDraft) return undefined;
+    const initialLinked = note?.linkedTask?._id || note?.linkedTask || "";
     if (
-      title !== note?.title ||
-      content !== note?.content ||
-      color !== note?.color ||
-      tags !== note?.tags?.join(", ")
+      title !== (note?.title || "") ||
+      content !== (note?.content || "") ||
+      color !== (note?.color || "#7c6dfa") ||
+      tags !== (note?.tags?.join(", ") || "") ||
+      linkedTask !== initialLinked
     ) {
+      isDirtyRef.current = true;
       clearTimeout(saveTimer.current);
       setIsSyncing(true);
       saveTimer.current = setTimeout(() => {
-        onSave(
-          {
-            title,
-            content,
-            color,
-            tags: tags
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean),
-          },
-          true,
-        );
+        onSave(payloadRef.current, true);
+        isDirtyRef.current = false;
         setTimeout(() => setIsSyncing(false), 800);
       }, 2000);
     }
     return () => clearTimeout(saveTimer.current);
-  }, [title, content, color, tags, note]);
+  }, [title, content, color, tags, linkedTask, note, isDraft, onSave]);
+
+  // Flush any pending unsaved changes immediately before closing or unmounting
+  const handleClose = (shouldDelete = false) => {
+    if (shouldDelete) {
+      onClose(true);
+      return;
+    }
+    if (isDirtyRef.current && !isDraft) {
+      clearTimeout(saveTimer.current);
+      onSave(payloadRef.current, true);
+      isDirtyRef.current = false;
+    }
+    onClose(false);
+  };
 
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
 
@@ -107,15 +148,13 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
         gap: 0,
         height: "100%",
         width: "100%",
-        borderRadius: isEmbedded ? 12 : (isMobile ? 16 : 12),
+        borderRadius: isEmbedded ? 12 : isMobile ? 16 : 12,
         background: "var(--surface-solid)",
         border: "1px solid var(--border)",
         position: "relative",
         overflow: "hidden",
       }}
     >
-
-
       <div
         className="liquid-glass-input"
         style={{
@@ -124,7 +163,7 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
           alignItems: "center",
           height: 68,
           gap: 12,
-          borderBottom: "1px solid rgba(255,255,255,0.04)"
+          borderBottom: "1px solid rgba(255,255,255,0.04)",
         }}
       >
         <div
@@ -157,25 +196,12 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="FRAGMENT TITLE..."
         />
-        
+
         {isDraft ? (
           <button
             type="button"
             className="haptic-tap"
-            onClick={() =>
-              onSave(
-                {
-                  title,
-                  content,
-                  color,
-                  tags: tags
-                    .split(",")
-                    .map((t) => t.trim())
-                    .filter(Boolean),
-                },
-                false,
-              )
-            }
+            onClick={() => onSave(payloadRef.current, false)}
             disabled={!canCreate}
             style={{
               height: 40,
@@ -196,39 +222,97 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
             Create
           </button>
         ) : (
-          isEmbedded && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Quick Pin Toggle in Editor */}
             <button
               type="button"
-              className="haptic-tap text-red"
-              onClick={() => onClose(true)}
+              className="haptic-tap"
+              onClick={() => onPin && onPin(note._id)}
               style={{
-                height: 40,
-                width: 40,
-                borderRadius: 12,
-                background: "rgba(255,107,107,0.1)",
+                height: 38,
+                width: 38,
+                borderRadius: 10,
+                background: note?.isPinned
+                  ? "var(--accent)22"
+                  : "rgba(255,255,255,0.04)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                border: "none",
-                cursor: "pointer"
+                border: "1px solid rgba(255,255,255,0.08)",
+                cursor: "pointer",
               }}
-              title="Delete fragment"
+              title={note?.isPinned ? "Unpin note" : "Pin note"}
             >
-              <Trash2 size={16} />
+              <Pin
+                size={15}
+                style={{
+                  color: note?.isPinned ? "var(--accent)" : "var(--muted)",
+                  fill: note?.isPinned ? "var(--accent)" : "none",
+                }}
+              />
             </button>
-          )
+
+            {/* Quick Archive Toggle in Editor */}
+            <button
+              type="button"
+              className="haptic-tap"
+              onClick={() => onArchive && onArchive(note._id)}
+              style={{
+                height: 38,
+                width: 38,
+                borderRadius: 10,
+                background: "rgba(255,255,255,0.04)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid rgba(255,255,255,0.08)",
+                cursor: "pointer",
+              }}
+              title={note?.isArchived ? "Restore to active" : "Archive note"}
+            >
+              {note?.isArchived ? (
+                <ArchiveRestore size={15} style={{ color: "var(--accent)" }} />
+              ) : (
+                <Archive size={15} style={{ color: "var(--muted)" }} />
+              )}
+            </button>
+
+            {/* Delete button (embedded) */}
+            {isEmbedded && (
+              <button
+                type="button"
+                className="haptic-tap text-red"
+                onClick={() => handleClose(true)}
+                style={{
+                  height: 38,
+                  width: 38,
+                  borderRadius: 10,
+                  background: "rgba(255,107,107,0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                title="Delete note"
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+          </div>
         )}
-        
+
         {!isEmbedded && (
           <button
             type="button"
             className="modal-close haptic-tap"
-            onClick={() => onClose()}
+            onClick={() => handleClose(false)}
             style={{
               background: "rgba(255,255,255,0.04)",
               borderRadius: 12,
               padding: 8,
               border: "none",
+              cursor: "pointer",
             }}
           >
             <X size={20} />
@@ -238,7 +322,12 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
 
       <div
         className="liquid-glass-input"
-        style={{ padding: "20px", flex: 1, display: "flex", flexDirection: "column" }}
+        style={{
+          padding: "20px",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
         <textarea
           className="no-border aura-scrollbar"
@@ -254,8 +343,7 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
             resize: "none",
             fontFamily: "Inter, sans-serif",
             fontWeight: 400,
-            wordBreak: "break-all",
-            wordWrap: "break-word",
+            wordBreak: "break-word",
             whiteSpace: "pre-wrap",
           }}
           value={content}
@@ -264,30 +352,85 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
         />
       </div>
 
+      {/* Tags & Linked Task Row */}
       <div
         style={{
-          padding: "12px 20px",
+          padding: "10px 20px",
           borderTop: "1px solid rgba(255,255,255,0.04)",
           display: "flex",
           alignItems: "center",
-          gap: 12
+          gap: 16,
+          flexWrap: "wrap",
         }}
       >
-        <span style={{ fontSize: 10, fontWeight: 900, color: "var(--muted)", letterSpacing: 1 }}>TAGS:</span>
-        <input
-          style={{
-            flex: 1,
-            background: "none",
-            border: "none",
-            outline: "none",
-            color: "white",
-            fontSize: 13,
-            fontFamily: "Inter"
-          }}
-          placeholder="comma separated tags..."
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 180 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 900,
+              color: "var(--muted)",
+              letterSpacing: 1,
+            }}
+          >
+            TAGS:
+          </span>
+          <input
+            style={{
+              flex: 1,
+              background: "none",
+              border: "none",
+              outline: "none",
+              color: "white",
+              fontSize: 13,
+              fontFamily: "Inter",
+            }}
+            placeholder="comma separated tags..."
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
+        </div>
+
+        {/* Task Selector */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 200 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 900,
+              color: "var(--muted)",
+              letterSpacing: 1,
+            }}
+          >
+            TASK:
+          </span>
+          <select
+            value={linkedTask}
+            onChange={(e) => setLinkedTask(e.target.value)}
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 8,
+              padding: "4px 8px",
+              color: linkedTask ? "white" : "var(--muted)",
+              fontSize: 12,
+              fontFamily: "Inter",
+              outline: "none",
+              maxWidth: 180,
+            }}
+          >
+            <option value="" style={{ background: "#13131a", color: "#888" }}>
+              None (Unlinked)
+            </option>
+            {tasksList.map((t) => (
+              <option
+                key={t._id}
+                value={t._id}
+                style={{ background: "#13131a", color: "#fff" }}
+              >
+                {t.title} ({t.status || "todo"})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div
@@ -331,7 +474,7 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
                   boxShadow:
                     color === c.value ? `0 0 10px ${c.value}` : "none",
                   padding: 0,
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
               />
             ))}
@@ -370,7 +513,7 @@ function NoteEditor({ note, onClose, onSave, isMobile, isEmbedded = false }) {
   return (
     <div
       className="modal-overlay note-editor-overlay"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => e.target === e.currentTarget && handleClose(false)}
       style={{
         zIndex: 1000,
         background: "rgba(0,0,0,0.85)",
@@ -413,7 +556,7 @@ export default function NotesPage() {
   const { addToast } = useNotifications();
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState([]);
+  const [viewMode, setViewMode] = useState("active"); // 'active' | 'archived'
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     title: "",
@@ -423,11 +566,14 @@ export default function NotesPage() {
   const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["notes"],
-    queryFn: () => notesAPI.getAll({ limit: 100 }).then((r) => r.data.notes),
+    queryKey: ["notes", viewMode],
+    queryFn: () =>
+      notesAPI
+        .getAll({ archived: viewMode === "archived", limit: 100 })
+        .then((r) => r.data.notes || []),
   });
 
-  const invalidate = () => qc.invalidateQueries(["notes"]);
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["notes"] });
 
   const createMutation = useMutation({
     mutationFn: notesAPI.create,
@@ -436,20 +582,26 @@ export default function NotesPage() {
       setModal(r.data.note);
       invalidate();
     },
+    onError: (err) => {
+      addToast(err?.response?.data?.error || "Error creating note", "error");
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => notesAPI.update(id, data),
     onMutate: async ({ id, data: newData }) => {
-      await qc.cancelQueries(["notes"]);
-      const previous = qc.getQueryData(["notes"]);
-      qc.setQueryData(["notes"], (old) =>
-        (old || []).map((n) => (n._id === id ? { ...n, ...newData } : n)),
+      await qc.cancelQueries({ queryKey: ["notes"] });
+      const previous = qc.getQueryData(["notes", viewMode]);
+      qc.setQueryData(["notes", viewMode], (old) =>
+        (old || []).map((n) => (n._id === id ? { ...n, ...newData } : n))
       );
       return { previous };
     },
     onError: (err, variables, context) => {
-      if (context?.previous) qc.setQueryData(["notes"], context.previous);
+      if (context?.previous) {
+        qc.setQueryData(["notes", viewMode], context.previous);
+      }
+      addToast(err?.response?.data?.error || "Error updating note", "error");
     },
     onSuccess: (r, { silent }) => {
       if (!silent) {
@@ -462,10 +614,51 @@ export default function NotesPage() {
   const deleteMutation = useMutation({
     mutationFn: notesAPI.delete,
     onSuccess: () => {
-      addToast("Memory archived", "info");
+      addToast("Memory erased from neural archive", "info");
       setModal(null);
       setConfirmDialog({ open: false, title: "", message: "", id: null });
       invalidate();
+    },
+    onError: (err) => {
+      addToast(err?.response?.data?.error || "Error deleting note", "error");
+    },
+  });
+
+  const pinMutation = useMutation({
+    mutationFn: notesAPI.pin,
+    onSuccess: (r) => {
+      const isPinned = r.data?.note?.isPinned;
+      addToast(
+        isPinned ? "Fragment pinned to crown" : "Fragment unpinned",
+        "success"
+      );
+      if (modal && modal._id === r.data?.note?._id) {
+        setModal((prev) => (prev ? { ...prev, isPinned } : prev));
+      }
+      invalidate();
+    },
+    onError: (err) => {
+      addToast(err?.response?.data?.error || "Error toggling pin", "error");
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: notesAPI.archive,
+    onSuccess: (r) => {
+      const isArchived = r.data?.note?.isArchived;
+      addToast(
+        isArchived
+          ? "Fragment moved to archive"
+          : "Fragment restored to active notes",
+        "success"
+      );
+      if (modal && modal._id === r.data?.note?._id) {
+        setModal(null);
+      }
+      invalidate();
+    },
+    onError: (err) => {
+      addToast(err?.response?.data?.error || "Error updating archive state", "error");
     },
   });
 
@@ -475,6 +668,7 @@ export default function NotesPage() {
       content: "",
       color: "#7c6dfa",
       tags: [],
+      linkedTask: null,
       _isDraft: true,
     });
 
@@ -514,9 +708,11 @@ export default function NotesPage() {
     return (data || [])
       .filter((n) => {
         if (!q) return true;
-        const matchTitle = n.title?.toLowerCase().includes(q);
-        const matchContent = n.content?.toLowerCase().includes(q);
-        const matchTags = Array.isArray(n.tags) && n.tags.some((t) => t?.toLowerCase().includes(q));
+        const matchTitle = (n.title || "").toLowerCase().includes(q);
+        const matchContent = (n.content || "").toLowerCase().includes(q);
+        const matchTags =
+          Array.isArray(n.tags) &&
+          n.tags.some((t) => (t || "").toLowerCase().includes(q));
         return Boolean(matchTitle || matchContent || matchTags);
       })
       .sort((a, b) => {
@@ -528,172 +724,254 @@ export default function NotesPage() {
       });
   }, [data, search]);
 
-  const NoteCard = React.memo(({ note }) => (
-    <motion.div
-      layout
-      whileHover={{ scale: isMobile ? 1 : 1.02, y: isMobile ? 0 : -3 }}
-      whileTap={{ scale: 0.98 }}
-      className="haptic-tap"
-      style={{
-        background: "var(--surface-solid)",
-        border: `1px solid var(--border)`,
-        borderLeft: `4px solid ${note.color}`,
-        padding: "16px",
-        borderRadius: 12,
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        position: "relative",
-        breakInside: "avoid",
-        marginBottom: 12,
-        willChange: "transform, opacity",
-      }}
-    >
-      <div
-        onClick={() => setModal(note)}
+  const NoteCard = React.memo(({ note }) => {
+    const isPinned = Boolean(note.isPinned);
+    const isArchived = Boolean(note.isArchived);
+
+    return (
+      <motion.div
+        layout
+        whileHover={{ scale: isMobile ? 1 : 1.02, y: isMobile ? 0 : -3 }}
+        whileTap={{ scale: 0.98 }}
+        className="haptic-tap"
         style={{
-          flex: 1,
+          background: "var(--surface-solid)",
+          border: `1px solid var(--border)`,
+          borderLeft: `4px solid ${note.color}`,
+          padding: "16px",
+          borderRadius: 12,
+          cursor: "pointer",
           display: "flex",
           alignItems: "center",
-          gap: isMobile ? 12 : 16,
-          minWidth: 0,
+          gap: 12,
+          position: "relative",
+          breakInside: "avoid",
+          marginBottom: 12,
+          willChange: "transform, opacity",
         }}
       >
         <div
+          onClick={() => setModal(note)}
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 8,
-            background: `${note.color}15`,
+            flex: 1,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
+            gap: isMobile ? 12 : 16,
+            minWidth: 0,
           }}
         >
-          <FileText
-            size={16}
-            style={{
-              color: note.color,
-            }}
-          />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <SensitivityShield>
-            <h3
-              style={{
-                fontFamily: "Plus Jakarta Sans, Inter, sans-serif",
-                fontSize: isMobile ? 14 : 16,
-                fontWeight: 700,
-                color: "white",
-                margin: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {note.title || "Untitled Essence"}
-            </h3>
-          </SensitivityShield>
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginTop: 4,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 10,
-                color: "var(--muted)",
-                fontWeight: 600,
-                letterSpacing: 0.5,
-              }}
-            >
-              {safeFormat(note.updatedAt, "MMM d, yyyy", "RECENTLY")}
-            </span>
-            <div
-              style={{
-                width: 3,
-                height: 3,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.1)",
-              }}
-            />
-            <div
-              style={{
-                fontSize: 10,
-                color: note.color,
-                fontWeight: 600,
-                letterSpacing: 0.5,
-              }}
-            >
-              {note.content?.length || 0} NODES
-            </div>
-          </div>
-        </div>
-        {note.isPinned && (
-          <div
-            style={{
-              width: 28,
-              height: 28,
+              width: 36,
+              height: 36,
               borderRadius: 8,
-              background: "var(--accent)22",
+              background: `${note.color}15`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <Pin
-              size={12}
-              style={{ color: "var(--accent)", fill: "var(--accent)" }}
+            <FileText
+              size={16}
+              style={{
+                color: note.color,
+              }}
             />
           </div>
-        )}
-      </div>
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setConfirmDialog({
-            open: true,
-            title: "Banish Manifestation?",
-            message: "Erase this memory from the neural archive?",
-            confirmText: "Banish",
-            id: getSafeId(note),
-          });
-        }}
-        onMouseDown={(e) => e.stopPropagation()}
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 8,
-          background: "rgba(255,107,107,0.1)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginLeft: 8,
-          flexShrink: 0,
-          zIndex: 10,
-          border: "none",
-          cursor: "pointer",
-        }}
-      >
-        <Trash2 size={14} style={{ color: "var(--red)" }} />
-      </button>
-    </motion.div>
-  ));
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <SensitivityShield>
+              <h3
+                style={{
+                  fontFamily: "Plus Jakarta Sans, Inter, sans-serif",
+                  fontSize: isMobile ? 14 : 16,
+                  fontWeight: 700,
+                  color: "white",
+                  margin: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {note.title || "Untitled Essence"}
+              </h3>
+            </SensitivityShield>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 4,
+                flexWrap: "wrap",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "var(--muted)",
+                  fontWeight: 600,
+                  letterSpacing: 0.5,
+                }}
+              >
+                {safeFormat(note.updatedAt, "MMM d, yyyy", "RECENTLY")}
+              </span>
+              <div
+                style={{
+                  width: 3,
+                  height: 3,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.1)",
+                }}
+              />
+              <div
+                style={{
+                  fontSize: 10,
+                  color: note.color,
+                  fontWeight: 600,
+                  letterSpacing: 0.5,
+                }}
+              >
+                {note.content?.length || 0} NODES
+              </div>
+
+              {note.linkedTask && (
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    background: "rgba(255,255,255,0.06)",
+                    fontSize: 9,
+                    color: "var(--muted)",
+                    maxWidth: 140,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={
+                    typeof note.linkedTask === "object"
+                      ? note.linkedTask.title
+                      : "Linked Task"
+                  }
+                >
+                  <CheckSquare size={10} style={{ color: "var(--accent)" }} />
+                  <span>
+                    {typeof note.linkedTask === "object"
+                      ? note.linkedTask.title
+                      : "Task"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Card Action Buttons: Pin, Archive, Delete */}
+        <div
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Pin Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              pinMutation.mutate(note._id);
+            }}
+            title={isPinned ? "Unpin note" : "Pin note"}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              background: isPinned ? "var(--accent)22" : "rgba(255,255,255,0.04)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: isPinned
+                ? "1px solid var(--accent)44"
+                : "1px solid rgba(255,255,255,0.06)",
+              cursor: "pointer",
+            }}
+          >
+            <Pin
+              size={13}
+              style={{
+                color: isPinned ? "var(--accent)" : "var(--muted)",
+                fill: isPinned ? "var(--accent)" : "none",
+              }}
+            />
+          </button>
+
+          {/* Archive / Restore Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              archiveMutation.mutate(note._id);
+            }}
+            title={isArchived ? "Restore to active" : "Archive note"}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              background: "rgba(255,255,255,0.04)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid rgba(255,255,255,0.06)",
+              cursor: "pointer",
+            }}
+          >
+            {isArchived ? (
+              <ArchiveRestore size={13} style={{ color: "var(--accent)" }} />
+            ) : (
+              <Archive size={13} style={{ color: "var(--muted)" }} />
+            )}
+          </button>
+
+          {/* Delete Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setConfirmDialog({
+                open: true,
+                title: "Banish Manifestation?",
+                message: "Erase this memory from the neural archive?",
+                confirmText: "Banish",
+                id: getSafeId(note),
+              });
+            }}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              background: "rgba(255,107,107,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "none",
+              cursor: "pointer",
+            }}
+            title="Delete note"
+          >
+            <Trash2 size={13} style={{ color: "var(--red)" }} />
+          </button>
+        </div>
+      </motion.div>
+    );
+  });
 
   return (
     <div
       className="responsive-container page-shell"
       style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}
     >
-
-
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -714,31 +992,44 @@ export default function NotesPage() {
             overflow: "hidden",
           }}
         >
-          {/* Subtle background glow */}
-          <div style={{
-            position: 'absolute',
-            top: '-50%',
-            left: '-10%',
-            width: '50%',
-            height: '200%',
-            background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
-            opacity: 0.05,
-            filter: 'blur(40px)',
-            pointerEvents: 'none'
-          }} />
+          {/* Background glow */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-50%",
+              left: "-10%",
+              width: "50%",
+              height: "200%",
+              background:
+                "radial-gradient(circle, var(--accent) 0%, transparent 70%)",
+              opacity: 0.05,
+              filter: "blur(40px)",
+              pointerEvents: "none",
+            }}
+          />
 
-          <div style={{ display: "flex", alignItems: "center", gap: "20px", zIndex: 1 }}>
-            <div style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "16px",
-              background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))",
-              border: "1px solid rgba(255,255,255,0.1)",
+          <div
+            style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
-            }}>
+              gap: "20px",
+              zIndex: 1,
+            }}
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "16px",
+                background:
+                  "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))",
+                border: "1px solid rgba(255,255,255,0.1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 8px 16px rgba(0,0,0,0.2)",
+              }}
+            >
               <FileText size={24} style={{ color: "var(--accent)" }} />
             </div>
             <div>
@@ -747,25 +1038,42 @@ export default function NotesPage() {
                   fontSize: isMobile ? "1.6rem" : "2.1rem",
                   fontWeight: 800,
                   margin: 0,
-                  background: "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
+                  background:
+                    "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
-                  letterSpacing: "-0.04em"
+                  letterSpacing: "-0.04em",
                 }}
               >
-                Notes
+                Notes & Fragments
               </h1>
-              <p style={{ fontSize: "0.95rem", color: "var(--muted)", margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.2px" }}>
-                Capture ideas and documentation
+              <p
+                style={{
+                  fontSize: "0.95rem",
+                  color: "var(--muted)",
+                  margin: "4px 0 0",
+                  fontWeight: 500,
+                  letterSpacing: "0.2px",
+                }}
+              >
+                Capture ideas and documentation with end-to-end privacy
               </p>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              zIndex: 1,
+            }}
+          >
             <button
               onClick={openDraft}
               style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
+                background:
+                  "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
                 border: "1px solid rgba(255,255,255,0.1)",
                 color: "#fff",
                 padding: "10px 20px",
@@ -776,9 +1084,10 @@ export default function NotesPage() {
                 alignItems: "center",
                 gap: 8,
                 cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+                boxShadow:
+                  "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
                 backdropFilter: "blur(10px)",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
               }}
               className="haptic-tap hover-lift"
             >
@@ -805,7 +1114,7 @@ export default function NotesPage() {
           >
             {/* Left Navigator Pane */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Search & Statistics */}
+              {/* Search, Filter Tabs & Statistics */}
               <div
                 className="premium-card"
                 style={{
@@ -813,25 +1122,97 @@ export default function NotesPage() {
                   borderRadius: 16,
                   display: "flex",
                   flexDirection: "column",
-                  gap: 16,
+                  gap: 12,
                   position: "relative",
-                  overflow: "hidden"
+                  overflow: "hidden",
                 }}
               >
+                {/* View Mode Tabs: Active vs Archive */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 6,
+                    background: "rgba(0,0,0,0.25)",
+                    padding: 4,
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.05)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode("active");
+                      setModal(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "none",
+                      background:
+                        viewMode === "active"
+                          ? "rgba(255,255,255,0.12)"
+                          : "transparent",
+                      color: viewMode === "active" ? "#fff" : "var(--muted)",
+                      fontWeight: 700,
+                      fontSize: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <FileText size={13} />
+                    <span>Active Notes</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode("archived");
+                      setModal(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "none",
+                      background:
+                        viewMode === "archived"
+                          ? "rgba(255,255,255,0.12)"
+                          : "transparent",
+                      color: viewMode === "archived" ? "#fff" : "var(--muted)",
+                      fontWeight: 700,
+                      fontSize: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <Archive size={13} />
+                    <span>Archive</span>
+                  </button>
+                </div>
+
+                {/* Search Bar */}
                 <div
                   style={{
                     borderRadius: 12,
                     padding: "0 16px",
-                    height: 44,
+                    height: 42,
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
                     background: "rgba(0,0,0,0.2)",
                     border: "1px solid rgba(255,255,255,0.05)",
-                    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)"
+                    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)",
                   }}
                 >
-                  <Search size={16} color="var(--accent)" />
+                  <Search size={15} color="var(--accent)" />
                   <input
                     className="no-ring"
                     style={{
@@ -842,14 +1223,29 @@ export default function NotesPage() {
                       color: "var(--text)",
                       fontWeight: 500,
                       width: "100%",
-                      fontSize: 14,
+                      fontSize: 13,
                     }}
-                    placeholder="Find notes..."
+                    placeholder={`Find in ${viewMode === "archived" ? "archive" : "notes"}...`}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--muted)",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
-                
+
                 <div
                   style={{
                     fontSize: 10,
@@ -858,10 +1254,10 @@ export default function NotesPage() {
                     letterSpacing: 1.5,
                     textTransform: "uppercase",
                     display: "flex",
-                    justifyContent: "space-between"
+                    justifyContent: "space-between",
                   }}
                 >
-                  <span>Navigator</span>
+                  <span>{viewMode === "archived" ? "ARCHIVED MEMORIES" : "ACTIVE FRAGMENTS"}</span>
                   <span>{notes.length} Fragments</span>
                 </div>
               </div>
@@ -876,9 +1272,32 @@ export default function NotesPage() {
                     borderRadius: 20,
                   }}
                 >
-                  <div style={{ fontSize: 36, marginBottom: 16 }}>🧠</div>
-                  <div style={{ fontSize: 16, fontWeight: 900, fontFamily: "Syne", marginBottom: 6 }}>No Notes Found</div>
-                  <div style={{ color: "var(--muted)", fontSize: 12, lineHeight: 1.4 }}>Forge a new fragment to begin.</div>
+                  <div style={{ fontSize: 36, marginBottom: 16 }}>
+                    {viewMode === "archived" ? "📦" : "🧠"}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 900,
+                      fontFamily: "Syne",
+                      marginBottom: 6,
+                    }}
+                  >
+                    {viewMode === "archived"
+                      ? "Archive is Empty"
+                      : "No Notes Found"}
+                  </div>
+                  <div
+                    style={{
+                      color: "var(--muted)",
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {viewMode === "archived"
+                      ? "Completed or stashed notes will appear here."
+                      : "Manifest a new fragment to begin."}
+                  </div>
                 </div>
               ) : (
                 <div
@@ -901,8 +1320,10 @@ export default function NotesPage() {
                           onClick={() => setModal(n)}
                           style={{
                             borderRadius: 16,
-                            border: isActive ? `2px solid ${n.color}` : "2px solid transparent",
-                            transition: "border-color 0.2s ease"
+                            border: isActive
+                              ? `2px solid ${n.color}`
+                              : "2px solid transparent",
+                            transition: "border-color 0.2s ease",
                           }}
                         >
                           <NoteCard note={n} />
@@ -921,7 +1342,7 @@ export default function NotesPage() {
                   flex: 1,
                   minHeight: 500,
                   display: "flex",
-                  flexDirection: "column"
+                  flexDirection: "column",
                 }}
               >
                 {modal ? (
@@ -937,6 +1358,8 @@ export default function NotesPage() {
                       }
                     }}
                     onSave={handleSave}
+                    onPin={(id) => pinMutation.mutate(id)}
+                    onArchive={(id) => archiveMutation.mutate(id)}
                     isMobile={false}
                   />
                 ) : (
@@ -953,16 +1376,42 @@ export default function NotesPage() {
                       borderRadius: 16,
                     }}
                   >
-                    <div style={{
-                      width: 64, height: 64, borderRadius: 20, 
-                      background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
-                      display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20
-                    }}>
+                    <div
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: 20,
+                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginBottom: 20,
+                      }}
+                    >
                       <FileText size={32} color="var(--accent)" />
                     </div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: "var(--text)" }}>No Note Selected</h3>
-                    <p style={{ fontSize: 14, color: "var(--muted)", maxWidth: 300, lineHeight: 1.5, fontWeight: 500 }}>
-                      Select an existing note from the list or create a new one to begin editing.
+                    <h3
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 700,
+                        marginBottom: 8,
+                        color: "var(--text)",
+                      }}
+                    >
+                      No Note Selected
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        color: "var(--muted)",
+                        maxWidth: 300,
+                        lineHeight: 1.5,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Select an existing fragment from the list or manifest a
+                      new one to begin editing.
                     </p>
                   </div>
                 )}
@@ -1008,17 +1457,23 @@ export default function NotesPage() {
           {isMobile && modal && (
             <NoteEditor
               note={modal}
-              onClose={() => {
-                setModal(null);
-                invalidate();
+              onClose={(shouldDelete = false) => {
+                if (shouldDelete) {
+                  handleSave(null, false, true);
+                } else {
+                  setModal(null);
+                  invalidate();
+                }
               }}
               onSave={handleSave}
+              onPin={(id) => pinMutation.mutate(id)}
+              onArchive={(id) => archiveMutation.mutate(id)}
               isMobile={true}
               isEmbedded={false}
             />
           )}
         </AnimatePresence>
-        
+
         <ConfirmDialog
           {...confirmDialog}
           onConfirm={() =>
@@ -1035,28 +1490,6 @@ export default function NotesPage() {
 
         .note-card-elite {
           transition: border-color 0.4s ease, background 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .holographic-shimmer::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            120deg,
-            transparent 0%,
-            transparent 40%,
-            rgba(255, 255, 255, 0.05) 50%,
-            transparent 60%,
-            transparent 100%
-          );
-          background-size: 200% 100%;
-          transition: background-position 0.6s ease;
-          pointer-events: none;
-          z-index: 1;
-        }
-
-        .holographic-shimmer:hover::before {
-          background-position: -200% 0;
         }
       `}</style>
     </div>

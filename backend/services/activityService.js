@@ -16,52 +16,46 @@ const logActivity = async (userId, updates) => {
             activity = new Activity({ user: userId, date: today });
         }
         
-        // Apply updates if any
+        // Apply updates if any, ensuring no negative counters
         if (updates && Object.keys(updates).length > 0) {
             Object.keys(updates).forEach(key => {
-                activity[key] = (activity[key] || 0) + updates[key];
+                activity[key] = Math.max(0, (activity[key] || 0) + updates[key]);
             });
         }
 
-        // --- RELATIVE INTENSITY CALCULATION ---
-        // 1. Calculate the raw score for today (End-To-End)
-        const score = (activity.tasksCompleted * 3) + // Tasks are highly prioritized
-            (Math.floor(activity.focusMinutes / 25) * 2) + // Focus sessions
-            (activity.habitsCompleted * 2) + // Consistency
-            (activity.notesCreated * 1) + // Knowledge base expansion
-            (activity.scheduleEventsCompleted * 1.5); // Planning
+        // --- LEETCODE-STYLE EXECUTION LOGIC ---
+        // A day ONLY counts as active if at least one actual work item is completed:
+        // (Task completed, Habit ritual completed, Pomodoro focus session completed, or Schedule event completed)
+        const totalCompletedWork = (activity.tasksCompleted || 0) +
+            (activity.habitsCompleted || 0) +
+            (activity.pomodoros || 0) +
+            (activity.scheduleEventsCompleted || 0);
 
-        activity.score = score;
-
-        // 2. Fetch last 90 days to find personal baseline
-        const ninetyDaysAgo = new Date();
-        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-        const startDateStr = ninetyDaysAgo.toISOString().split('T')[0];
-
-        const recentLogs = await Activity.find({
-            user: userId,
-            date: { $gte: startDateStr, $lt: today },
-            score: { $gt: 0 } // Only compare against active days
-        }).select('score').lean();
-
-        if (recentLogs.length < 3) { // Reduced threshold for new users to see progress faster
-            // Fallback to fixed thresholds for new users
-            if (score === 0) activity.intensity = 0;
-            else if (score < 4) activity.intensity = 1;
-            else if (score < 8) activity.intensity = 2;
-            else if (score < 12) activity.intensity = 3;
-            else activity.intensity = 4;
+        if (totalCompletedWork === 0) {
+            // No work completed today -> Day remains completely inert
+            activity.score = 0;
+            activity.intensity = 0;
         } else {
-            // Calculate personal percentiles (Z-Score like approach)
-            const scores = recentLogs.map(l => l.score).sort((a, b) => a - b);
-            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+            // Calculate score when actual work was completed
+            const score = (activity.tasksCompleted * 3) +
+                (activity.pomodoros * 2) +
+                (Math.floor(activity.focusMinutes / 25) * 1) +
+                (activity.habitsCompleted * 2) +
+                (activity.scheduleEventsCompleted * 1.5) +
+                ((activity.notesCreated || 0) * 0.5);
 
-            // Relative Scaling logic:
-            if (score === 0) activity.intensity = 0;
-            else if (score < avg * 0.6) activity.intensity = 1;
-            else if (score < avg * 1.1) activity.intensity = 2;
-            else if (score < avg * 1.6) activity.intensity = 3;
-            else activity.intensity = 4;
+            activity.score = score;
+
+            // Discrete intensity levels based on work volume
+            if (totalCompletedWork === 1) {
+                activity.intensity = 1;
+            } else if (totalCompletedWork <= 3) {
+                activity.intensity = 2;
+            } else if (totalCompletedWork <= 6) {
+                activity.intensity = 3;
+            } else {
+                activity.intensity = 4;
+            }
         }
 
         await activity.save();

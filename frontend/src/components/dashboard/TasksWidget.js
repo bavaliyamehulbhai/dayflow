@@ -29,8 +29,9 @@ const TasksWidget = ({ data, navigate }) => {
 
       {data?.tasks?.today?.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: density === 'compact' ? 6 : 10 }}>
-          {data.tasks.today.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2)).slice(0, 5).map((task, index) => {
+          {[...(data?.tasks?.today || [])].sort((a, b) => (priorityOrder[a?.priority] || 2) - (priorityOrder[b?.priority] || 2)).slice(0, 5).map((task, index) => {
             const tid = getSafeId(task, `task-${index}`);
+            const priority = task?.priority || 'medium';
             return (
               <div key={tid} style={{
                 display: 'flex',
@@ -47,9 +48,9 @@ const TasksWidget = ({ data, navigate }) => {
                 transition: 'all 0.2s ease',
                 cursor: 'pointer'
               }} className="hover-lift" onClick={() => navigate('/tasks')}>
-                <div style={{ width: 8, height: 8, borderRadius: '4px', background: task.priority === 'urgent' ? 'var(--red)' : task.priority === 'high' ? 'var(--orange)' : task.priority === 'medium' ? 'var(--yellow)' : 'var(--green)', flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</span>
-                <span className={`badge badge-${task.priority}`} style={{ fontSize: 9 }}>{task.priority.toUpperCase()}</span>
+                <div style={{ width: 8, height: 8, borderRadius: '4px', background: priority === 'urgent' ? 'var(--red)' : priority === 'high' ? 'var(--orange)' : priority === 'medium' ? 'var(--yellow)' : 'var(--green)', flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task?.title || 'Untitled Task'}</span>
+                <span className={`badge badge-${priority}`} style={{ fontSize: 9 }}>{priority.toUpperCase()}</span>
               </div>
             )
           })}

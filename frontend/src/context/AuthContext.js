@@ -60,10 +60,24 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const { data } = await authAPI.login({ email, password });
+      if (data.twoFactorRequired) {
+        return data;
+      }
       setUser(data.user);
       return data;
     } catch (err) {
       console.error("[AuthContext] login error:", err);
+      throw err;
+    }
+  };
+
+  const login2FA = async (userId, token) => {
+    try {
+      const { data } = await authAPI.login2FA({ userId, token });
+      setUser(data.user);
+      return data;
+    } catch (err) {
+      console.error("[AuthContext] login2FA error:", err);
       throw err;
     }
   };
@@ -80,7 +94,16 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, updateUser, fetchUser }}
+      value={{
+        user,
+        loading,
+        login,
+        login2FA,
+        register,
+        logout,
+        updateUser,
+        fetchUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

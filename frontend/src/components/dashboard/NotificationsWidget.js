@@ -11,21 +11,37 @@ const NotificationsWidget = ({ data, navigate }) => {
   const now = new Date();
   const threshold = addHours(now, 48);
 
-  const upcomingDeadlines = (data?.tasks?.all || [])
+  const parseDueDate = (val) => {
+    if (!val) return null;
+    try {
+      const d = typeof val === 'string' ? parseISO(val) : new Date(val);
+      return isNaN(d.getTime()) ? null : d;
+    } catch {
+      return null;
+    }
+  };
+
+  const upcomingDeadlines = (data?.tasks?.upcoming || data?.tasks?.all || data?.tasks?.today || [])
     .filter(task => {
-      if (!task.dueDate || task.status === 'completed') return false;
-      const dueDate = parseISO(task.dueDate);
-      return isAfter(dueDate, now) && isBefore(dueDate, threshold);
+      if (!task?.dueDate || task.status === 'completed' || task.status === 'cancelled') return false;
+      const dueDate = parseDueDate(task.dueDate);
+      if (!dueDate) return false;
+      return isBefore(dueDate, threshold);
     })
-    .sort((a, b) => parseISO(a.dueDate) - parseISO(b.dueDate));
+    .sort((a, b) => {
+      const da = parseDueDate(a.dueDate) || 0;
+      const db = parseDueDate(b.dueDate) || 0;
+      return da - db;
+    });
 
   return (
     <WidgetWrapper title="Signals & Deadlines" icon={Bell}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {upcomingDeadlines.length > 0 ? (
           upcomingDeadlines.slice(0, 4).map((task, idx) => {
-            const dueDate = parseISO(task.dueDate);
-            const isUrgent = isBefore(dueDate, addHours(now, 12));
+            const dueDate = parseDueDate(task.dueDate) || now;
+            const isOverdue = isBefore(dueDate, now);
+            const isUrgent = isOverdue || isBefore(dueDate, addHours(now, 12));
             
             return (
               <motion.div
@@ -33,13 +49,17 @@ const NotificationsWidget = ({ data, navigate }) => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.1 }}
-                onClick={() => navigate('/tasks')}
+                onClick={() => navigate('/notifications')}
                 className="haptic-tap hover-lift"
                 style={{
                   padding: '14px 16px',
                   borderRadius: 14,
-                  border: `1px solid ${isUrgent ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 255, 255, 0.04)'}`,
-                  background: isUrgent ? 'linear-gradient(145deg, rgba(255,107,107,0.05) 0%, rgba(255,107,107,0.01) 100%)' : 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+                  border: `1px solid ${isOverdue ? 'rgba(255, 77, 77, 0.3)' : isUrgent ? 'rgba(255, 170, 0, 0.25)' : 'rgba(255, 255, 255, 0.04)'}`,
+                  background: isOverdue 
+                    ? 'linear-gradient(145deg, rgba(255,77,77,0.08) 0%, rgba(255,77,77,0.02) 100%)' 
+                    : isUrgent 
+                      ? 'linear-gradient(145deg, rgba(255,170,0,0.06) 0%, rgba(255,170,0,0.01) 100%)' 
+                      : 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
                   boxShadow: isUrgent ? 'inset 0 1px 1px rgba(255,107,107,0.1)' : 'inset 0 1px 1px rgba(255,255,255,0.05)',
                   display: 'flex',
                   alignItems: 'center',
@@ -51,12 +71,14 @@ const NotificationsWidget = ({ data, navigate }) => {
               >
                 <div style={{ 
                   width: 36, height: 36, borderRadius: 10, 
-                  background: isUrgent ? 'rgba(255, 107, 107, 0.1)' : 'rgba(124, 109, 250, 0.1)',
+                  background: isOverdue ? 'rgba(255, 77, 77, 0.15)' : isUrgent ? 'rgba(255, 170, 0, 0.12)' : 'rgba(124, 109, 250, 0.1)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0
                 }}>
-                  {isUrgent ? (
-                    <AlertCircle size={18} color="var(--red)" />
+                  {isOverdue ? (
+                    <AlertCircle size={18} color="#ff4d4d" />
+                  ) : isUrgent ? (
+                    <Clock size={18} color="#ffa500" />
                   ) : (
                     <Clock size={18} color="var(--accent)" />
                   )}
@@ -77,7 +99,7 @@ const NotificationsWidget = ({ data, navigate }) => {
                   <div style={{ 
                     fontSize: 10, 
                     fontWeight: 700, 
-                    color: isUrgent ? 'var(--red)' : 'var(--muted)',
+                    color: isOverdue ? '#ff6b6b' : isUrgent ? '#ffa500' : 'var(--muted)',
                     marginTop: 2,
                     display: 'flex',
                     alignItems: 'center',
@@ -88,12 +110,24 @@ const NotificationsWidget = ({ data, navigate }) => {
                   </div>
                 </div>
 
-                {isUrgent && (
+                {isOverdue ? (
                   <div style={{ 
                     fontSize: 9, 
                     fontWeight: 900, 
-                    color: 'var(--red)', 
-                    background: 'rgba(255, 107, 107, 0.1)',
+                    color: '#ff4d4d', 
+                    background: 'rgba(255, 77, 77, 0.15)',
+                    padding: '2px 6px',
+                    borderRadius: 6,
+                    letterSpacing: 0.5
+                  }}>
+                    OVERDUE
+                  </div>
+                ) : isUrgent && (
+                  <div style={{ 
+                    fontSize: 9, 
+                    fontWeight: 900, 
+                    color: '#ffa500', 
+                    background: 'rgba(255, 170, 0, 0.12)',
                     padding: '2px 6px',
                     borderRadius: 6,
                     letterSpacing: 0.5
@@ -120,10 +154,10 @@ const NotificationsWidget = ({ data, navigate }) => {
         
         <button 
           className="btn btn-sm btn-ghost mt-2" 
-          onClick={() => navigate('/tasks')} 
-          style={{ fontSize: 11, fontWeight: 800, alignSelf: 'center' }}
+          onClick={() => navigate('/notifications')} 
+          style={{ fontSize: 11, fontWeight: 800, alignSelf: 'center', display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          TEMPORAL VIEW <ArrowRight size={14} style={{ marginLeft: 4 }} />
+          VIEW NOTIFICATIONS CENTER <ArrowRight size={14} />
         </button>
       </div>
     </WidgetWrapper>

@@ -42,6 +42,7 @@ import {
   Minimize2,
   CloudRain,
   Wind,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import useFeedback from "../hooks/useFeedback";
@@ -314,6 +315,26 @@ export default function PomodoroPage() {
     },
   });
 
+  const recordMutation = useMutation({
+    mutationFn: (data) => pomodoroAPI.record(data),
+    onSuccess: () => {
+      qc.invalidateQueries(["pomo-stats"]);
+      qc.invalidateQueries(["pomo-history"]);
+      qc.invalidateQueries(["dashboard"]);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => pomodoroAPI.delete(id),
+    onSuccess: () => {
+      addToast("Session removed from records", "info");
+      qc.invalidateQueries(["pomo-stats"]);
+      qc.invalidateQueries(["pomo-history"]);
+      qc.invalidateQueries(["dashboard"]);
+    },
+    onError: () => addToast("Failed to remove session", "error")
+  });
+
   const duration = DURATIONS[mode];
   const progress = ((duration - timeLeft) / duration) * 100;
   const modeInfo = MODES[mode];
@@ -412,23 +433,62 @@ export default function PomodoroPage() {
     setRunning(false);
     playSound();
     feedback("complete");
-    if (currentPomoId && mode === "work") {
-      const actualDuration = startedAt
-        ? Math.round((Date.now() - startedAt) / 1000)
-        : DURATIONS.work;
-      completeMutation.mutate({
-        id: currentPomoId,
-        data: { actualDuration, note },
-      });
+
+    // Accurately calculate seconds spent in session
+    const actualDuration = Math.max(1, duration - timeLeft);
+
+    if (mode === "work") {
+      if (currentPomoId) {
+        completeMutation.mutate({
+          id: currentPomoId,
+          data: { actualDuration, note },
+        });
+      } else {
+        // Direct record fallback so session progress is never lost
+        recordMutation.mutate({
+          type: "work",
+          duration: Math.round(duration / 60),
+          actualDuration,
+          linkedTask: linkedTask || undefined,
+          note,
+        });
+      }
       setSessions((s) => s + 1);
+
+      if (linkedTask) {
+        addToast(
+          <span>
+            ✨ Focus complete! Linked objective finished?{" "}
+            <strong
+              style={{ textDecoration: "underline", cursor: "pointer", marginLeft: 4 }}
+              onClick={() => {
+                tasksAPI.update(linkedTask, { status: "completed" }).then(() => {
+                  qc.invalidateQueries(["tasks-for-pomo"]);
+                  qc.invalidateQueries(["dashboard"]);
+                  addToast("Objective marked complete!", "success");
+                });
+              }}
+            >
+              Mark Done
+            </strong>
+          </span>,
+          "success",
+          7000
+        );
+      } else {
+        addToast(`✨ ${modeInfo.label} session complete!`, "success", 4000);
+      }
+    } else {
+      addToast(`✨ ${modeInfo.label} session complete!`, "success", 4000);
     }
+
     const nextMode =
       mode === "work"
         ? (sessions + 1) % 4 === 0
           ? "long-break"
           : "short-break"
         : "work";
-    addToast(`✨ ${modeInfo.label} session complete!`, "success", 4000);
+
     setTimeout(() => {
       setMode(nextMode);
       setTimeLeft(DURATIONS[nextMode]);
@@ -438,14 +498,19 @@ export default function PomodoroPage() {
   }, [
     mode,
     currentPomoId,
+    duration,
+    timeLeft,
     sessions,
-    startedAt,
     note,
+    linkedTask,
     modeInfo,
     completeMutation,
+    recordMutation,
     DURATIONS,
     playSound,
     addToast,
+    qc,
+    feedback
   ]);
 
   // Keep ref always up-to-date so timer interval can call it without being in deps
@@ -472,9 +537,7 @@ export default function PomodoroPage() {
   }, [running]);
 
   useEffect(() => {
-    document.title = running
-      ? `${formatTime(timeLeft)} · ${modeInfo.label}`
-      : "Flow State";
+    document.title = `${formatTime(timeLeft)} · ${running ? modeInfo.label : "Paused"} | DayFlow`;
     return () => {
       document.title = "DayFlow";
     };
@@ -524,7 +587,7 @@ export default function PomodoroPage() {
   };
 
   const handleConfirm = () => {
-    const { action, newMode } = confirmState;
+    const { action, newMode, sessionId } = confirmState;
     if (action === "reset") {
       clearInterval(intervalRef.current);
       setRunning(false);
@@ -533,6 +596,8 @@ export default function PomodoroPage() {
       setStartedAt(null);
     } else if (action === "mode") {
       switchMode(newMode);
+    } else if (action === "delete_session" && sessionId) {
+      deleteMutation.mutate(sessionId);
     }
     setConfirmState({ open: false, action: null, message: "" });
   };
@@ -1513,13 +1578,54 @@ export default function PomodoroPage() {
                             </div>
                           )}
                         </div>
-                        <div style={{ textAlign: "right", flexShrink: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: "white" }}>
-                            {durationMin} min
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: "white" }}>
+                              {durationMin} min
+                            </div>
+                            <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 2, fontWeight: 600 }}>
+                              {safeFormat(session.completedAt || session.createdAt, "MMM d, h:mm a")}
+                            </div>
                           </div>
-                          <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 2, fontWeight: 600 }}>
-                            {safeFormat(session.completedAt || session.createdAt, "MMM d, h:mm a")}
-                          </div>
+                          <button
+                            type="button"
+                            title="Delete session"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const sid = getSafeId(session);
+                              if (sid) {
+                                setConfirmState({
+                                  open: true,
+                                  action: "delete_session",
+                                  sessionId: sid,
+                                  message: "Remove this focus session from your history?"
+                                });
+                              }
+                            }}
+                            style={{
+                              background: "rgba(255,255,255,0.03)",
+                              border: "1px solid rgba(255,255,255,0.06)",
+                              color: "var(--muted)",
+                              cursor: "pointer",
+                              padding: "6px",
+                              borderRadius: "8px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              transition: "all 0.2s ease"
+                            }}
+                            className="hover-lift"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = "var(--red)";
+                              e.currentTarget.style.borderColor = "rgba(255,107,107,0.3)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = "var(--muted)";
+                              e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                            }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
                     );
@@ -1556,10 +1662,20 @@ export default function PomodoroPage() {
       <ConfirmDialog
         open={confirmState.open}
         title={
-          confirmState.action === "reset" ? "Reset Session?" : "Switch Mode?"
+          confirmState.action === "reset"
+            ? "Reset Session?"
+            : confirmState.action === "delete_session"
+            ? "Delete Session?"
+            : "Switch Mode?"
         }
         message={confirmState.message}
-        confirmText={confirmState.action === "reset" ? "Reset" : "Switch"}
+        confirmText={
+          confirmState.action === "reset"
+            ? "Reset"
+            : confirmState.action === "delete_session"
+            ? "Delete"
+            : "Switch"
+        }
         onConfirm={handleConfirm}
         onCancel={() =>
           setConfirmState({ open: false, action: null, message: "" })

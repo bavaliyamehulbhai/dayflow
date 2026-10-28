@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Zap, 
@@ -21,12 +21,41 @@ import {
   Clock, 
   ExternalLink,
   Laptop,
-  CheckCheck
+  CheckCheck,
+  Menu,
+  X,
+  Loader2,
+  LayoutDashboard
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 
 export default function LandingPage() {
+  const { user, login } = useAuth();
+  const { addToast } = useNotifications();
+  const navigate = useNavigate();
   const [activeFaq, setActiveFaq] = useState(null);
-  const [activeTab, setActiveTab] = useState('tasks');
+  const [activeTab, setActiveTab] = useState('all');
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleInstantDemo = async () => {
+    if (user) {
+      navigate('/dashboard');
+      return;
+    }
+    setIsDemoLoading(true);
+    try {
+      await login('demo@dayflow.app', 'Demo123!');
+      addToast('Welcome to DayFlow Demo Workspace! 🚀', 'success');
+      navigate('/dashboard');
+    } catch {
+      addToast('Redirecting to login...', 'info');
+      navigate('/login');
+    } finally {
+      setIsDemoLoading(false);
+    }
+  };
 
   const toggleFaq = (index) => {
     setActiveFaq(activeFaq === index ? null : index);
@@ -184,40 +213,218 @@ export default function LandingPage() {
           </button>
         </div>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link to="/login" style={{ 
-            padding: '8px 16px', 
-            borderRadius: 10, 
-            fontSize: 13, 
-            fontWeight: 600, 
-            color: '#e4e4e7', 
-            textDecoration: 'none',
-            background: 'rgba(255,255,255,0.03)', 
-            border: '1px solid rgba(255,255,255,0.08)',
-            transition: 'all 0.2s ease'
-          }}>
-            Log In
-          </Link>
-          <Link to="/register" style={{ 
-            padding: '8px 18px', 
-            borderRadius: 10, 
-            fontSize: 13, 
-            fontWeight: 600, 
-            color: '#ffffff', 
-            textDecoration: 'none',
-            background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
-            boxShadow: '0 4px 14px rgba(124, 109, 250, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            transition: 'all 0.2s ease'
-          }}>
-            <span>Get Started</span>
-            <ArrowRight size={14} />
-          </Link>
+        {/* Action Buttons (Desktop) */}
+        <div className="landing-desktop-actions" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {user ? (
+            <Link to="/dashboard" style={{ 
+              padding: '8px 18px', 
+              borderRadius: 10, 
+              fontSize: 13, 
+              fontWeight: 700, 
+              color: '#ffffff', 
+              textDecoration: 'none',
+              background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+              boxShadow: '0 4px 14px rgba(124, 109, 250, 0.35)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.2s ease'
+            }}>
+              <LayoutDashboard size={15} />
+              <span>Go to Dashboard</span>
+              <ArrowRight size={14} />
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" style={{ 
+                padding: '8px 16px', 
+                borderRadius: 10, 
+                fontSize: 13, 
+                fontWeight: 600, 
+                color: '#e4e4e7', 
+                textDecoration: 'none',
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.08)',
+                transition: 'all 0.2s ease'
+              }}>
+                Log In
+              </Link>
+              <Link to="/register" style={{ 
+                padding: '8px 18px', 
+                borderRadius: 10, 
+                fontSize: 13, 
+                fontWeight: 600, 
+                color: '#ffffff', 
+                textDecoration: 'none',
+                background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                boxShadow: '0 4px 14px rgba(124, 109, 250, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease'
+              }}>
+                <span>Get Started</span>
+                <ArrowRight size={14} />
+              </Link>
+            </>
+          )}
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="landing-mobile-menu-btn"
+          aria-label="Toggle menu"
+          style={{
+            display: 'none',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 8,
+            padding: 8,
+            color: '#ffffff',
+            cursor: 'pointer'
+          }}
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
+        {/* Mobile Dropdown Drawer */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                background: '#0d0d12',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                padding: '20px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
+                boxShadow: '0 20px 40px rgba(0,0,0,0.8)'
+              }}
+            >
+              <button 
+                onClick={() => { scrollToSection('features'); setMobileMenuOpen(false); }} 
+                style={{ background: 'none', border: 'none', color: '#d4d4d8', fontSize: 15, fontWeight: 600, textAlign: 'left', padding: '6px 0', cursor: 'pointer' }}
+              >
+                Features
+              </button>
+              <button 
+                onClick={() => { scrollToSection('preview'); setMobileMenuOpen(false); }} 
+                style={{ background: 'none', border: 'none', color: '#d4d4d8', fontSize: 15, fontWeight: 600, textAlign: 'left', padding: '6px 0', cursor: 'pointer' }}
+              >
+                App Preview
+              </button>
+              <button 
+                onClick={() => { scrollToSection('workflow'); setMobileMenuOpen(false); }} 
+                style={{ background: 'none', border: 'none', color: '#d4d4d8', fontSize: 15, fontWeight: 600, textAlign: 'left', padding: '6px 0', cursor: 'pointer' }}
+              >
+                Workflow
+              </button>
+              <button 
+                onClick={() => { scrollToSection('faq'); setMobileMenuOpen(false); }} 
+                style={{ background: 'none', border: 'none', color: '#d4d4d8', fontSize: 15, fontWeight: 600, textAlign: 'left', padding: '6px 0', cursor: 'pointer' }}
+              >
+                FAQ
+              </button>
+
+              <div style={{ height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '4px 0' }} />
+
+              {user ? (
+                <Link 
+                  to="/dashboard" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{ 
+                    padding: '12px 18px', 
+                    borderRadius: 10, 
+                    fontSize: 14, 
+                    fontWeight: 700, 
+                    color: '#ffffff', 
+                    textDecoration: 'none',
+                    background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8
+                  }}
+                >
+                  <LayoutDashboard size={16} />
+                  <span>Go to Dashboard</span>
+                </Link>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <button
+                    onClick={() => { handleInstantDemo(); setMobileMenuOpen(false); }}
+                    disabled={isDemoLoading}
+                    style={{
+                      padding: '12px',
+                      borderRadius: 10,
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: '#ffffff',
+                      fontWeight: 600,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8
+                    }}
+                  >
+                    {isDemoLoading ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
+                    <span>Explore Instant Demo</span>
+                  </button>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <Link 
+                      to="/login" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      style={{ 
+                        flex: 1,
+                        padding: '10px', 
+                        borderRadius: 10, 
+                        fontSize: 14, 
+                        fontWeight: 600, 
+                        color: '#e4e4e7', 
+                        textDecoration: 'none',
+                        background: 'rgba(255, 255, 255, 0.03)', 
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        textAlign: 'center'
+                      }}
+                    >
+                      Log In
+                    </Link>
+                    <Link 
+                      to="/register" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      style={{ 
+                        flex: 1,
+                        padding: '10px', 
+                        borderRadius: 10, 
+                        fontSize: 14, 
+                        fontWeight: 600, 
+                        color: '#ffffff', 
+                        textDecoration: 'none',
+                        background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                        textAlign: 'center'
+                      }}
+                    >
+                      Get Started
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Hero Section */}
@@ -314,42 +521,74 @@ export default function LandingPage() {
           transition={{ duration: 0.6, delay: 0.3 }}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 28 }}
         >
-          <Link to="/register" style={{ 
-            padding: '14px 28px', 
-            borderRadius: 12, 
-            fontSize: 15, 
-            fontWeight: 700, 
-            color: '#ffffff', 
-            textDecoration: 'none',
-            background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
-            boxShadow: '0 8px 24px rgba(124, 109, 250, 0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 10,
-            transition: 'transform 0.2s ease'
-          }}>
-            <span>Start Free Workspace</span>
-            <ArrowRight size={18} />
-          </Link>
-          <Link to="/login" style={{ 
-            padding: '14px 26px', 
-            borderRadius: 12, 
-            fontSize: 15, 
-            fontWeight: 600, 
-            color: '#e4e4e7', 
-            textDecoration: 'none',
-            background: 'rgba(255, 255, 255, 0.04)',
-            border: '1px solid rgba(255, 255, 255, 0.09)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 8,
-            transition: 'background 0.2s ease'
-          }}>
-            <span>Explore Demo</span>
-            <ExternalLink size={16} color="#a1a1aa" />
-          </Link>
+          {user ? (
+            <Link to="/dashboard" style={{ 
+              padding: '14px 32px', 
+              borderRadius: 12, 
+              fontSize: 16, 
+              fontWeight: 700, 
+              color: '#ffffff', 
+              textDecoration: 'none',
+              background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+              boxShadow: '0 8px 24px rgba(124, 109, 250, 0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 10,
+              transition: 'transform 0.2s ease'
+            }}>
+              <LayoutDashboard size={18} />
+              <span>Open DayFlow Workspace</span>
+              <ArrowRight size={18} />
+            </Link>
+          ) : (
+            <>
+              <Link to="/register" style={{ 
+                padding: '14px 28px', 
+                borderRadius: 12, 
+                fontSize: 15, 
+                fontWeight: 700, 
+                color: '#ffffff', 
+                textDecoration: 'none',
+                background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                boxShadow: '0 8px 24px rgba(124, 109, 250, 0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 10,
+                transition: 'transform 0.2s ease'
+              }}>
+                <span>Start Free Workspace</span>
+                <ArrowRight size={18} />
+              </Link>
+              <button 
+                onClick={handleInstantDemo}
+                disabled={isDemoLoading}
+                style={{ 
+                  padding: '14px 26px', 
+                  borderRadius: 12, 
+                  fontSize: 15, 
+                  fontWeight: 600, 
+                  color: '#e4e4e7', 
+                  cursor: 'pointer',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.09)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 8,
+                  transition: 'background 0.2s ease'
+                }}
+              >
+                {isDemoLoading ? (
+                  <Loader2 size={16} className="animate-spin" color="#a78bfa" />
+                ) : (
+                  <ExternalLink size={16} color="#a1a1aa" />
+                )}
+                <span>{isDemoLoading ? 'Launching Demo...' : 'Explore Instant Demo'}</span>
+              </button>
+            </>
+          )}
         </motion.div>
 
         {/* Proof / Assurance Strip */}
@@ -427,9 +666,47 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Interactive Preview Tabs Bar */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 18px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+            background: 'rgba(255, 255, 255, 0.01)',
+            overflowX: 'auto'
+          }}>
+            {[
+              { id: 'all', label: 'Overview (All Modules)' },
+              { id: 'tasks', label: 'Tasks & Sprints' },
+              { id: 'focus', label: 'Pomodoro Engine' },
+              { id: 'coach', label: 'Neural AI Coach' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: activeTab === tab.id ? '1px solid rgba(124, 109, 250, 0.4)' : '1px solid transparent',
+                  background: activeTab === tab.id ? 'rgba(124, 109, 250, 0.15)' : 'transparent',
+                  color: activeTab === tab.id ? '#ffffff' : '#71717a',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           {/* Mockup Inner Dashboard View */}
           <div style={{ padding: '24px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
             {/* Column 1: Today's High-Leverage Tasks */}
+            {(activeTab === 'all' || activeTab === 'tasks') && (
             <div style={{
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: 14,
@@ -494,8 +771,10 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+            )}
 
             {/* Column 2: Live Focus Engine */}
+            {(activeTab === 'all' || activeTab === 'focus') && (
             <div style={{
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: 14,
@@ -557,8 +836,10 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Column 3: AI Neural Coach Insight */}
+            {(activeTab === 'all' || activeTab === 'coach') && (
             <div style={{
               background: 'rgba(255, 255, 255, 0.02)',
               borderRadius: 14,
@@ -616,6 +897,7 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       </section>
@@ -988,23 +1270,66 @@ export default function LandingPage() {
             Join professionals orchestrating their daily priorities, deep habits, and focused blocks inside DayFlow.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <Link to="/register" style={{ 
-              padding: '14px 32px', 
-              borderRadius: 12, 
-              fontSize: 15, 
-              fontWeight: 700, 
-              color: '#ffffff', 
-              textDecoration: 'none',
-              background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
-              boxShadow: '0 8px 24px rgba(124, 109, 250, 0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 10
-            }}>
-              <span>Get Started Now</span>
-              <ArrowRight size={18} />
-            </Link>
+            {user ? (
+              <Link to="/dashboard" style={{ 
+                padding: '14px 34px', 
+                borderRadius: 12, 
+                fontSize: 16, 
+                fontWeight: 700, 
+                color: '#ffffff', 
+                textDecoration: 'none',
+                background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                boxShadow: '0 8px 24px rgba(124, 109, 250, 0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 10
+              }}>
+                <LayoutDashboard size={18} />
+                <span>Go to Your Workspace</span>
+                <ArrowRight size={18} />
+              </Link>
+            ) : (
+              <>
+                <Link to="/register" style={{ 
+                  padding: '14px 32px', 
+                  borderRadius: 12, 
+                  fontSize: 15, 
+                  fontWeight: 700, 
+                  color: '#ffffff', 
+                  textDecoration: 'none',
+                  background: 'linear-gradient(135deg, #7c6dfa 0%, #5850ec 100%)',
+                  boxShadow: '0 8px 24px rgba(124, 109, 250, 0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 10
+                }}>
+                  <span>Get Started Now</span>
+                  <ArrowRight size={18} />
+                </Link>
+                <button
+                  onClick={handleInstantDemo}
+                  disabled={isDemoLoading}
+                  style={{
+                    padding: '14px 26px',
+                    borderRadius: 12,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: '#e4e4e7',
+                    cursor: 'pointer',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  {isDemoLoading ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} color="#a1a1aa" />}
+                  <span>{isDemoLoading ? 'Launching...' : 'Try Demo Workspace'}</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -1048,8 +1373,14 @@ export default function LandingPage() {
             <button onClick={() => scrollToSection('features')} style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: 13 }}>Features</button>
             <button onClick={() => scrollToSection('workflow')} style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: 13 }}>Workflow</button>
             <button onClick={() => scrollToSection('faq')} style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: 13 }}>FAQ</button>
-            <Link to="/login" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Log In</Link>
-            <Link to="/register" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Register</Link>
+            {user ? (
+              <Link to="/dashboard" style={{ color: '#a78bfa', fontWeight: 600, textDecoration: 'none' }}>Dashboard</Link>
+            ) : (
+              <>
+                <Link to="/login" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Log In</Link>
+                <Link to="/register" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Register</Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -1077,8 +1408,12 @@ export default function LandingPage() {
       {/* Scoped CSS for Responsive & Non-blurry Hover Elevation */}
       <style>{`
         @media (max-width: 768px) {
-          .landing-desktop-nav {
+          .landing-desktop-nav,
+          .landing-desktop-actions {
             display: none !important;
+          }
+          .landing-mobile-menu-btn {
+            display: block !important;
           }
         }
         .hover-card-elevation:hover {

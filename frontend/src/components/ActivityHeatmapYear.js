@@ -29,6 +29,17 @@ const ActivityHeatmapYear = React.memo(
     const monthsToShow = isMobile ? 3 : 12;
     const startDate = useMemo(() => subMonths(today, monthsToShow - 1), [today, monthsToShow]);
 
+    // LeetCode-style work counter: requires real completions
+    const getWorkCount = useCallback((log) => {
+      if (!log) return 0;
+      return (
+        (log.tasksCompleted || 0) +
+        (log.habitsCompleted || 0) +
+        (log.scheduleEventsCompleted || 0) +
+        (log.pomodoros || 0)
+      );
+    }, []);
+
     const stats = useMemo(() => {
       let totalSubmissions = 0;
       let activeDays = 0;
@@ -40,17 +51,15 @@ const ActivityHeatmapYear = React.memo(
       );
 
       data.forEach((log) => {
-        totalSubmissions +=
-          (log.tasksCompleted || 0) +
-          (log.habitsCompleted || 0) +
-          (log.scheduleEventsCompleted || 0) +
-          (log.pomodoros || 0);
-        if (log.score > 0) activeDays++;
+        const work = getWorkCount(log);
+        totalSubmissions += work;
+        if (work > 0) activeDays++;
       });
 
       let lastDate = null;
       sortedLogs.forEach((log) => {
-        if (log.score > 0) {
+        const work = getWorkCount(log);
+        if (work > 0) {
           const logDate = new Date(log.date);
           if (lastDate && differenceInDays(logDate, lastDate) === 1) {
             currentStreak++;
@@ -65,7 +74,7 @@ const ActivityHeatmapYear = React.memo(
       });
 
       return { totalSubmissions, activeDays, maxStreak };
-    }, [data]);
+    }, [data, getWorkCount]);
 
     const monthsData = useMemo(() => {
       const interval = eachMonthOfInterval({
@@ -223,11 +232,13 @@ const ActivityHeatmapYear = React.memo(
                   {month.days.map((day) => {
                     const dateStr = safeFormat(day, "yyyy-MM-dd");
                     const log = logByDate.get(dateStr);
-                    const intensity = log ? log.intensity || 0 : 0;
+                    const dayWork = getWorkCount(log);
+                    const hasWork = dayWork > 0;
+                    const intensity = hasWork ? (log?.intensity || 1) : 0;
                     const isFuture = day > today;
                     const isToday = dateStr === todayStr;
                     const isSelected = selectedDay === dateStr;
-                    const isRecord = log && log.score > 0 && log.score >= maxScore * 0.95 && maxScore > 0;
+                    const isRecord = hasWork && log && log.score > 0 && log.score >= maxScore * 0.95 && maxScore > 0;
 
                     return (
                       <div
@@ -236,7 +247,7 @@ const ActivityHeatmapYear = React.memo(
                         onMouseEnter={!isMobile ? (e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top });
-                          setHoveredDay({ date: day, log, id: dateStr });
+                          setHoveredDay({ date: day, log, id: dateStr, dayWork });
                         } : undefined}
                         onMouseLeave={!isMobile ? () => setHoveredDay(null) : undefined}
                         style={{
@@ -244,11 +255,19 @@ const ActivityHeatmapYear = React.memo(
                           height: 12,
                           borderRadius: 3,
                           background: intensityColors[intensity],
-                          opacity: isFuture ? 0.1 : 1,
+                          opacity: isFuture ? 0.08 : 1,
                           cursor: isFuture ? "default" : "pointer",
-                          border: isSelected ? "1.5px solid white" : isToday ? "1px solid var(--accent)" : "none",
+                          border: isSelected 
+                            ? "1.5px solid white" 
+                            : isToday 
+                              ? (hasWork ? "1px solid var(--accent)" : "1px dashed rgba(255,255,255,0.25)") 
+                              : "none",
                           position: "relative",
-                          boxShadow: isSelected ? "0 0 15px rgba(255,255,255,0.4)" : isToday ? "0 0 8px var(--accent)" : "none",
+                          boxShadow: isSelected 
+                            ? "0 0 15px rgba(255,255,255,0.4)" 
+                            : (isToday && hasWork) 
+                              ? "0 0 8px var(--accent)" 
+                              : "none",
                           transform: "translateZ(0)",
                           transition: "box-shadow 0.2s ease",
                         }}
@@ -311,21 +330,35 @@ const ActivityHeatmapYear = React.memo(
                 {safeFormat(hoveredDay.date, "MMMM d, yyyy")}
               </div>
               <div style={{ fontSize: 18, fontWeight: 900, color: "white", marginBottom: 12 }}>
-                {hoveredDay.log?.score || 0}{" "}
-                <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600 }}>COGNITIVE XP</span>
+                {hoveredDay.dayWork > 0 ? (
+                  <>
+                    {hoveredDay.log?.score || 0}{" "}
+                    <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600 }}>COGNITIVE XP</span>
+                  </>
+                ) : (
+                  <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
+                    No executions logged
+                  </span>
+                )}
               </div>
-              <div style={{ display: "grid", gap: 6, borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 12 }}>
-                {[
-                  { label: "Tactical Objectives", val: hoveredDay.log?.tasksCompleted || 0, color: "var(--accent)" },
-                  { label: "Neural Focus", val: `${hoveredDay.log?.pomodoros || 0} sessions`, color: "var(--green)" },
-                  { label: "Rituals Secured", val: hoveredDay.log?.habitsCompleted || 0, color: "var(--accent2)" },
-                ].map((item) => (
-                  <div key={item.label} style={{ fontSize: 10, display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>{item.label}</span>
-                    <span style={{ fontWeight: 800, color: item.color }}>{item.val}</span>
-                  </div>
-                ))}
-              </div>
+              {hoveredDay.dayWork > 0 ? (
+                <div style={{ display: "grid", gap: 6, borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 12 }}>
+                  {[
+                    { label: "Tactical Objectives", val: hoveredDay.log?.tasksCompleted || 0, color: "var(--accent)" },
+                    { label: "Neural Focus", val: `${hoveredDay.log?.pomodoros || 0} sessions`, color: "var(--green)" },
+                    { label: "Rituals Secured", val: hoveredDay.log?.habitsCompleted || 0, color: "var(--accent2)" },
+                  ].map((item) => (
+                    <div key={item.label} style={{ fontSize: 10, display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>{item.label}</span>
+                      <span style={{ fontWeight: 800, color: item.color }}>{item.val}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontStyle: "italic", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 8 }}>
+                  Complete a task, habit, or focus block to illuminate this cycle.
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

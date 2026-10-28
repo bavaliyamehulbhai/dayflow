@@ -530,7 +530,7 @@ function TasksSkeleton() {
 }
 
 // ─── Task modal ───────────────────────────────────────────────────────────────
-function TaskModal({ task, onClose, onSave }) {
+function TaskModal({ task, onClose, onSave, onDelete }) {
   const { addToast } = useNotifications();
   const isMobile = window.innerWidth <= 768;
   const [form, setForm] = useState({
@@ -567,6 +567,8 @@ function TaskModal({ task, onClose, onSave }) {
       return addToast("Objective title is required", "error");
     onSave({
       ...form,
+      title: form.title.trim(),
+      description: form.description.trim(),
       tags: form.tags
         .split(",")
         .map((t) => t.trim())
@@ -583,15 +585,15 @@ function TaskModal({ task, onClose, onSave }) {
       <div
         className="modal-body custom-scrollbar"
         style={{
-          padding: isMobile ? "0" : "32px",
+          padding: isMobile ? "16px 20px" : "28px 32px",
           paddingBottom: isMobile
             ? "calc(20px + env(safe-area-inset-bottom))"
-            : 32,
+            : 24,
           flex: 1,
           overflowY: "auto",
         }}
       >
-        <div className="form-group mb-6">
+        <div className="form-group mb-5">
           <label
             style={{
               fontSize: 10,
@@ -608,21 +610,54 @@ function TaskModal({ task, onClose, onSave }) {
           <input
             className="auth-input"
             style={{
-              height: 48,
-              fontSize: 15,
+              height: 46,
+              fontSize: 14,
               background: "var(--bg)",
               border: "1px solid var(--border)",
               borderRadius: 8,
-              padding: "0 16px"
+              padding: "0 14px"
             }}
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="E.g., Complete the Q4 report"
+            placeholder="E.g., Complete the Q4 financial audit"
             autoFocus
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="form-group mb-5">
+          <label
+            style={{
+              fontSize: 10,
+              fontWeight: 800,
+              color: "var(--muted)",
+              letterSpacing: 1.5,
+              textTransform: "uppercase",
+              marginBottom: 8,
+              display: "block",
+            }}
+          >
+            Description / Context
+          </label>
+          <textarea
+            className="auth-input custom-scrollbar"
+            style={{
+              minHeight: 70,
+              padding: "10px 14px",
+              fontSize: 13,
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              width: "100%",
+              resize: "vertical"
+            }}
+            rows={3}
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            placeholder="Add any specific context, milestones or links..."
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-5">
           <div className="form-group">
             <label
               style={{
@@ -681,7 +716,7 @@ function TaskModal({ task, onClose, onSave }) {
           </div>
         </div>
 
-        <div className="form-group mb-6">
+        <div className="form-group mb-5">
           <label
             style={{
               fontSize: 10,
@@ -701,9 +736,9 @@ function TaskModal({ task, onClose, onSave }) {
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, category: cat }))}
                 style={{
-                  padding: "6px 12px",
+                  padding: "5px 12px",
                   borderRadius: 6,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 600,
                   cursor: "pointer",
                   border: form.category === cat ? "1px solid var(--text)" : "1px solid var(--border)",
@@ -717,51 +752,227 @@ function TaskModal({ task, onClose, onSave }) {
           </div>
         </div>
 
-        <div className="form-group mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-5">
+          <div className="form-group">
+            <label
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                color: "var(--muted)",
+                textTransform: "uppercase",
+                marginBottom: 8,
+                display: "block",
+              }}
+            >
+              Due Date
+            </label>
+            <input
+              type="date"
+              className="auth-input"
+              style={{
+                height: 42,
+                borderRadius: 6,
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
+                padding: "0 12px",
+                width: "100%"
+              }}
+              value={form.dueDate}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, dueDate: e.target.value }))
+              }
+            />
+          </div>
+          <div className="form-group">
+            <label
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                color: "var(--muted)",
+                textTransform: "uppercase",
+                marginBottom: 8,
+                display: "block",
+              }}
+            >
+              Est. Minutes
+            </label>
+            <input
+              type="number"
+              min="1"
+              className="auth-input"
+              style={{
+                height: 42,
+                borderRadius: 6,
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
+                padding: "0 12px",
+                width: "100%"
+              }}
+              value={form.estimatedMinutes}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, estimatedMinutes: e.target.value }))
+              }
+              placeholder="e.g. 45"
+            />
+          </div>
+        </div>
+
+        {/* Checklist / Subtasks Section */}
+        <div className="form-group mb-5">
           <label
             style={{
               fontSize: 10,
               fontWeight: 800,
               color: "var(--muted)",
+              letterSpacing: 1.5,
               textTransform: "uppercase",
               marginBottom: 8,
               display: "block",
             }}
           >
-            Timeline
+            Checklist ({form.subtasks.filter((s) => s.completed).length}/{form.subtasks.length})
           </label>
-          <input
-            type="date"
-            className="auth-input"
-            style={{
-              height: 42,
-              borderRadius: 6,
-              background: "var(--bg)",
-              border: "1px solid var(--border)",
-              padding: "0 12px"
-            }}
-            value={form.dueDate}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, dueDate: e.target.value }))
-            }
-          />
+          {form.subtasks.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+              {form.subtasks.map((st, sIdx) => (
+                <div
+                  key={sIdx}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 12px",
+                    background: "rgba(255, 255, 255, 0.02)",
+                    border: "1px solid rgba(255, 255, 255, 0.06)",
+                    borderRadius: 8,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={st.completed}
+                    onChange={() => {
+                      setForm((f) => ({
+                        ...f,
+                        subtasks: f.subtasks.map((s, i) =>
+                          i === sIdx ? { ...s, completed: !s.completed } : s
+                        ),
+                      }));
+                    }}
+                    style={{ width: 16, height: 16, accentColor: "var(--accent)", cursor: "pointer" }}
+                  />
+                  <span
+                    style={{
+                      flex: 1,
+                      fontSize: 13,
+                      color: st.completed ? "var(--muted)" : "var(--text)",
+                      textDecoration: st.completed ? "line-through" : "none",
+                    }}
+                  >
+                    {st.title}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeSubtask(sIdx)}
+                    className="haptic-tap text-muted"
+                    style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4 }}
+                    title="Delete subtask"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="text"
+              className="auth-input"
+              style={{
+                height: 38,
+                borderRadius: 6,
+                fontSize: 13,
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
+                padding: "0 12px",
+                flex: 1,
+              }}
+              value={newSubtask}
+              onChange={(e) => setNewSubtask(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addSubtask();
+                }
+              }}
+              placeholder="Add checklist subtask..."
+            />
+            <button
+              type="button"
+              onClick={addSubtask}
+              className="btn glass btn-sm haptic-tap"
+              style={{ height: 38, padding: "0 14px", borderRadius: 6, fontSize: 12, fontWeight: 700 }}
+            >
+              <Plus size={14} /> Add
+            </button>
+          </div>
         </div>
+      </div>
 
-        <button
-          type="submit"
-          style={{
-            height: 48,
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            background: "var(--text)",
-            color: "var(--bg)",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          {task ? "Save changes" : "Create task"}
-        </button>
+      <div
+        style={{
+          padding: "16px 24px",
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          justifyContent: task && onDelete ? "space-between" : "flex-end",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        {task && onDelete && (
+          <button
+            type="button"
+            className="haptic-tap"
+            onClick={() => onDelete(task)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 8,
+              fontWeight: 600,
+              fontSize: 13,
+              background: "rgba(239, 68, 68, 0.1)",
+              border: "1px solid rgba(239, 68, 68, 0.25)",
+              color: "var(--red)",
+              cursor: "pointer",
+            }}
+          >
+            <Trash2 size={15} />
+            <span>Delete</span>
+          </button>
+        )}
+        <div style={{ display: "flex", gap: 12 }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-ghost"
+            style={{ padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600 }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{
+              padding: "8px 20px",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            {task ? "Save Changes" : "Create Objective"}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -771,7 +982,7 @@ function TaskModal({ task, onClose, onSave }) {
       <MobileBottomSheet
         isOpen={true}
         onClose={onClose}
-        title={task ? "Refine Mission" : "New Objective"}
+        title={task ? "Refine Objective" : "New Objective"}
       >
         {modalContent}
       </MobileBottomSheet>
@@ -782,7 +993,13 @@ function TaskModal({ task, onClose, onSave }) {
     <div
       className="modal-overlay"
       style={{
-        position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
@@ -791,18 +1008,19 @@ function TaskModal({ task, onClose, onSave }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 10 }}
         transition={{ type: "spring", damping: 25, stiffness: 400 }}
-        style={{ 
-          width: "100%", 
-          maxWidth: 480, 
+        style={{
+          width: "100%",
+          maxWidth: 500,
           maxHeight: "90vh",
           display: "flex",
           flexDirection: "column",
-          padding: 0, 
-          overflow: "hidden", 
+          padding: 0,
+          overflow: "hidden",
           background: "var(--surface-solid)",
           border: "1px solid var(--border)",
           borderRadius: 12,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)"
+          boxShadow:
+            "0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
         }}
       >
         <div
@@ -811,13 +1029,11 @@ function TaskModal({ task, onClose, onSave }) {
             borderBottom: "1px solid var(--border)",
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center"
+            alignItems: "center",
           }}
         >
-          <div
-            style={{ fontWeight: 600, fontSize: 18, color: "var(--text)" }}
-          >
-            {task ? "Edit Task" : "New Task"}
+          <div style={{ fontWeight: 600, fontSize: 18, color: "var(--text)" }}>
+            {task ? "Edit Objective" : "New Objective"}
           </div>
           <button
             className="modal-close haptic-tap"
@@ -949,6 +1165,34 @@ export default function TasksPage() {
       setConfirmState({ open: false, task: null });
       invalidate();
     },
+    onError: () => {
+      addToast("Failed to delete objective", "error");
+    }
+  });
+
+  const bulkStatusMutation = useMutation({
+    mutationFn: ({ ids, status }) => tasksAPI.bulkStatus(ids, status),
+    onSuccess: (res, variables) => {
+      addToast(`${variables.ids.length} objectives updated in bulk`, "success");
+      setSelected([]);
+      invalidate();
+    },
+    onError: () => {
+      addToast("Failed to update objectives in bulk", "error");
+    }
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids) => tasksAPI.bulkDelete(ids),
+    onSuccess: (res, variables) => {
+      addToast(`${variables.length} objectives removed in bulk`, "info");
+      setSelected([]);
+      setConfirmState({ open: false, task: null });
+      invalidate();
+    },
+    onError: () => {
+      addToast("Failed to delete objectives in bulk", "error");
+    }
   });
 
   const tasks = data?.tasks || [];
@@ -1008,31 +1252,38 @@ export default function TasksPage() {
     );
 
   const handleDelete = (task) => {
-    deleteMutation.mutate(getSafeId(task));
+    const tid = getSafeId(task);
+    if (!tid) return;
+    setConfirmState({
+      open: true,
+      title: `Remove "${task.title || 'Objective'}"?`,
+      message: "This action cannot be undone. Are you sure you want to proceed?",
+      danger: true,
+      onConfirm: () => {
+        deleteMutation.mutate(tid);
+        setConfirmState({ open: false, task: null });
+        if (modal && getSafeId(modal) === tid) {
+          setModal(null);
+        }
+      }
+    });
   };
 
   const handleBulkComplete = () => {
-    selected.forEach((id) => {
-      const task = tasks.find((t) => getSafeId(t) === id);
-      if (task && task.status !== "completed") {
-        updateMutation.mutate({ id, data: { status: "completed" } });
-      }
-    });
-    setSelected([]);
-    addToast(`${selected.length} objectives secured in bulk`, "success");
+    if (selected.length === 0) return;
+    bulkStatusMutation.mutate({ ids: selected, status: "completed" });
     feedback("success");
   };
 
   const handleBulkDelete = () => {
+    if (selected.length === 0) return;
     setConfirmState({
       open: true,
       title: `Remove ${selected.length} Objectives?`,
       message:
         "This action cannot be undone. Are you sure you want to proceed?",
       onConfirm: () => {
-        selected.forEach((id) => deleteMutation.mutate(id));
-        setSelected([]);
-        setConfirmState({ open: false, task: null });
+        bulkDeleteMutation.mutate(selected);
       },
     });
   };
@@ -1554,6 +1805,7 @@ export default function TasksPage() {
             task={modal === "create" ? null : modal}
             onClose={() => setModal(null)}
             onSave={handleSave}
+            onDelete={handleDelete}
           />
         )}
       </AnimatePresence>

@@ -57,6 +57,7 @@ import {
   Palette,
   Sun,
   Moon,
+  X,
 } from "lucide-react";
 import { useZenTheme } from "../hooks/useZenTheme";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -227,6 +228,31 @@ export default function ProfilePage() {
     log: null,
   });
   const [confirmDialog, setConfirmDialog] = useState({ open: false });
+  const [twoFactorModal, setTwoFactorModal] = useState({
+    open: false,
+    mode: "setup", // 'setup' | 'recovery' | 'disable'
+    qrCode: "",
+    secret: "",
+    code: "",
+    password: "",
+    recoveryCodes: [],
+    loading: false,
+  });
+
+  // Sync profileForm whenever user data is loaded or updated
+  useEffect(() => {
+    if (user) {
+      setProfileForm((prev) => ({
+        ...prev,
+        name: user.name || "",
+        bio: user.bio || "",
+        avatarGradient: user.avatarGradient || "purple",
+        pomodoroWork: user.preferences?.pomodoroWork || 25,
+        pomodoroBreak: user.preferences?.pomodoroBreak || 5,
+        pomodoroLong: user.preferences?.pomodoroLong || 15,
+      }));
+    }
+  }, [user]);
 
   // Fetch badges
   const { data: badgeData, refetch: refetchBadges } = useQuery({
@@ -315,16 +341,99 @@ export default function ProfilePage() {
 
   const handleProfileSave = (e) => {
     e?.preventDefault();
+    const pWork = Number(profileForm.pomodoroWork) || 25;
+    const pBreak = Number(profileForm.pomodoroBreak) || 5;
+    const pLong = Number(profileForm.pomodoroLong) || 15;
+
     profileMutation.mutate({
-      name: profileForm.name,
-      bio: profileForm.bio,
+      name: profileForm.name?.trim(),
+      bio: profileForm.bio?.trim(),
       avatarGradient: profileForm.avatarGradient,
       preferences: {
-        pomodoroWork: parseInt(profileForm.pomodoroWork),
-        pomodoroBreak: parseInt(profileForm.pomodoroBreak),
-        pomodoroLong: parseInt(profileForm.pomodoroLong),
+        pomodoroWork: pWork,
+        pomodoroBreak: pBreak,
+        pomodoroLong: pLong,
       },
     });
+  };
+
+  const handleOpen2FASetup = async () => {
+    setTwoFactorModal({
+      open: true,
+      mode: "setup",
+      qrCode: "",
+      secret: "",
+      code: "",
+      password: "",
+      recoveryCodes: [],
+      loading: true,
+    });
+    try {
+      const res = await authAPI.setup2FA();
+      setTwoFactorModal((prev) => ({
+        ...prev,
+        qrCode: res.data.qrCode,
+        secret: res.data.secret,
+        loading: false,
+      }));
+    } catch (err) {
+      addToast(
+        err.response?.data?.error || "Error initiating 2FA setup",
+        "error"
+      );
+      setTwoFactorModal((prev) => ({ ...prev, open: false, loading: false }));
+    }
+  };
+
+  const handleVerify2FA = async (e) => {
+    e.preventDefault();
+    if (!twoFactorModal.code || twoFactorModal.code.length < 6) {
+      return addToast("Please enter a valid 6-digit code", "error");
+    }
+    setTwoFactorModal((prev) => ({ ...prev, loading: true }));
+    try {
+      const res = await authAPI.verify2FA(twoFactorModal.code.trim());
+      updateUser({ twoFactorEnabled: true });
+      addToast("2FA protection engaged! 🛡️", "success");
+      setTwoFactorModal((prev) => ({
+        ...prev,
+        mode: "recovery",
+        recoveryCodes: res.data.recoveryCodes || [],
+        loading: false,
+      }));
+    } catch (err) {
+      addToast(
+        err.response?.data?.error || "Invalid verification code",
+        "error"
+      );
+      setTwoFactorModal((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleDisable2FA = async (e) => {
+    e.preventDefault();
+    if (!twoFactorModal.password) {
+      return addToast("Password is required", "error");
+    }
+    setTwoFactorModal((prev) => ({ ...prev, loading: true }));
+    try {
+      await authAPI.disable2FA(twoFactorModal.password);
+      updateUser({ twoFactorEnabled: false });
+      addToast("2FA protection disabled", "info");
+      setTwoFactorModal({
+        open: false,
+        mode: "setup",
+        qrCode: "",
+        secret: "",
+        code: "",
+        password: "",
+        recoveryCodes: [],
+        loading: false,
+      });
+    } catch (err) {
+      addToast(err.response?.data?.error || "Failed to disable 2FA", "error");
+      setTwoFactorModal((prev) => ({ ...prev, loading: false }));
+    }
   };
 
   const handlePasswordChange = (e) => {
@@ -656,6 +765,7 @@ export default function ProfilePage() {
                       onClick={() => {
                         setProfileForm((f) => ({ ...f, avatarGradient: key }));
                         setShowGradientPicker(false);
+                        profileMutation.mutate({ avatarGradient: key });
                       }}
                       style={{
                         width: 34,
@@ -1632,6 +1742,147 @@ export default function ProfilePage() {
                       </span>
                     </div>
                   ))}
+                </div>
+
+                {/* Two-Factor Authentication (2FA) Control Card */}
+                <div
+                  className="glass"
+                  style={{
+                    padding: "24px",
+                    borderRadius: 20,
+                    border: user?.twoFactorEnabled
+                      ? "1px solid rgba(34,197,94,0.2)"
+                      : "1px solid rgba(124,109,250,0.15)",
+                    background: user?.twoFactorEnabled
+                      ? "rgba(34,197,94,0.03)"
+                      : "rgba(124,109,250,0.03)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 16,
+                    marginBottom: 40,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 14,
+                        background: user?.twoFactorEnabled
+                          ? "rgba(34,197,94,0.1)"
+                          : "rgba(124,109,250,0.1)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Fingerprint
+                        size={24}
+                        style={{
+                          color: user?.twoFactorEnabled
+                            ? "var(--green)"
+                            : "var(--accent)",
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <span>Two-Factor Authentication (2FA)</span>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            padding: "2px 8px",
+                            borderRadius: 6,
+                            fontWeight: 800,
+                            background: user?.twoFactorEnabled
+                              ? "rgba(34,197,94,0.15)"
+                              : "rgba(255,255,255,0.05)",
+                            color: user?.twoFactorEnabled
+                              ? "#4ade80"
+                              : "var(--muted)",
+                          }}
+                        >
+                          {user?.twoFactorEnabled ? "ENABLED" : "DISABLED"}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--muted)",
+                          marginTop: 4,
+                          maxWidth: 450,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {user?.twoFactorEnabled
+                          ? "Your account is guarded with time-based TOTP verification on each login session."
+                          : "Secure your consciousness by requiring a dynamic 6-digit authenticator code on login."}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    {user?.twoFactorEnabled ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTwoFactorModal({
+                            open: true,
+                            mode: "disable",
+                            qrCode: "",
+                            secret: "",
+                            code: "",
+                            password: "",
+                            recoveryCodes: [],
+                            loading: false,
+                          })
+                        }
+                        className="haptic-tap"
+                        style={{
+                          padding: "10px 18px",
+                          borderRadius: 12,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          background: "rgba(255,107,107,0.1)",
+                          color: "var(--red)",
+                          border: "1px solid rgba(255,107,107,0.2)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Disable 2FA
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleOpen2FASetup}
+                        className="haptic-tap"
+                        style={{
+                          padding: "10px 20px",
+                          borderRadius: 12,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          background: "var(--grad-premium)",
+                          color: "white",
+                          border: "none",
+                          cursor: "pointer",
+                          boxShadow: "0 4px 15px rgba(124,109,250,0.3)",
+                        }}
+                      >
+                        Enable 2FA Protection
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <label
@@ -3010,6 +3261,497 @@ export default function ProfilePage() {
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog({ open: false })}
       />
+
+      {/* 2FA Setup / Recovery / Disable Modal */}
+      <AnimatePresence>
+        {twoFactorModal.open && (
+          <div
+            className="modal-overlay"
+            style={{
+              zIndex: 2000,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(12px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "fixed",
+              inset: 0,
+              padding: 20,
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !twoFactorModal.loading) {
+                setTwoFactorModal((prev) => ({ ...prev, open: false }));
+              }
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 15 }}
+              style={{
+                width: "100%",
+                maxWidth: 480,
+                background: "var(--surface-solid)",
+                border: "1px solid var(--border)",
+                borderRadius: 24,
+                padding: 32,
+                position: "relative",
+                boxShadow: "0 30px 60px rgba(0,0,0,0.7)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setTwoFactorModal((prev) => ({ ...prev, open: false }))
+                }
+                style={{
+                  position: "absolute",
+                  top: 20,
+                  right: 20,
+                  background: "rgba(255,255,255,0.05)",
+                  border: "none",
+                  borderRadius: 10,
+                  width: 32,
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "var(--muted)",
+                }}
+              >
+                <X size={16} />
+              </button>
+
+              {twoFactorModal.mode === "setup" && (
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      marginBottom: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        background: "rgba(124,109,250,0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Fingerprint size={20} color="var(--accent)" />
+                    </div>
+                    <div>
+                      <h3
+                        style={{ margin: 0, fontSize: 18, fontWeight: 800 }}
+                      >
+                        Two-Factor Setup
+                      </h3>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: 12,
+                          color: "var(--muted)",
+                        }}
+                      >
+                        Scan QR Code with Google Authenticator or Authy
+                      </p>
+                    </div>
+                  </div>
+
+                  {twoFactorModal.loading && !twoFactorModal.qrCode ? (
+                    <div
+                      style={{
+                        padding: 40,
+                        textAlign: "center",
+                        color: "var(--muted)",
+                      }}
+                    >
+                      Generating security credentials...
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          textAlign: "center",
+                          margin: "24px 0",
+                          background: "white",
+                          padding: 16,
+                          borderRadius: 16,
+                          display: "inline-block",
+                          width: "100%",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        {twoFactorModal.qrCode && (
+                          <img
+                            src={twoFactorModal.qrCode}
+                            alt="2FA QR Code"
+                            style={{
+                              width: 180,
+                              height: 180,
+                              margin: "0 auto",
+                              display: "block",
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      <div
+                        style={{
+                          marginBottom: 20,
+                          background: "rgba(255,255,255,0.03)",
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "var(--muted)",
+                              fontWeight: 700,
+                            }}
+                          >
+                            MANUAL SECRET KEY
+                          </div>
+                          <code
+                            style={{
+                              fontSize: 12,
+                              color: "var(--accent)",
+                              letterSpacing: 1,
+                            }}
+                          >
+                            {twoFactorModal.secret}
+                          </code>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              twoFactorModal.secret
+                            );
+                            addToast(
+                              "Secret key copied to clipboard",
+                              "success"
+                            );
+                          }}
+                          style={{
+                            fontSize: 11,
+                            padding: "4px 8px",
+                            background: "rgba(255,255,255,0.06)",
+                            border: "none",
+                            borderRadius: 6,
+                            color: "white",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Copy
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleVerify2FA}>
+                        <label
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: "var(--muted)",
+                            display: "block",
+                            marginBottom: 8,
+                          }}
+                        >
+                          ENTER 6-DIGIT VERIFICATION CODE
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          placeholder="000000"
+                          value={twoFactorModal.code}
+                          onChange={(e) =>
+                            setTwoFactorModal((prev) => ({
+                              ...prev,
+                              code: e.target.value.replace(/\D/g, ""),
+                            }))
+                          }
+                          style={{
+                            width: "100%",
+                            height: 52,
+                            borderRadius: 14,
+                            background: "rgba(0,0,0,0.3)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            fontSize: 22,
+                            letterSpacing: 6,
+                            textAlign: "center",
+                            color: "white",
+                            fontWeight: 800,
+                            outline: "none",
+                            marginBottom: 20,
+                            boxSizing: "border-box",
+                          }}
+                          autoFocus
+                        />
+                        <button
+                          type="submit"
+                          disabled={
+                            twoFactorModal.loading ||
+                            twoFactorModal.code.length < 6
+                          }
+                          style={{
+                            width: "100%",
+                            height: 48,
+                            borderRadius: 14,
+                            background: "var(--grad-premium)",
+                            color: "white",
+                            fontWeight: 800,
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: 14,
+                          }}
+                        >
+                          {twoFactorModal.loading
+                            ? "Verifying..."
+                            : "Verify & Activate 2FA"}
+                        </button>
+                      </form>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {twoFactorModal.mode === "recovery" && (
+                <div>
+                  <div style={{ textAlign: "center", marginBottom: 20 }}>
+                    <CheckCircle2
+                      size={40}
+                      color="var(--green)"
+                      style={{ margin: "0 auto 12px" }}
+                    />
+                    <h3 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800 }}>
+                      2FA Successfully Activated
+                    </h3>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 12,
+                        color: "var(--muted)",
+                      }}
+                    >
+                      Save these emergency recovery codes. Each code can only be
+                      used once if you lose device access.
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 8,
+                      background: "rgba(0,0,0,0.3)",
+                      padding: 16,
+                      borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      marginBottom: 20,
+                    }}
+                  >
+                    {twoFactorModal.recoveryCodes.map((code, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          fontFamily: "monospace",
+                          fontSize: 13,
+                          color: "var(--accent)",
+                          padding: "4px 8px",
+                          background: "rgba(255,255,255,0.03)",
+                          borderRadius: 6,
+                          textAlign: "center",
+                        }}
+                      >
+                        {code}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          twoFactorModal.recoveryCodes.join("\n")
+                        );
+                        addToast("Recovery codes copied to clipboard", "success");
+                      }}
+                      style={{
+                        flex: 1,
+                        height: 44,
+                        borderRadius: 12,
+                        background: "rgba(255,255,255,0.08)",
+                        border: "none",
+                        color: "white",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Copy Codes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTwoFactorModal((prev) => ({ ...prev, open: false }))
+                      }
+                      style={{
+                        flex: 1,
+                        height: 44,
+                        borderRadius: 12,
+                        background: "var(--grad-premium)",
+                        border: "none",
+                        color: "white",
+                        fontWeight: 800,
+                        cursor: "pointer",
+                      }}
+                    >
+                      I Have Saved Them
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {twoFactorModal.mode === "disable" && (
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      marginBottom: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        background: "rgba(255,107,107,0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <AlertCircle size={20} color="var(--red)" />
+                    </div>
+                    <div>
+                      <h3
+                        style={{ margin: 0, fontSize: 18, fontWeight: 800 }}
+                      >
+                        Disable 2FA Protection
+                      </h3>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: 12,
+                          color: "var(--muted)",
+                        }}
+                      >
+                        Enter your password to disengage two-factor security.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleDisable2FA}>
+                    <div style={{ marginBottom: 20 }}>
+                      <label
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "var(--muted)",
+                          display: "block",
+                          marginBottom: 8,
+                        }}
+                      >
+                        CURRENT ACCOUNT PASSWORD
+                      </label>
+                      <input
+                        type="password"
+                        value={twoFactorModal.password}
+                        onChange={(e) =>
+                          setTwoFactorModal((prev) => ({
+                            ...prev,
+                            password: e.target.value,
+                          }))
+                        }
+                        required
+                        placeholder="Enter your password"
+                        style={{
+                          width: "100%",
+                          height: 50,
+                          borderRadius: 14,
+                          background: "rgba(0,0,0,0.3)",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          padding: "0 16px",
+                          color: "white",
+                          fontSize: 14,
+                          outline: "none",
+                          boxSizing: "border-box",
+                        }}
+                        autoFocus
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTwoFactorModal((prev) => ({ ...prev, open: false }))
+                        }
+                        style={{
+                          flex: 1,
+                          height: 46,
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.06)",
+                          border: "none",
+                          color: "white",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={
+                          twoFactorModal.loading || !twoFactorModal.password
+                        }
+                        style={{
+                          flex: 1,
+                          height: 46,
+                          borderRadius: 12,
+                          background: "rgba(255,107,107,0.15)",
+                          border: "1px solid rgba(255,107,107,0.3)",
+                          color: "var(--red)",
+                          fontWeight: 800,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {twoFactorModal.loading
+                          ? "Disabling..."
+                          : "Confirm & Disable"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

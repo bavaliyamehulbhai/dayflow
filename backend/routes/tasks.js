@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult, query } = require('express-validator');
+const mongoose = require('mongoose');
 const Task = require('../models/Task');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
@@ -9,6 +10,9 @@ const { awardBadges } = require('../services/badgeService');
 const { logActivity } = require('../services/activityService');
 const { updateStreak } = require('../services/streakService');
 const { cacheMiddleware, clearCache } = require('../middleware/cache');
+
+// Helper to validate MongoDB ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // All routes protected
 router.use(protect);
@@ -22,6 +26,7 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
     if (category) filter.category = category; // ReDoS Safe Exact Match
+
     // Flexible partial keyword search across title, description, and tags
     if (search && typeof search === 'string' && search.trim()) {
       const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -31,14 +36,19 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
         { tags: { $regex: escaped, $options: 'i' } }
       ];
     }
+
     if (dueDate) {
       const date = new Date(dueDate);
-      const nextDay = new Date(date);
-      nextDay.setDate(nextDay.getDate() + 1);
-      filter.dueDate = { $gte: date, $lt: nextDay };
+      if (!isNaN(date.getTime())) {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        filter.dueDate = { $gte: date, $lt: nextDay };
+      }
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const parsedPage = Math.max(1, parseInt(page) || 1);
+    const parsedLimit = Math.min(100, Math.max(1, parseInt(limit) || 50));
+    const skip = (parsedPage - 1) * parsedLimit;
     const sortOrder = order === 'asc' ? 1 : -1;
     const sortField = { [sortBy]: sortOrder };
 
@@ -46,13 +56,14 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
       Task.find(filter)
         .sort(sortField)
         .skip(skip)
-        .limit(parseInt(limit))
+        .limit(parsedLimit)
         .lean(),
       Task.countDocuments(filter)
     ]);
 
-    res.json({ success: true, tasks, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) });
+    res.json({ success: true, tasks, total, page: parsedPage, pages: Math.ceil(total / parsedLimit) });
   } catch (err) {
+    console.error('[TASKS GET ERROR]', err);
     res.status(500).json({ error: 'Error fetching tasks.' });
   }
 });
@@ -60,10 +71,15 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
 // ─── GET single task ──────────────────────────────────────────────────────────
 router.get('/:id', cacheMiddleware(300), async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ error: 'Task not found.' });
+    }
+
     const task = await Task.findOne({ _id: req.params.id, user: req.user._id });
     if (!task) return res.status(404).json({ error: 'Task not found.' });
     res.json({ success: true, task });
   } catch (err) {
+    console.error('[TASK GET ONE ERROR]', err);
     res.status(500).json({ error: 'Error fetching task.' });
   }
 });
@@ -87,8 +103,12 @@ router.post('/',
 
       const { title, description, priority, status, category, dueDate, estimatedMinutes, tags, subtasks } = req.body;
       const task = await Task.create({
-        title, description, priority, status, category,
-        dueDate: dueDate || null,
+        title,
+        description: description ? description.trim() : '',
+        priority: priority || 'medium',
+        status: status || 'pending',
+        category: category || 'General',
+        dueDate: dueDate ? new Date(dueDate) : null,
         estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
         tags: Array.isArray(tags) ? tags.map(t => String(t).trim()).filter(Boolean) : [],
         subtasks: Array.isArray(subtasks) ? subtasks.map(s => ({ title: String(s.title || '').trim(), completed: Boolean(s.completed) })) : [],
@@ -97,6 +117,7 @@ router.post('/',
       clearCache(req.user._id);
       res.status(201).json({ success: true, task });
     } catch (err) {
+      console.error('[TASK CREATE ERROR]', err);
       res.status(500).json({ error: 'Error creating task.' });
     }
   }
@@ -116,20 +137,30 @@ router.put('/:id',
   ],
   async (req, res) => {
     try {
+      if (!isValidObjectId(req.params.id)) {
+        return res.status(404).json({ error: 'Task not found.' });
+      }
+
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
       const { title, description, priority, status, category, dueDate, estimatedMinutes, tags, subtasks } = req.body;
       const updates = {};
-      if (title !== undefined) updates.title = title;
-      if (description !== undefined) updates.description = description;
+      if (title !== undefined) updates.title = title.trim();
+      if (description !== undefined) updates.description = description ? description.trim() : '';
       if (priority !== undefined) updates.priority = priority;
       if (status !== undefined) updates.status = status;
       if (category !== undefined) updates.category = category;
-      if (dueDate !== undefined) updates.dueDate = dueDate || null;
+      if (dueDate !== undefined) updates.dueDate = dueDate ? new Date(dueDate) : null;
       if (estimatedMinutes !== undefined) updates.estimatedMinutes = estimatedMinutes ? parseInt(estimatedMinutes) : null;
-      if (tags !== undefined) updates.tags = tags.map(t => String(t).trim()).filter(Boolean);
-      if (subtasks !== undefined && Array.isArray(subtasks)) updates.subtasks = subtasks.map(s => ({ title: String(s.title || '').trim(), completed: Boolean(s.completed) }));
+      if (tags !== undefined) updates.tags = Array.isArray(tags) ? tags.map(t => String(t).trim()).filter(Boolean) : [];
+      if (subtasks !== undefined && Array.isArray(subtasks)) {
+        updates.subtasks = subtasks.map(s => ({
+          title: String(s.title || '').trim(),
+          completed: Boolean(s.completed),
+          completedAt: s.completed ? (s.completedAt || new Date()) : null
+        }));
+      }
 
       const existingTask = await Task.findOne({ _id: req.params.id, user: req.user._id });
       if (!existingTask) return res.status(404).json({ error: 'Task not found.' });
@@ -164,6 +195,7 @@ router.put('/:id',
       clearCache(req.user._id);
       res.json({ success: true, task, newBadges });
     } catch (err) {
+      console.error('[TASK UPDATE ERROR]', err);
       res.status(500).json({ error: 'Error updating task.' });
     }
   }
@@ -172,11 +204,27 @@ router.put('/:id',
 // ─── DELETE task ──────────────────────────────────────────────────────────────
 router.delete('/:id', async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ error: 'Task not found.' });
+    }
+
     const task = await Task.findOneAndDelete({ _id: req.params.id, user: req.user._id });
     if (!task) return res.status(404).json({ error: 'Task not found.' });
+
+    // If task was completed, adjust completed count
+    if (task.status === 'completed') {
+      try {
+        await User.findByIdAndUpdate(req.user._id, { $inc: { 'stats.tasksCompleted': -1 } });
+        await logActivity(req.user._id, { tasksCompleted: -1 });
+      } catch (logErr) {
+        console.error('[TASK DELETE LOG ERROR]', logErr);
+      }
+    }
+
     clearCache(req.user._id);
     res.json({ success: true, message: 'Task deleted.' });
   } catch (err) {
+    console.error('[TASK DELETE ERROR]', err);
     res.status(500).json({ error: 'Error deleting task.' });
   }
 });
@@ -185,11 +233,37 @@ router.delete('/:id', async (req, res) => {
 router.post('/bulk/delete', async (req, res) => {
   try {
     const { ids } = req.body;
-    if (!ids || !Array.isArray(ids)) return res.status(400).json({ error: 'IDs array required.' });
-    const result = await Task.deleteMany({ _id: { $in: ids }, user: req.user._id });
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'Valid IDs array required.' });
+    }
+
+    const validIds = ids.filter(isValidObjectId);
+    if (validIds.length === 0) {
+      return res.status(400).json({ error: 'No valid task IDs provided.' });
+    }
+
+    // Check how many completed tasks are being deleted to adjust stats
+    const completedCount = await Task.countDocuments({
+      _id: { $in: validIds },
+      user: req.user._id,
+      status: 'completed'
+    });
+
+    const result = await Task.deleteMany({ _id: { $in: validIds }, user: req.user._id });
+
+    if (completedCount > 0) {
+      try {
+        await User.findByIdAndUpdate(req.user._id, { $inc: { 'stats.tasksCompleted': -completedCount } });
+        await logActivity(req.user._id, { tasksCompleted: -completedCount });
+      } catch (logErr) {
+        console.error('[BULK DELETE LOG ERROR]', logErr);
+      }
+    }
+
     clearCache(req.user._id);
     res.json({ success: true, deleted: result.deletedCount });
   } catch (err) {
+    console.error('[BULK DELETE ERROR]', err);
     res.status(500).json({ error: 'Error deleting tasks.' });
   }
 });
@@ -197,12 +271,19 @@ router.post('/bulk/delete', async (req, res) => {
 router.post('/bulk/status', async (req, res) => {
   try {
     const { ids, status } = req.body;
-    if (!ids || !status) return res.status(400).json({ error: 'IDs and status required.' });
+    if (!ids || !Array.isArray(ids) || ids.length === 0 || !status) {
+      return res.status(400).json({ error: 'IDs array and status required.' });
+    }
+
+    const validIds = ids.filter(isValidObjectId);
+    if (validIds.length === 0) {
+      return res.status(400).json({ error: 'No valid task IDs provided.' });
+    }
+
     const update = { status };
     if (status === 'completed') {
-      // Find the tasks in this list that are not already completed
       const pendingTasks = await Task.find({
-        _id: { $in: ids },
+        _id: { $in: validIds },
         user: req.user._id,
         status: { $ne: 'completed' }
       }).select('_id');
@@ -213,14 +294,13 @@ router.post('/bulk/status', async (req, res) => {
         await User.findByIdAndUpdate(req.user._id, { $inc: { 'stats.tasksCompleted': countToComplete } });
         await logActivity(req.user._id, { tasksCompleted: countToComplete });
         await updateStreak(req.user._id);
-        
+
         const pendingIds = pendingTasks.map(t => t._id);
         await Task.updateMany({ _id: { $in: pendingIds }, user: req.user._id }, update);
       }
     } else {
-      // If changing to pending, in-progress, or cancelled, decrement stats for tasks that WERE completed
       const completedTasks = await Task.find({
-        _id: { $in: ids },
+        _id: { $in: validIds },
         user: req.user._id,
         status: 'completed'
       }).select('_id');
@@ -232,11 +312,13 @@ router.post('/bulk/status', async (req, res) => {
         await logActivity(req.user._id, { tasksCompleted: -countToRevert });
       }
 
-      await Task.updateMany({ _id: { $in: ids }, user: req.user._id }, update);
+      await Task.updateMany({ _id: { $in: validIds }, user: req.user._id }, update);
     }
+
     clearCache(req.user._id);
-    res.json({ success: true, message: 'Tasks updated.' });
+    res.json({ success: true, message: 'Tasks updated successfully.' });
   } catch (err) {
+    console.error('[BULK STATUS ERROR]', err);
     res.status(500).json({ error: 'Error updating tasks.' });
   }
 });
@@ -244,6 +326,10 @@ router.post('/bulk/status', async (req, res) => {
 // ─── Subtask toggle ───────────────────────────────────────────────────────────
 router.patch('/:id/subtasks/:subtaskId', async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.subtaskId)) {
+      return res.status(404).json({ error: 'Task or subtask not found.' });
+    }
+
     const task = await Task.findOne({ _id: req.params.id, user: req.user._id });
     if (!task) return res.status(404).json({ error: 'Task not found.' });
 
@@ -256,6 +342,7 @@ router.patch('/:id/subtasks/:subtaskId', async (req, res) => {
     clearCache(req.user._id);
     res.json({ success: true, task });
   } catch (err) {
+    console.error('[SUBTASK TOGGLE ERROR]', err);
     res.status(500).json({ error: 'Error updating subtask.' });
   }
 });
@@ -268,7 +355,6 @@ router.get('/stats/summary', cacheMiddleware(300), async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Single aggregate instead of 6 countDocuments round-trips
     const [statusCounts, overdueCount, todayCompletedCount] = await Promise.all([
       Task.aggregate([
         { $match: { user: req.user._id } },
@@ -295,9 +381,9 @@ router.get('/stats/summary', cacheMiddleware(300), async (req, res) => {
 
     res.json({ success: true, stats });
   } catch (err) {
+    console.error('[STATS SUMMARY ERROR]', err);
     res.status(500).json({ error: 'Error fetching stats.' });
   }
 });
 
 module.exports = router;
-

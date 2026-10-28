@@ -44,7 +44,7 @@ const CAT_COLORS = {
   other: "#a3a3a3",
 };
 
-function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
+function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, tasks, isMobile }) {
   const { addToast } = useNotifications();
   const [form, setForm] = useState({
     title: event?.title || "",
@@ -99,8 +99,33 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
             alignItems: "center"
           }}
         >
-          <div style={{ fontWeight: 600, fontSize: 18, color: "var(--text)" }}>
-            {event ? "Edit Event" : "New Event"}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontWeight: 700, fontSize: 18, color: "var(--text)" }}>
+              {event ? "Edit Event" : "New Event"}
+            </span>
+            {event && onToggleComplete && (
+              <button
+                type="button"
+                className="haptic-tap"
+                onClick={() => onToggleComplete(getSafeId(event))}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 10px",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: event.isCompleted ? "rgba(34, 197, 94, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                  border: `1px solid ${event.isCompleted ? "rgba(34, 197, 94, 0.3)" : "rgba(255, 255, 255, 0.1)"}`,
+                  color: event.isCompleted ? "var(--green)" : "var(--muted)",
+                  cursor: "pointer"
+                }}
+              >
+                <CheckCircle2 size={14} />
+                <span>{event.isCompleted ? "Completed" : "Mark Complete"}</span>
+              </button>
+            )}
           </div>
           <button
             className="haptic-tap"
@@ -340,37 +365,73 @@ function EventModal({ event, date, onClose, onSave, tasks, isMobile }) {
         </div>
         <div
           style={{
-            padding: "20px 24px",
+            padding: "16px 24px",
             borderTop: "1px solid var(--border)",
             display: "flex",
-            gap: 12,
-            justifyContent: "flex-end"
+            justifyContent: event && onDelete ? "space-between" : "flex-end",
+            alignItems: "center",
+            gap: 12
           }}
         >
-          <button
-            onClick={onClose}
-            style={{ padding: "8px 16px", borderRadius: 6, fontWeight: 600, background: "transparent", border: "1px solid var(--border)", color: "var(--text)" }}
-          >
-            Cancel
-          </button>
-          <button
-            style={{
-              padding: "8px 16px",
-              borderRadius: 6,
-              fontSize: 14,
-              fontWeight: 600,
-              background: "var(--text)",
-              color: "var(--bg)",
-              border: "none"
-            }}
-            onClick={() => {
-              if (!form.title.trim() || !form.startTime || !form.date)
-                return addToast("Required data missing", "error");
-              onSave({ ...form, linkedTask: form.linkedTask || null });
-            }}
-          >
-            Save Event
-          </button>
+          {event && onDelete && (
+            <button
+              type="button"
+              className="haptic-tap"
+              onClick={() => onDelete(event)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontWeight: 600,
+                fontSize: 13,
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgba(239, 68, 68, 0.25)",
+                color: "var(--red)",
+                cursor: "pointer"
+              }}
+            >
+              <Trash2 size={15} />
+              <span>Delete</span>
+            </button>
+          )}
+          <div style={{ display: "flex", gap: 12 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-ghost"
+              style={{ padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600 }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{
+                padding: "8px 20px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700
+              }}
+              onClick={() => {
+                if (!form.title.trim()) return addToast("Please enter an event title", "error");
+                if (!form.date) return addToast("Please select a date", "error");
+                if (!form.startTime) return addToast("Please enter a start time", "error");
+                if (form.endTime && form.endTime <= form.startTime) {
+                  return addToast("End time must be after start time", "error");
+                }
+                onSave({
+                  ...form,
+                  title: form.title.trim(),
+                  linkedTask: form.linkedTask || null,
+                  endTime: form.endTime || null
+                });
+              }}
+            >
+              {event ? "Save Changes" : "Create Event"}
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -451,8 +512,17 @@ export default function SchedulePage() {
   });
 
   const events = data || [];
-  const now = new Date();
-  const todayStr = format(now, "yyyy-MM-dd");
+  const [now, setNow] = useState(new Date());
+
+  // 30s ticker to keep current time line indicator live
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const todayStr = safeToLocalISO(now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
   const getStatus = (ev) => {
@@ -474,19 +544,40 @@ export default function SchedulePage() {
 
   const handleSave = (data) => {
     const mid = getSafeId(modal);
-    if (modal && mid) updateMutation.mutate({ id: mid, data });
+    if (modal && mid && modal !== "create") updateMutation.mutate({ id: mid, data });
     else createMutation.mutate(data);
   };
 
+  const handleDeleteRequest = (ev) => {
+    const evId = getSafeId(ev);
+    if (!evId) return;
+    setConfirmDialog({
+      open: true,
+      title: "Delete Event",
+      message: `Are you sure you want to delete "${ev.title || 'this event'}"?`,
+      confirmText: "Delete",
+      danger: true,
+      onConfirm: () => {
+        deleteMutation.mutate(evId);
+        setConfirmDialog({ open: false });
+        if (modal && getSafeId(modal) === evId) {
+          setModal(null);
+        }
+      }
+    });
+  };
+
   const prevDay = () => {
-    const d = new Date(currentDate + "T12:00:00");
-    d.setDate(d.getDate() - 1);
-    setCurrentDate(d.toISOString().split("T")[0]);
+    const [y, m, d] = currentDate.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() - 1);
+    setCurrentDate(safeToLocalISO(dateObj));
   };
   const nextDay = () => {
-    const d = new Date(currentDate + "T12:00:00");
-    d.setDate(d.getDate() + 1);
-    setCurrentDate(d.toISOString().split("T")[0]);
+    const [y, m, d] = currentDate.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() + 1);
+    setCurrentDate(safeToLocalISO(dateObj));
   };
 
   const hours = Array.from({ length: 18 }, (_, i) => i + 6);
@@ -763,11 +854,12 @@ export default function SchedulePage() {
                   key={h}
                   onClick={() => {
                     const padHour = String(h).padStart(2, "0");
+                    const endHour = h === 23 ? "23:59" : `${String(h + 1).padStart(2, "0")}:00`;
                     setModal({
                       title: "",
                       description: "",
                       startTime: `${padHour}:00`,
-                      endTime: `${String(h + 1).padStart(2, "0")}:00`,
+                      endTime: endHour,
                       category: "other"
                     });
                   }}
@@ -1039,22 +1131,37 @@ export default function SchedulePage() {
                           </div>
                         </div>
                         <div
-                          style={{ display: "flex", gap: 8 }}
+                          style={{ display: "flex", gap: 6 }}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
                             className="btn glass btn-sm haptic-tap"
                             style={{
-                              width: 34,
-                              height: 34,
-                              borderRadius: 10,
+                              width: 32,
+                              height: 32,
+                              borderRadius: 8,
                               color: ev.isCompleted
                                 ? "var(--green)"
                                 : "var(--muted)",
                             }}
+                            title={ev.isCompleted ? "Mark Incomplete" : "Mark Complete"}
                             onClick={() => toggleMutation.mutate(getSafeId(ev))}
                           >
-                            <CheckCircle2 size={18} />
+                            <CheckCircle2 size={16} />
+                          </button>
+                          <button
+                            className="btn glass btn-sm haptic-tap"
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 8,
+                              color: "var(--red)",
+                              opacity: 0.8
+                            }}
+                            title="Delete Event"
+                            onClick={() => handleDeleteRequest(ev)}
+                          >
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
@@ -1101,6 +1208,15 @@ export default function SchedulePage() {
             date={currentDate}
             onClose={() => setModal(null)}
             onSave={handleSave}
+            onDelete={handleDeleteRequest}
+            onToggleComplete={(id) => {
+              toggleMutation.mutate(id);
+              setModal((prev) =>
+                prev && typeof prev === "object"
+                  ? { ...prev, isCompleted: !prev.isCompleted }
+                  : prev
+              );
+            }}
             tasks={tasks}
             isMobile={isMobile}
           />

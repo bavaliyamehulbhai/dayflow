@@ -1,13 +1,24 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 const Note = require("../models/Note");
 const { protect } = require("../middleware/auth");
 const { sanitizeFields } = require("../middleware/sanitizer");
 const { logActivity } = require("../services/activityService");
 const { cacheMiddleware, clearCache } = require("../middleware/cache");
+const { decrypt } = require("../utils/cryptoUtils");
 
 router.use(protect);
+
+// Helper to ensure returned note has decrypted title & content
+const formatNoteResponse = (noteDoc) => {
+  if (!noteDoc) return null;
+  const noteObj = noteDoc.toObject ? noteDoc.toObject() : { ...noteDoc };
+  if (noteObj.title) noteObj.title = decrypt(noteObj.title);
+  if (noteObj.content) noteObj.content = decrypt(noteObj.content);
+  return noteObj;
+};
 
 // ─── Validation rules ─────────────────────────────────────────────────────────
 const noteValidation = [
@@ -33,27 +44,45 @@ const noteValidation = [
 // GET all notes
 router.get("/", cacheMiddleware(60), async (req, res) => {
   try {
-    const { search, tag, archived = false, page = 1, limit = 50 } = req.query;
-    const filter = { user: req.user._id, isArchived: archived === "true" };
+    const { search, tag, archived = "false", page = 1, limit = 50 } = req.query;
+    const isArchivedBool = archived === "true";
+    const filter = { user: req.user._id, isArchived: isArchivedBool };
 
-    if (tag) filter.tags = tag;
-    if (search && typeof search === "string" && search.trim()) {
-      const q = search.trim();
-      filter.$or = [
-        { title: { $regex: q, $options: "i" } },
-        { content: { $regex: q, $options: "i" } },
-        { tags: { $regex: q, $options: "i" } },
-      ];
+    if (tag && typeof tag === "string" && tag.trim()) {
+      filter.tags = tag.trim();
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const notes = await Note.find(filter)
+    // Retrieve notes for user (post-init hook automatically decrypts title & content)
+    let notes = await Note.find(filter)
       .sort({ isPinned: -1, updatedAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+      .populate("linkedTask", "title status priority");
 
-    res.json({ success: true, notes });
+    // Perform case-insensitive search in-memory to handle encrypted fields at rest
+    if (search && typeof search === "string" && search.trim()) {
+      const q = search.trim().toLowerCase();
+      notes = notes.filter((n) => {
+        const titleMatch = (n.title || "").toLowerCase().includes(q);
+        const contentMatch = (n.content || "").toLowerCase().includes(q);
+        const tagsMatch = Array.isArray(n.tags) && n.tags.some((t) => (t || "").toLowerCase().includes(q));
+        return titleMatch || contentMatch || tagsMatch;
+      });
+    }
+
+    const total = notes.length;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+    const paginatedNotes = notes.slice(skip, skip + limitNum).map(formatNoteResponse);
+
+    res.json({
+      success: true,
+      notes: paginatedNotes,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum) || 1,
+    });
   } catch (err) {
+    console.error("Error fetching notes:", err);
     res.status(500).json({ error: "Error fetching notes." });
   }
 });
@@ -61,9 +90,13 @@ router.get("/", cacheMiddleware(60), async (req, res) => {
 // GET single note
 router.get("/:id", cacheMiddleware(300), async (req, res) => {
   try {
-    const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid note ID format." });
+    }
+    const note = await Note.findOne({ _id: req.params.id, user: req.user._id })
+      .populate("linkedTask", "title status priority");
     if (!note) return res.status(404).json({ error: "Note not found." });
-    res.json({ success: true, note });
+    res.json({ success: true, note: formatNoteResponse(note) });
   } catch (err) {
     res.status(500).json({ error: "Error fetching note." });
   }
@@ -77,52 +110,70 @@ router.post("/", noteValidation, async (req, res) => {
       return res.status(400).json({ error: errors.array()[0].msg });
 
     const { title, content, color, tags, linkedTask } = req.body;
+    const sanitizedLinkedTask =
+      linkedTask && mongoose.Types.ObjectId.isValid(linkedTask) ? linkedTask : null;
+
     const note = await Note.create({
-      title,
-      content,
-      color,
-      tags,
-      linkedTask,
+      title: title || "Untitled Note",
+      content: content || "",
+      color: color || "#7c6dfa",
+      tags: Array.isArray(tags) ? tags : [],
+      linkedTask: sanitizedLinkedTask,
       user: req.user._id,
     });
+
+    if (sanitizedLinkedTask) {
+      await note.populate("linkedTask", "title status priority");
+    }
 
     // Log activity
     await logActivity(req.user._id, { notesCreated: 1 });
     clearCache(req.user._id);
 
-    res.status(201).json({ success: true, note });
+    res.status(201).json({ success: true, note: formatNoteResponse(note) });
   } catch (err) {
+    console.error("Error creating note:", err);
     res.status(500).json({ error: "Error creating note." });
   }
 });
 
-// UPDATE note (auto-saves)
+// UPDATE note (uses note.save() to trigger AES encryption pre('save') hook)
 router.put("/:id", noteValidation, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid note ID format." });
+    }
+
     const errors = validationResult(req);
     if (!errors.isEmpty())
       return res.status(400).json({ error: errors.array()[0].msg });
 
-    const { title, content, color, tags, linkedTask, isPinned, isArchived } =
-      req.body;
-    const updates = {};
-    if (title !== undefined) updates.title = title;
-    if (content !== undefined) updates.content = content;
-    if (color !== undefined) updates.color = color;
-    if (tags !== undefined) updates.tags = tags;
-    if (linkedTask !== undefined) updates.linkedTask = linkedTask;
-    if (isPinned !== undefined) updates.isPinned = isPinned;
-    if (isArchived !== undefined) updates.isArchived = isArchived;
-
-    const note = await Note.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id },
-      updates,
-      { new: true, runValidators: true },
-    );
+    const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
     if (!note) return res.status(404).json({ error: "Note not found." });
+
+    const { title, content, color, tags, linkedTask, isPinned, isArchived } = req.body;
+
+    if (title !== undefined) note.title = title;
+    if (content !== undefined) note.content = content;
+    if (color !== undefined) note.color = color;
+    if (tags !== undefined) note.tags = Array.isArray(tags) ? tags : [];
+    if (linkedTask !== undefined) {
+      note.linkedTask =
+        linkedTask && mongoose.Types.ObjectId.isValid(linkedTask) ? linkedTask : null;
+    }
+    if (isPinned !== undefined) note.isPinned = Boolean(isPinned);
+    if (isArchived !== undefined) note.isArchived = Boolean(isArchived);
+
+    await note.save();
+
+    if (note.linkedTask) {
+      await note.populate("linkedTask", "title status priority");
+    }
+
     clearCache(req.user._id);
-    res.json({ success: true, note });
+    res.json({ success: true, note: formatNoteResponse(note) });
   } catch (err) {
+    console.error("Error updating note:", err);
     res.status(500).json({ error: "Error updating note." });
   }
 });
@@ -130,6 +181,9 @@ router.put("/:id", noteValidation, async (req, res) => {
 // DELETE note
 router.delete("/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid note ID format." });
+    }
     const note = await Note.findOneAndDelete({
       _id: req.params.id,
       user: req.user._id,
@@ -145,26 +199,32 @@ router.delete("/:id", async (req, res) => {
 // TOGGLE pin
 router.patch("/:id/pin", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid note ID format." });
+    }
     const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
     if (!note) return res.status(404).json({ error: "Note not found." });
     note.isPinned = !note.isPinned;
     await note.save();
     clearCache(req.user._id);
-    res.json({ success: true, note });
+    res.json({ success: true, note: formatNoteResponse(note) });
   } catch (err) {
     res.status(500).json({ error: "Error toggling pin." });
   }
 });
 
-// ARCHIVE note
+// TOGGLE archive
 router.patch("/:id/archive", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "Invalid note ID format." });
+    }
     const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
     if (!note) return res.status(404).json({ error: "Note not found." });
     note.isArchived = !note.isArchived;
     await note.save();
     clearCache(req.user._id);
-    res.json({ success: true, note });
+    res.json({ success: true, note: formatNoteResponse(note) });
   } catch (err) {
     res.status(500).json({ error: "Error archiving note." });
   }

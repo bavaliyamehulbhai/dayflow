@@ -72,7 +72,7 @@ export default function SessionManager() {
                 <AnimatePresence mode="popLayout">
                     {sessions.map((session, index) => {
                         const sid = typeof session._id === 'string' ? session._id : (session._id?.$oid || String(session._id));
-                        const isCurrent = session.refreshToken === localStorage.getItem('dayflow_token');
+                        const isCurrent = Boolean(session.isCurrent);
 
                         return (
                             <motion.div

@@ -69,10 +69,9 @@ const PublicRoute = ({ children }) => {
 
 const PageWrapper = ({ children }) => (
   <motion.div
-    initial={{ opacity: 0, y: 15 }}
+    initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -15 }}
-    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
     style={{ height: "100%", width: "100%" }}
   >
     {children}
@@ -100,8 +99,7 @@ function AppRoutes() {
         <div className="splash-loader" />
       </div>
     }>
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
+      <Routes>
         <Route
           path="/login"
           element={
@@ -214,7 +212,6 @@ function AppRoutes() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      </AnimatePresence>
     </Suspense>
   );
 }
