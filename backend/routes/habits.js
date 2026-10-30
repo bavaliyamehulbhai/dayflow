@@ -24,7 +24,7 @@ const habitValidation = [
 ];
 
 // GET all habits
-router.get('/', cacheMiddleware(60), async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const habits = await Habit.find({ user: req.user._id, isActive: true })
       .sort({ order: 1, createdAt: 1 })
@@ -161,22 +161,31 @@ router.post('/:id/complete',
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
       const todayStr = `${year}-${month}-${day}`;
+      const clientDate = (typeof req.body.clientDate === 'string' && req.body.clientDate) ? req.body.clientDate : todayStr;
+      const isToday = (date === clientDate || date === todayStr);
+
+      // Enforce day-wise isolation: only today's habits can be completed/uncompleted
+      if (!isToday) {
+        return res.status(400).json({
+          error: "Only today's ritual habits can be checked in or modified."
+        });
+      }
 
       if (idx > -1) {
         // Remove completion
         habit.completions.splice(idx, 1);
         // Log negative activity only if the completion was for today
-        if (date === todayStr) {
-          await logActivity(req.user._id, { habitsCompleted: -1 });
-          await updateStreak(req.user._id);
+        if (isToday) {
+          await logActivity(req.user._id, { habitsCompleted: -1 }, clientDate);
+          await updateStreak(req.user._id, clientDate);
         }
       } else {
         // Add completion
         habit.completions.push({ date, count, note });
         // Log as daily activity if completing for today
-        if (date === todayStr) {
-          await logActivity(req.user._id, { habitsCompleted: 1 });
-          await updateStreak(req.user._id);
+        if (isToday) {
+          await logActivity(req.user._id, { habitsCompleted: 1 }, clientDate);
+          await updateStreak(req.user._id, clientDate);
         }
       }
 

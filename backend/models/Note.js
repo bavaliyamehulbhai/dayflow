@@ -67,7 +67,8 @@ noteSchema.post('init', function (doc) {
 });
 
 noteSchema.index({ user: 1, isPinned: -1, updatedAt: -1 });
-noteSchema.index({ user: 1, isArchived: 1 });
+noteSchema.index({ user: 1, isArchived: 1, updatedAt: -1 });
+noteSchema.index({ user: 1, linkedTask: 1 });
 
 // Note: Text index removed to support encryption at rest (privacy first)
 

@@ -22,6 +22,7 @@ import {
   RefreshCcw,
   Zap,
   Search,
+  Lock,
 } from "lucide-react";
 import {
   motion,
@@ -30,7 +31,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { useZenTheme } from "../hooks/useZenTheme";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ConfirmDialog from "../components/ConfirmDialog";
 import useFeedback from "../hooks/useFeedback";
 import SensitivityShield from "../components/layout/SensitivityShield";
@@ -44,8 +45,9 @@ const localSubDays = (date, amount) => {
   return d;
 };
 
-const localEachDayOfInterval = ({ start, end }) => {
-  const dates = [];
+const localEachDayOfInterval = ({ start, end }) => { /*
+  const { addToast } = useNotifications();
+*/ const dates = [];
   let d = new Date(start);
   d.setHours(0, 0, 0, 0);
   const e = new Date(end);
@@ -95,9 +97,16 @@ const FREQ = [
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
   useEffect(() => {
-    const h = () => setW(window.innerWidth);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
+    let tid = null;
+    const h = () => {
+      clearTimeout(tid);
+      tid = setTimeout(() => setW(window.innerWidth), 150);
+    };
+    window.addEventListener("resize", h, { passive: true });
+    return () => {
+      window.removeEventListener("resize", h);
+      clearTimeout(tid);
+    };
   }, []);
   return w;
 }
@@ -106,6 +115,7 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
   const { addToast } = useNotifications();
   const width = useWindowWidth();
   const isMobile = width <= 768;
+
   const [form, setForm] = useState({
     name: habit?.name || "",
     description: habit?.description || "",
@@ -122,7 +132,22 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
       onSubmit={(e) => {
         e.preventDefault();
         if (!form.name.trim()) return addToast("Ritual name required", "error");
-        onSave(form);
+        if (form.name.trim().length > 100) return addToast("Ritual name cannot exceed 100 characters", "error");
+        if (form.frequency === "custom" && (!form.customDays || form.customDays.length === 0)) {
+          return addToast("Please select at least one day for custom frequency.", "warning");
+        }
+        const targetVal = parseInt(form.targetCount, 10);
+        if (isNaN(targetVal) || targetVal < 1) {
+          return addToast("Daily target must be at least 1", "error");
+        }
+        onSave({
+          ...form,
+          name: form.name.trim(),
+          description: form.description ? form.description.trim() : "",
+          unit: form.unit ? form.unit.trim() : "times",
+          targetCount: Math.max(1, parseInt(form.targetCount, 10) || 1),
+          customDays: Array.isArray(form.customDays) ? form.customDays : [1, 2, 3, 4, 5],
+        });
       }}
       style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
     >
@@ -264,6 +289,31 @@ function HabitModal({ habit, onClose, onSave, onDelete }) {
               Frequency
             </label>
             <select
+              className="select"
+              style={{
+                height: 44,
+                borderRadius: 6,
+                width: "100%",
+                fontSize: 13,
+                background: "#18181b",
+                border: "1px solid var(--border)",
+                padding: "0 10px",
+                color: "#f4f4f5",
+                outline: "none",
+                colorScheme: "dark",
+              }}
+              value={form.frequency}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, frequency: e.target.value }))
+              }
+            >
+              {FREQ.map((f) => (
+                <option key={f.value} value={f.value} style={{ background: "#18181b", color: "#f4f4f5" }}>
+                  {f.label.toUpperCase()}
+                </option>
+              ))}
+            </select>
+            <select hidden disabled aria-hidden="true"
               style={{
                 height: 44,
                 borderRadius: 6,
@@ -582,6 +632,7 @@ const RitualCard = ({
   onEdit,
   onDelete,
 }) => {
+  const { addToast } = useNotifications();
   const daysToShow = 7;
   const last7 = React.useMemo(
     () =>
@@ -698,7 +749,9 @@ const RitualCard = ({
                 cursor: "pointer",
                 backgroundColor: s.done ? habit.color : "transparent",
                 boxShadow: s.done ? `inset 0 1px 0 rgba(255,255,255,0.2)` : "none",
+                cursor: s.isToday ? "pointer" : "default",
                 borderColor: s.isToday ? habit.color : "rgba(255, 255, 255, 0.15)",
+                opacity: s.isToday ? 1 : 0.75,
                 width: 14,
                 height: 14,
                 borderRadius: "50%",
@@ -706,8 +759,14 @@ const RitualCard = ({
                 padding: 0,
                 display: "inline-block"
               }}
-              title={s.label}
-              onClick={() => onComplete({ id: getSafeId(habit), date: s.dateStr })}
+              title={s.isToday ? `${s.label} (Today - Click to toggle)` : `${s.label}: ${s.done ? "Completed" : "Missed"} (Past Record - Locked)`}
+              onClick={() => {
+                if (!s.isToday) {
+                  addToast("Past habit records are locked (Read-Only). You can only check in for today.", "warning");
+                  return;
+                }
+                onComplete({ id: getSafeId(habit), date: s.dateStr });
+              }}
             />
           );
         })}
@@ -779,6 +838,7 @@ const MobileRitualCard = ({
   onEdit,
   onDelete,
 }) => {
+  const { addToast } = useNotifications();
   const x = useMotionValue(0);
   const isDraggingRef = React.useRef(false);
   const background = useTransform(
@@ -962,8 +1022,25 @@ export default function HabitsPage() {
   });
   const [confirmDialog, setConfirmDialog] = useState({ open: false });
   const today = safeToLocalISO(new Date());
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("action") === "create") {
+      setModal("create");
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
+
+  useEffect(() => {
+    const handler = () => setModal("create");
+    window.addEventListener("df_open_create_modal", handler);
+    return () => window.removeEventListener("df_open_create_modal", handler);
+  }, []);
   const width = useWindowWidth();
   const isMobile = width <= 768;
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["habits"],
@@ -971,8 +1048,8 @@ export default function HabitsPage() {
   });
 
   const invalidate = () => {
-    qc.invalidateQueries(["habits"]);
-    qc.invalidateQueries(["dashboard"]);
+    qc.invalidateQueries({ queryKey: ["habits"] });
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
   };
 
   const createMutation = useMutation({
@@ -1018,8 +1095,9 @@ export default function HabitsPage() {
 
   const completeMutation = useMutation({
     mutationFn: ({ id, date }) => habitsAPI.complete(id, { date }),
-    onMutate: async ({ id, date }) => {
-      await qc.cancelQueries({ queryKey: ["habits"] });
+    onMutate: async ({ id, date }) => { /*
+  const { addToast } = useNotifications();
+*/ await qc.cancelQueries({ queryKey: ["habits"] });
       const previousState = qc.getQueryData(["habits"]);
       if (previousState) {
         qc.setQueryData(["habits"], previousState.map(h => {
@@ -1111,8 +1189,9 @@ export default function HabitsPage() {
       setModal(null);
       return;
     }
-    if (modal && getSafeId(modal))
-      updateMutation.mutate({ id: getSafeId(modal), data: formData });
+    const hid = getSafeId(modal);
+    if (modal && modal !== "create" && hid)
+      updateMutation.mutate({ id: hid, data: formData });
     else createMutation.mutate(formData);
   };
 

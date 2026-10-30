@@ -18,6 +18,8 @@ import {
   Archive,
   ArchiveRestore,
   CheckSquare,
+  Copy,
+  Tag,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -60,6 +62,7 @@ function NoteEditor({
   const saveTimer = useRef(null);
   const isDirtyRef = useRef(false);
   const isDraft = note?._isDraft;
+  const { addToast } = useNotifications();
 
   // Fetch available tasks to allow linking notes to tasks
   const { data: tasksList = [] } = useQuery({
@@ -195,6 +198,7 @@ function NoteEditor({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="FRAGMENT TITLE..."
+          maxLength={200}
         />
 
         {isDraft ? (
@@ -261,7 +265,7 @@ function NoteEditor({
                 height: 38,
                 width: 38,
                 borderRadius: 10,
-                background: "rgba(255,255,255,0.04)",
+                background: "#18181b", colorScheme: "dark", cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -275,6 +279,35 @@ function NoteEditor({
               ) : (
                 <Archive size={15} style={{ color: "var(--muted)" }} />
               )}
+            </button>
+
+            {/* Quick Copy in Editor */}
+            <button
+              type="button"
+              className="haptic-tap"
+              onClick={() => {
+                const textToCopy = `${title ? title + "\n\n" : ""}${content}`;
+                if (textToCopy.trim()) {
+                  navigator.clipboard?.writeText(textToCopy);
+                  addToast("Fragment copied to clipboard", "success");
+                } else {
+                  addToast("Nothing to copy", "info");
+                }
+              }}
+              style={{
+                height: 38,
+                width: 38,
+                borderRadius: 10,
+                background: "#18181b", colorScheme: "dark", cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px solid rgba(255,255,255,0.08)",
+                cursor: "pointer",
+              }}
+              title="Copy note to clipboard"
+            >
+              <Copy size={15} style={{ color: "var(--muted)" }} />
             </button>
 
             {/* Delete button (embedded) */}
@@ -308,7 +341,7 @@ function NoteEditor({
             className="modal-close haptic-tap"
             onClick={() => handleClose(false)}
             style={{
-              background: "rgba(255,255,255,0.04)",
+              background: "#18181b", colorScheme: "dark", cursor: "pointer",
               borderRadius: 12,
               padding: 8,
               border: "none",
@@ -406,7 +439,7 @@ function NoteEditor({
             value={linkedTask}
             onChange={(e) => setLinkedTask(e.target.value)}
             style={{
-              background: "rgba(255,255,255,0.04)",
+              background: "#18181b", colorScheme: "dark", cursor: "pointer",
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: 8,
               padding: "4px 8px",
@@ -417,14 +450,14 @@ function NoteEditor({
               maxWidth: 180,
             }}
           >
-            <option value="" style={{ background: "#13131a", color: "#888" }}>
+            <option value="" style={{ background: "#18181b", color: "#a1a1aa" }}>
               None (Unlinked)
             </option>
             {tasksList.map((t) => (
               <option
                 key={t._id}
                 value={t._id}
-                style={{ background: "#13131a", color: "#fff" }}
+                style={{ background: "#18181b", color: "#f4f4f5" }}
               >
                 {t.title} ({t.status || "todo"})
               </option>
@@ -499,7 +532,7 @@ function NoteEditor({
               textTransform: "uppercase",
             }}
           >
-            {wordCount} NODES // {isSyncing ? "SYNCING..." : "SAVED"}
+            {content.length} CHARS · {wordCount} WORDS // {isSyncing ? "SYNCING..." : "SAVED"}
           </div>
         </div>
       </div>
@@ -557,6 +590,7 @@ export default function NotesPage() {
   const [modal, setModal] = useState(null);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("active"); // 'active' | 'archived'
+  const [selectedTag, setSelectedTag] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     title: "",
@@ -632,7 +666,7 @@ export default function NotesPage() {
         isPinned ? "Fragment pinned to crown" : "Fragment unpinned",
         "success"
       );
-      if (modal && modal._id === r.data?.note?._id) {
+      if (modal && getSafeId(modal) === getSafeId(r.data?.note)) {
         setModal((prev) => (prev ? { ...prev, isPinned } : prev));
       }
       invalidate();
@@ -652,7 +686,7 @@ export default function NotesPage() {
           : "Fragment restored to active notes",
         "success"
       );
-      if (modal && modal._id === r.data?.note?._id) {
+      if (modal && getSafeId(modal) === getSafeId(r.data?.note)) {
         setModal(null);
       }
       invalidate();
@@ -673,7 +707,7 @@ export default function NotesPage() {
     });
 
   const handleSave = (formData, silent = false, isDeletion = false) => {
-    const noteId = modal?._id;
+    const noteId = modal?._id || modal?.id;
     if (isDeletion) {
       if (noteId) {
         setConfirmDialog({
@@ -703,10 +737,25 @@ export default function NotesPage() {
     if (hasContent && !isCreating) createMutation.mutate(formData);
   };
 
+  const allTags = React.useMemo(() => {
+    const tagSet = new Set();
+    (data || []).forEach((n) => {
+      if (Array.isArray(n.tags)) {
+        n.tags.forEach((t) => {
+          if (t && typeof t === "string" && t.trim()) tagSet.add(t.trim());
+        });
+      }
+    });
+    return Array.from(tagSet).slice(0, 10);
+  }, [data]);
+
   const notes = React.useMemo(() => {
     const q = (search || "").trim().toLowerCase();
     return (data || [])
       .filter((n) => {
+        if (selectedTag && (!Array.isArray(n.tags) || !n.tags.includes(selectedTag))) {
+          return false;
+        }
         if (!q) return true;
         const matchTitle = (n.title || "").toLowerCase().includes(q);
         const matchContent = (n.content || "").toLowerCase().includes(q);
@@ -722,7 +771,7 @@ export default function NotesPage() {
         const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         return timeB - timeA;
       });
-  }, [data, search]);
+  }, [data, search, selectedTag]);
 
   const NoteCard = React.memo(({ note }) => {
     const isPinned = Boolean(note.isPinned);
@@ -831,8 +880,33 @@ export default function NotesPage() {
                   letterSpacing: 0.5,
                 }}
               >
-                {note.content?.length || 0} NODES
+                {note.content?.length || 0} chars
               </div>
+
+              {Array.isArray(note.tags) && note.tags.length > 0 && (
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+                  {note.tags.slice(0, 2).map((tg) => (
+                    <span
+                      key={tg}
+                      style={{
+                        fontSize: 9,
+                        padding: "1px 5px",
+                        borderRadius: 4,
+                        background: `${note.color}18`,
+                        color: note.color,
+                        fontWeight: 700,
+                      }}
+                    >
+                      #{tg}
+                    </span>
+                  ))}
+                  {note.tags.length > 2 && (
+                    <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 600 }}>
+                      +{note.tags.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {note.linkedTask && (
                 <div
@@ -905,6 +979,36 @@ export default function NotesPage() {
             />
           </button>
 
+          {/* Quick Copy Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const textToCopy = `${note.title ? note.title + "\n\n" : ""}${note.content || ""}`;
+              if (textToCopy.trim()) {
+                navigator.clipboard?.writeText(textToCopy);
+                addToast("Fragment copied to clipboard", "success");
+              } else {
+                addToast("Note is empty", "info");
+              }
+            }}
+            title="Copy note"
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              background: "rgba(255,255,255,0.04)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid rgba(255,255,255,0.06)",
+              cursor: "pointer",
+            }}
+          >
+            <Copy size={13} style={{ color: "var(--muted)" }} />
+          </button>
+
           {/* Archive / Restore Button */}
           <button
             type="button"
@@ -918,7 +1022,7 @@ export default function NotesPage() {
               width: 30,
               height: 30,
               borderRadius: 8,
-              background: "rgba(255,255,255,0.04)",
+              background: "#18181b", colorScheme: "dark", cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -1142,6 +1246,7 @@ export default function NotesPage() {
                     type="button"
                     onClick={() => {
                       setViewMode("active");
+                      setSelectedTag(null);
                       setModal(null);
                     }}
                     style={{
@@ -1171,6 +1276,7 @@ export default function NotesPage() {
                     type="button"
                     onClick={() => {
                       setViewMode("archived");
+                      setSelectedTag(null);
                       setModal(null);
                     }}
                     style={{
@@ -1260,6 +1366,75 @@ export default function NotesPage() {
                   <span>{viewMode === "archived" ? "ARCHIVED MEMORIES" : "ACTIVE FRAGMENTS"}</span>
                   <span>{notes.length} Fragments</span>
                 </div>
+
+                {/* Tag Filter Chips */}
+                {allTags.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 6,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      paddingTop: 4,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 900,
+                        color: "var(--muted)",
+                        letterSpacing: 1,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      TAGS:
+                    </span>
+                    {allTags.map((tag) => {
+                      const isSelected = selectedTag === tag;
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          className="haptic-tap"
+                          onClick={() => setSelectedTag(isSelected ? null : tag)}
+                          style={{
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            background: isSelected
+                              ? "var(--accent)"
+                              : "rgba(255,255,255,0.04)",
+                            color: isSelected ? "#fff" : "var(--muted)",
+                            border: isSelected
+                              ? "1px solid var(--accent)"
+                              : "1px solid rgba(255,255,255,0.08)",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          #{tag}
+                        </button>
+                      );
+                    })}
+                    {selectedTag && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTag(null)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          fontSize: 10,
+                          color: "var(--muted)",
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Note Cards List */}

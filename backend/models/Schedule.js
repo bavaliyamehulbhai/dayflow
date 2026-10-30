@@ -63,5 +63,8 @@ const scheduleSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 scheduleSchema.index({ user: 1, date: 1 });
+scheduleSchema.index({ user: 1, date: 1, isCompleted: 1 });
+scheduleSchema.index({ user: 1, date: 1, startTime: 1 });
+scheduleSchema.index({ user: 1, linkedTask: 1 });
 
 module.exports = mongoose.model('Schedule', scheduleSchema);

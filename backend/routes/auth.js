@@ -394,7 +394,7 @@ router.post("/2fa/verify", protect, async (req, res) => {
     const verified = speakeasy.totp.verify({
       secret: user.twoFactorSecret,
       encoding: "base32",
-      token,
+
     });
 
     if (!verified) {
@@ -477,7 +477,7 @@ router.post("/2fa/login", async (req, res) => {
     const verified = speakeasy.totp.verify({
       secret: user.twoFactorSecret,
       encoding: "base32",
-      token,
+
     });
 
     if (!verified) {
@@ -555,7 +555,7 @@ router.post("/logout", protect, async (req, res) => {
       if (decoded) {
         // Blacklist token until its natural expiry
         await require("../models/Blacklist").create({
-          token,
+    
           expiresAt: new Date(decoded.exp * 1000),
         });
       }
@@ -579,8 +579,8 @@ router.post("/logout", protect, async (req, res) => {
 // ─── Get Me ───────────────────────────────────────────────────────────────────
 router.get("/me", protect, async (req, res) => {
   try {
-    console.log("[DEBUG /auth/me] cookies:", req.cookies);
-    console.log("[DEBUG /auth/me] user:", req.user?._id);
+
+
     const user = await User.findById(req.user._id);
     res.json({ success: true, user });
   } catch (err) {
@@ -757,7 +757,7 @@ router.put(
         const decoded = require("jsonwebtoken").decode(token);
         if (decoded && decoded.exp) {
           await require("../models/Blacklist").create({
-            token,
+      
             expiresAt: new Date(decoded.exp * 1000),
           });
         }

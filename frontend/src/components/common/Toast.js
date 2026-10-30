@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle2, XCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 const Toast = ({ toast, onRemove }) => {
   const { id, message, type, duration, customIcon } = toast;
@@ -11,17 +11,24 @@ const Toast = ({ toast, onRemove }) => {
   }, [id, duration, onRemove]);
 
   const icons = {
-    success: <CheckCircle className="text-green-400" size={18} />,
-    error: <XCircle className="text-red-400" size={18} />,
-    warning: <AlertTriangle className="text-yellow-400" size={18} />,
-    info: <Info className="text-blue-400" size={18} />,
+    success: <CheckCircle2 color="#10b981" size={18} />,
+    error: <XCircle color="#ef4444" size={18} />,
+    warning: <AlertTriangle color="#f59e0b" size={18} />,
+    info: <Info color="#7c6dfa" size={18} />,
   };
 
   const colors = {
-    success: 'rgba(34, 197, 94, 0.15)',
+    success: 'rgba(16, 185, 129, 0.15)',
     error: 'rgba(239, 68, 68, 0.15)',
-    warning: 'rgba(234, 179, 8, 0.15)',
-    info: 'rgba(59, 130, 246, 0.15)',
+    warning: 'rgba(245, 158, 11, 0.15)',
+    info: 'rgba(124, 109, 250, 0.15)',
+  };
+
+  const borderColors = {
+    success: '#10b981',
+    error: '#ef4444',
+    warning: '#f59e0b',
+    info: '#7c6dfa',
   };
 
   return (
@@ -39,26 +46,25 @@ const Toast = ({ toast, onRemove }) => {
         padding: '12px 16px',
         minWidth: '280px',
         maxWidth: '400px',
-        background: 'rgba(255, 255, 255, 0.05)',
-        backdropFilter: 'blur(16px) saturate(180%)',
+        background: '#18181b',
         border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: 16,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        borderRadius: 14,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         pointerEvents: 'auto',
-        marginBottom: 12,
+        marginBottom: 10,
         position: 'relative',
         overflow: 'hidden'
       }}
     >
-      {/* Background Glow */}
+      {/* Indicator accent strip */}
       <div style={{
         position: 'absolute',
         top: 0,
         left: 0,
-        width: 4,
+        width: 3,
         height: '100%',
-        background: type === 'success' ? 'var(--green)' : type === 'error' ? 'var(--red)' : type === 'warning' ? 'var(--orange)' : 'var(--accent)',
-        opacity: 0.8
+        background: borderColors[type] || '#7c6dfa',
+        opacity: 0.9
       }} />
 
       <div style={{ 
@@ -68,12 +74,11 @@ const Toast = ({ toast, onRemove }) => {
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        boxShadow: `0 0 10px ${colors[type] || 'rgba(255,255,255,0.05)'}`
       }}>
-        {customIcon ? <span style={{ fontSize: 18 }}>{customIcon}</span> : icons[type]}
+        {customIcon ? <span style={{ fontSize: 18 }}>{customIcon}</span> : (icons[type] || icons.info)}
       </div>
 
-      <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+      <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#f4f4f5', letterSpacing: '-0.01em', lineHeight: 1.4 }}>
         {message}
       </div>
 
@@ -82,17 +87,17 @@ const Toast = ({ toast, onRemove }) => {
         style={{
           background: 'none',
           border: 'none',
-          color: 'var(--muted)',
+          color: '#a1a1aa',
           cursor: 'pointer',
           padding: 4,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: 0.6,
+          opacity: 0.7,
           transition: 'opacity 0.2s ease'
         }}
         onMouseEnter={(e) => e.target.style.opacity = 1}
-        onMouseLeave={(e) => e.target.style.opacity = 0.6}
+        onMouseLeave={(e) => e.target.style.opacity = 0.7}
       >
         <X size={14} />
       </button>
@@ -107,8 +112,8 @@ const Toast = ({ toast, onRemove }) => {
           bottom: 0,
           left: 0,
           height: 2,
-          background: 'rgba(255,255,255,0.2)',
-          opacity: 0.3
+          background: borderColors[type] || 'rgba(255,255,255,0.2)',
+          opacity: 0.4
         }}
       />
     </motion.div>

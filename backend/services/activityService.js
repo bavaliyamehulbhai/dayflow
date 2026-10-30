@@ -5,9 +5,9 @@ const Activity = require('../models/Activity');
  * @param {string} userId - User ID
  * @param {object} updates - Object containing fields to increment (e.g. { tasksCompleted: 1 })
  */
-const logActivity = async (userId, updates) => {
+const logActivity = async (userId, updates, clientDate) => {
     try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = (typeof clientDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)) ? clientDate : new Date().toISOString().split('T')[0];
 
         // Using findOne + save instead of findOneAndUpdate to trigger the 'save' middleware for intensity calculation
         let activity = await Activity.findOne({ user: userId, date: today });

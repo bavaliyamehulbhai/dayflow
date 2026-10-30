@@ -1,9 +1,31 @@
 import React from 'react';
 import WidgetWrapper from './WidgetWrapper';
 import { RefreshCw, Flame, Check } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { habitsAPI } from '../../utils/api';
+import { useNotifications } from '../../context/NotificationContext';
+import { safeFormat } from '../../utils/dateUtils';
 import { getSafeId } from '../../utils/idUtils';
 
 const HabitsWidget = ({ data, navigate }) => {
+  const qc = useQueryClient();
+  const { addToast } = useNotifications();
+
+  const handleToggleHabit = async (h, e) => {
+    e.stopPropagation();
+    const hid = h._id || h.id;
+    if (!hid) return;
+    const todayStr = safeFormat(new Date(), "yyyy-MM-dd");
+    try {
+      await habitsAPI.complete(hid, { date: todayStr });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["habits"] });
+      addToast(h.completedToday ? "Habit uncompleted" : "Ritual locked in!", "success");
+    } catch (err) {
+      addToast(err?.response?.data?.error || "Failed to update habit", "error");
+    }
+  };
+
   return (
     <WidgetWrapper title="Rituals" icon={RefreshCw}>
       {data?.habits?.list?.length ? (
@@ -24,15 +46,20 @@ const HabitsWidget = ({ data, navigate }) => {
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{h.name}</div>
                 {h?.streak?.current > 0 && <div style={{ fontSize: 10, color: 'var(--orange)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}><Flame size={12} /> {h.streak.current} DAY STREAK</div>}
               </div>
-              <div style={{
-                width: 24, height: 24, borderRadius: '50%',
-                background: h.completedToday ? h.color : 'rgba(255,255,255,0.03)',
-                border: `2px solid ${h.completedToday ? h.color : 'var(--border)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'white',
-                boxShadow: h.completedToday ? `0 0 10px ${h.color}44` : 'none',
-                transition: 'all 0.2s ease'
-              }}>
+              <div 
+                style={{
+                  width: 26, height: 26, borderRadius: '50%',
+                  background: h.completedToday ? h.color : 'rgba(255,255,255,0.03)',
+                  border: `2px solid ${h.completedToday ? h.color : 'var(--border)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'white',
+                  boxShadow: h.completedToday ? `0 0 10px ${h.color}44` : 'none',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer'
+                }}
+                onClick={(e) => handleToggleHabit(h, e)}
+                title={h.completedToday ? "Completed today (Click to uncomplete)" : "Mark complete for today"}
+              >
                 {h.completedToday && <Check size={14} strokeWidth={3} />}
               </div>
             </div>

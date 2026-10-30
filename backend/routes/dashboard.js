@@ -9,24 +9,30 @@ const User = require('../models/User');
 const Activity = require('../models/Activity');
 const { protect } = require('../middleware/auth');
 const { cacheMiddleware } = require('../middleware/cache');
+const { decrypt } = require('../utils/cryptoUtils');
 
 router.use(protect);
 
 // GET complete dashboard summary
-router.get('/', cacheMiddleware(60), async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
-    const todayStart = new Date(year, now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const todayEnd = new Date(year, now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const serverToday = `${year}-${month}-${day}`;
+    const clientDateHeader = typeof req.headers['x-client-date'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.headers['x-client-date']) ? req.headers['x-client-date'] : null;
+    const today = (typeof req.query.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)) ? req.query.date : (clientDateHeader || serverToday);
+    const [tYear, tMonth, tDay] = today.split('-').map(Number);
+    const todayStart = new Date(tYear, tMonth - 1, tDay, 0, 0, 0, 0);
+    const todayEnd = new Date(tYear, tMonth - 1, tDay, 23, 59, 59, 999);
 
     const [
       user,
       taskStats,
       todayTasks,
+      todayTasksPendingCount,
+      todayTasksCompleted,
       overdueTasks,
       upcomingTasks,
       todayEvents,
@@ -45,26 +51,50 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
           }
         }
       ]),
-      // Today's tasks (due today or no due date)
+      // Today's tasks (due today)
       Task.find({
         user: req.user._id,
         status: { $in: ['pending', 'in-progress'] },
         $or: [
-          { dueDate: { $gte: todayStart, $lte: todayEnd } },
-          { dueDate: null }
+          { date: today },
+          { date: null, dueDate: { $gte: todayStart, $lte: todayEnd } }
         ]
-      }).sort({ priority: -1 }).limit(5).lean(),
+      }).sort({ priority: -1 }).limit(10).lean(),
+      // Today's pending tasks count
+      Task.countDocuments({
+        user: req.user._id,
+        status: { $in: ['pending', 'in-progress'] },
+        $or: [
+          { date: today },
+          { date: null, dueDate: { $gte: todayStart, $lte: todayEnd } }
+        ]
+      }),
+      // Today's completed tasks
+      Task.countDocuments({
+        user: req.user._id,
+        status: 'completed',
+        $or: [
+          { date: today },
+          { date: null, completedAt: { $gte: todayStart, $lte: todayEnd } }
+        ]
+      }),
       // Overdue tasks
       Task.countDocuments({
         user: req.user._id,
         status: { $nin: ['completed', 'cancelled'] },
-        dueDate: { $lt: todayStart }
+        $or: [
+          { date: { $lt: today } },
+          { date: null, dueDate: { $lt: todayStart } }
+        ]
       }),
       // Upcoming tasks due within the next 48 hours
       Task.find({
         user: req.user._id,
         status: { $in: ['pending', 'in-progress'] },
-        dueDate: { $gte: now, $lte: new Date(now.getTime() + 48 * 3600000) }
+        $or: [
+          { date: { $gt: today } },
+          { dueDate: { $gte: now, $lte: new Date(now.getTime() + 48 * 3600000) } }
+        ]
       }).sort({ dueDate: 1 }).limit(10).lean(),
       // Today's events
       Schedule.find({ user: req.user._id, date: today }).sort({ startTime: 1 }).lean(),
@@ -83,6 +113,14 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
       taskSummary.total += s.count;
     });
 
+    const todayTaskTotal = todayTasksCompleted + todayTasksPendingCount;
+    const todayTaskSummary = {
+      total: todayTaskTotal,
+      completed: todayTasksCompleted,
+      pending: todayTasksPendingCount,
+      pct: todayTaskTotal > 0 ? Math.round((todayTasksCompleted / todayTaskTotal) * 100) : 0
+    };
+
     // Process habits
     const habitSummary = activeHabits.map(h => ({
       _id: h._id,
@@ -97,11 +135,13 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
     // Focus stats
     const focusMinutesToday = todayPomos.reduce((acc, p) => acc + Math.floor((p.actualDuration || p.duration * 60) / 60), 0);
 
-    // 7-day activity (for chart)
+    // 7-day activity (for chart) based on today's local date
     const last7 = [];
+    const [tY, tM, tD] = today.split('-').map(Number);
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 86400000);
-      last7.push(d.toISOString().split('T')[0]);
+      const d = new Date(tY, tM - 1, tD - i, 12, 0, 0);
+      const pad = (n) => String(n).padStart(2, '0');
+      last7.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
     }
 
     const weekPomos = await Pomodoro.aggregate([
@@ -146,11 +186,11 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
       success: true,
       dashboard: {
         user: { name: user?.name || '', stats: user?.stats || {}, preferences: user?.preferences || {} },
-        tasks: { summary: taskSummary, today: todayTasks, overdue: overdueTasks, upcoming: upcomingTasks },
+        tasks: { summary: taskSummary, todaySummary: todayTaskSummary, today: todayTasks, overdue: overdueTasks, upcoming: upcomingTasks },
         schedule: { today: todayEvents },
         habits: { list: habitSummary, total: activeHabits.length, completedToday: habitsCompleted },
         pomodoro: { todayCount: todayPomos.length, todayMinutes: focusMinutesToday },
-        notes: { recent: recentNotes },
+        notes: { recent: recentNotes.map(n => ({ ...n, title: decrypt(n.title) })) },
         weekActivity: weekData,
         weeklyProgress: weeklyProgress
       }
@@ -220,11 +260,20 @@ router.get('/activity/12m', cacheMiddleware(300), async (req, res) => {
 
     sortedLogs.forEach(log => {
       if (hasCompletedWork(log)) {
-        if (!lastDate) { currentStreak = 1; }
-        else {
-          const diff = (new Date(log.date) - new Date(lastDate)) / 86400000;
-          if (diff <= 1.1) currentStreak++;
-          else currentStreak = 1;
+        if (!lastDate) { 
+          currentStreak = 1; 
+        } else {
+          const [y1, m1, d1] = log.date.split('-').map(Number);
+          const [y0, m0, d0] = lastDate.split('-').map(Number);
+          const dtCurr = new Date(y1, m1 - 1, d1, 12, 0, 0);
+          const dtLast = new Date(y0, m0 - 1, d0, 12, 0, 0);
+          const roundedDiff = Math.round((dtCurr - dtLast) / 86400000);
+          
+          if (roundedDiff === 1) {
+            currentStreak++;
+          } else if (roundedDiff > 1) {
+            currentStreak = 1;
+          }
         }
         maxStreak = Math.max(maxStreak, currentStreak);
         lastDate = log.date;

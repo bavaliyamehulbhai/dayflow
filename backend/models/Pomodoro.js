@@ -49,6 +49,8 @@ const pomodoroSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 pomodoroSchema.index({ user: 1, date: 1 });
+pomodoroSchema.index({ user: 1, date: 1, completed: 1, type: 1 });
+pomodoroSchema.index({ user: 1, linkedTask: 1 });
 pomodoroSchema.index({ user: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Pomodoro', pomodoroSchema);

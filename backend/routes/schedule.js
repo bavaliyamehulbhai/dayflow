@@ -6,6 +6,7 @@ const Schedule = require('../models/Schedule');
 const { protect } = require('../middleware/auth');
 const { sanitizeFields } = require('../middleware/sanitizer');
 const { logActivity } = require('../services/activityService');
+const { updateStreak } = require('../services/streakService');
 
 router.use(protect);
 
@@ -71,14 +72,19 @@ router.get('/',
       } else if (startDate && endDate) {
         filter.date = { $gte: startDate, $lte: endDate };
       } else {
-        // Default: today (server local date string)
+        // Default: today (client local date or server fallback)
         const d = new Date();
-        filter.date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const pad = (n) => String(n).padStart(2, '0');
+        const serverToday = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        filter.date = (typeof req.headers['x-client-date'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.headers['x-client-date']))
+          ? req.headers['x-client-date']
+          : serverToday;
       }
 
       const events = await Schedule.find(filter)
         .sort({ startTime: 1 })
-        .populate('linkedTask', 'title status priority');
+        .populate('linkedTask', 'title status priority')
+        .lean();
 
       res.json({ success: true, events });
     } catch (err) {
@@ -94,6 +100,20 @@ router.post('/', eventValidation, async (req, res) => {
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
     const payload = cleanPayload(req.body);
+
+    // Prevent creating events for past dates
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const serverTodayStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const clientDate = (typeof req.body?.clientDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.body.clientDate))
+      ? req.body.clientDate
+      : (typeof req.headers['x-client-date'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.headers['x-client-date']))
+        ? req.headers['x-client-date']
+        : serverTodayStr;
+    const minAllowed = clientDate < serverTodayStr ? clientDate : serverTodayStr;
+    if (payload.date && payload.date < minAllowed) {
+      return res.status(400).json({ error: 'Events cannot be scheduled for past dates.' });
+    }
     const event = await Schedule.create({ ...payload, user: req.user._id });
     const populated = await event.populate('linkedTask', 'title status priority');
     res.status(201).json({ success: true, event: populated });
@@ -117,6 +137,20 @@ router.put('/:id', eventValidation, async (req, res) => {
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
     const updates = cleanPayload(req.body);
+
+    // Prevent rescheduling events to past dates
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const serverTodayStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const clientDate = (typeof req.body?.clientDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.body.clientDate))
+      ? req.body.clientDate
+      : (typeof req.headers['x-client-date'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.headers['x-client-date']))
+        ? req.headers['x-client-date']
+        : serverTodayStr;
+    const minAllowed = clientDate < serverTodayStr ? clientDate : serverTodayStr;
+    if (updates.date && updates.date < minAllowed) {
+      return res.status(400).json({ error: 'Events cannot be rescheduled to past dates.' });
+    }
     const event = await Schedule.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
       updates,
@@ -127,10 +161,7 @@ router.put('/:id', eventValidation, async (req, res) => {
     res.json({ success: true, event });
   } catch (err) {
     console.error('[SCHEDULE UPDATE ERROR]', err);
-    res.status(500).json({
-      error: 'Error updating event.',
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
+    res.status(500).json({ error: 'Error updating event.' });
   }
 });
 
@@ -146,10 +177,15 @@ router.delete('/:id', async (req, res) => {
 
     // Deduct activity if event was completed today
     const d = new Date();
-    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    if (event.date === today && event.isCompleted) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const serverToday = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const clientDate = (typeof req.headers['x-client-date'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.headers['x-client-date']))
+      ? req.headers['x-client-date']
+      : serverToday;
+
+    if ((event.date === clientDate || event.date === serverToday) && event.isCompleted) {
       try {
-        await logActivity(req.user._id, { scheduleEventsCompleted: -1 });
+        await logActivity(req.user._id, { scheduleEventsCompleted: -1 }, event.date);
       } catch (logErr) {
         console.error('[SCHEDULE DELETE LOG ERROR]', logErr);
       }
@@ -173,18 +209,66 @@ router.patch('/:id/complete', async (req, res) => {
     if (!event) return res.status(404).json({ error: 'Event not found.' });
 
     const wasCompleted = event.isCompleted;
+
+    // Strict Day & Window validation: Events can only be completed/modified on their scheduled date and time window
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const fallbackDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const fallbackTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    const clientDate = (typeof req.body?.clientDate === 'string' && req.body.clientDate) ? req.body.clientDate : fallbackDate;
+    const clientTime = (typeof req.body?.clientTime === 'string' && req.body.clientTime) ? req.body.clientTime : fallbackTime;
+
+    // Strict Day isolation: Only today's scheduled events can be completed or modified
+    if (clientDate !== event.date) {
+      return res.status(400).json({
+        error: `Only events scheduled for today (${clientDate}) can be completed or modified.`
+      });
+    }
+
+    if (!wasCompleted) {
+      // Time comparison
+      const toMinutes = (timeStr) => {
+        if (!timeStr || typeof timeStr !== 'string') return 0;
+        const [h = 0, m = 0] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      const currentMins = toMinutes(clientTime);
+      const startMins = toMinutes(event.startTime);
+      let endMins;
+      if (event.endTime && typeof event.endTime === 'string') {
+        endMins = toMinutes(event.endTime);
+      } else {
+        endMins = Math.min(startMins + 60, 24 * 60 - 1);
+      }
+
+      if (currentMins < startMins) {
+        return res.status(400).json({
+          error: `Event cannot be completed before its scheduled time (${event.startTime}).`
+        });
+      }
+
+      if (currentMins > endMins) {
+        return res.status(400).json({
+          error: `Event scheduled time has already passed (${event.startTime}${event.endTime ? ' - ' + event.endTime : ''}). It can only be completed during its scheduled time.`
+        });
+      }
+    }
     event.isCompleted = !event.isCompleted;
     await event.save();
 
     // Log activity if toggled to/from completed today
     const d = new Date();
-    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    if (event.date === today) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const serverToday = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    if (event.date === clientDate || event.date === serverToday) {
       try {
         if (!wasCompleted && event.isCompleted) {
-          await logActivity(req.user._id, { scheduleEventsCompleted: 1 });
+          await logActivity(req.user._id, { scheduleEventsCompleted: 1 }, clientDate);
+          await updateStreak(req.user._id, clientDate);
         } else if (wasCompleted && !event.isCompleted) {
-          await logActivity(req.user._id, { scheduleEventsCompleted: -1 });
+          await logActivity(req.user._id, { scheduleEventsCompleted: -1 }, clientDate);
         }
       } catch (logErr) {
         console.error('[SCHEDULE TOGGLE LOG ERROR]', logErr);

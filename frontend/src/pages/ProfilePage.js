@@ -9,6 +9,7 @@ import ActivityTimeline from "../components/ActivityTimeline";
 import ProductivityCircle from "../components/ProductivityCircle";
 import SessionManager from "../components/profile/SessionManager";
 import ActivityTags from "../components/ActivityTags";
+import AppInstallCard from "../components/profile/AppInstallCard";
 import { useNotifications } from "../context/NotificationContext";
 import {
   format,
@@ -58,6 +59,8 @@ import {
   Sun,
   Moon,
   X,
+  Smartphone,
+  Bell,
 } from "lucide-react";
 import { useZenTheme } from "../hooks/useZenTheme";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -68,9 +71,16 @@ import MagneticButton from "../components/common/MagneticButton";
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
   useEffect(() => {
-    const h = () => setW(window.innerWidth);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
+    let tid = null;
+    const h = () => {
+      clearTimeout(tid);
+      tid = setTimeout(() => setW(window.innerWidth), 150);
+    };
+    window.addEventListener("resize", h, { passive: true });
+    return () => {
+      window.removeEventListener("resize", h);
+      clearTimeout(tid);
+    };
   }, []);
   return w;
 }
@@ -79,6 +89,7 @@ const TABS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "security", label: "Security", icon: Shield },
+  { id: "app", label: "App & Mobile", icon: Smartphone },
   { id: "pomodoro", label: "Focus", icon: Timer },
   { id: "stats", label: "Stats", icon: BarChart2 },
   { id: "badges", label: "Badges", icon: Medal },
@@ -454,7 +465,8 @@ export default function ProfilePage() {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `dayflow_export_${user._id}.json`);
+      const uid = getSafeId(user, 'user');
+      link.setAttribute("download", `dayflow_export_${uid}.json`);
       document.body.appendChild(link);
       link.click();
       addToast("Data exported successfully! 📂", "success");
@@ -1017,6 +1029,9 @@ export default function ProfilePage() {
           {/* ── PROFILE ─────────────────────────────── */}
           {activeTab === "profile" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+
+
+              <AppInstallCard isMobile={isMobile} />
               {/* Bio Editor (Overlay-like when active) */}
               <AnimatePresence>
                 {editingBio && (
@@ -1453,6 +1468,8 @@ export default function ProfilePage() {
           {/* ── SECURITY ─────────────────────────────── */}
           {activeTab === "security" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+
+
               <div
                 style={{
                   padding: isMobile ? 24 : 32,
@@ -2371,6 +2388,225 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {/* ── APP & MOBILE ─────────────────────────── */}
+          {activeTab === "app" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              {/* App Install Main Card */}
+              <AppInstallCard isMobile={isMobile} />
+
+              {/* Mobile Capabilities & Device Optimization */}
+              <div
+                style={{
+                  padding: isMobile ? 20 : 28,
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.02)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 20,
+                  }}
+                >
+                  <Smartphone size={18} className="text-accent" />
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "var(--text)",
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    Mobile & Hardware Optimization
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(260px, 1fr))",
+                    gap: 14,
+                  }}
+                >
+                  <div
+                    className="glass"
+                    style={{
+                      padding: "16px 18px",
+                      borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Display Environment</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Current window frame mode</div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        padding: "4px 10px",
+                        borderRadius: 8,
+                        background: typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)",
+                        color: typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches ? "var(--green)" : "var(--muted)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                      }}
+                    >
+                      {typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches ? "Standalone App" : "Web Browser"}
+                    </span>
+                  </div>
+
+                  <div
+                    className="glass"
+                    style={{
+                      padding: "16px 18px",
+                      borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Tactile Haptic Feedback</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Vibrations on interaction</div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        padding: "4px 10px",
+                        borderRadius: 8,
+                        background: "rgba(34,197,94,0.15)",
+                        color: "var(--green)",
+                        border: "1px solid rgba(34,197,94,0.3)",
+                      }}
+                    >
+                      {typeof navigator !== "undefined" && "vibrate" in navigator ? "Hardware Supported" : "Simulated"}
+                    </span>
+                  </div>
+
+                  <div
+                    className="glass"
+                    style={{
+                      padding: "16px 18px",
+                      borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Offline Cache Service</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Fast launch without waiting</div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        padding: "4px 10px",
+                        borderRadius: 8,
+                        background: "rgba(124,109,250,0.15)",
+                        color: "var(--accent)",
+                        border: "1px solid rgba(124,109,250,0.3)",
+                      }}
+                    >
+                      {typeof navigator !== "undefined" && "serviceWorker" in navigator ? "Active" : "Disabled"}
+                    </span>
+                  </div>
+
+                  <div
+                    className="glass"
+                    style={{
+                      padding: "16px 18px",
+                      borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Push Notifications</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Daily agenda & streak alerts</div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        padding: "4px 10px",
+                        borderRadius: 8,
+                        background:
+                          typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted"
+                            ? "rgba(34,197,94,0.15)"
+                            : "rgba(245,158,11,0.15)",
+                        color:
+                          typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted"
+                            ? "var(--green)"
+                            : "var(--yellow)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                      }}
+                    >
+                      {typeof window !== "undefined" && "Notification" in window ? Notification.permission : "Not Supported"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Add Instructions */}
+              <div
+                style={{
+                  padding: isMobile ? 20 : 28,
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(255,255,255,0.02)",
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", marginBottom: 16 }}>
+                  Quick Install Cheat Sheet
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+                  <div
+                    style={{
+                      padding: 16,
+                      borderRadius: 12,
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", marginBottom: 6 }}>
+                      iOS (iPhone / iPad)
+                    </div>
+                    <p style={{ fontSize: 12, color: "var(--muted)", margin: 0, lineHeight: 1.6 }}>
+                      Safari browser me open karein → Neeche <strong>Share</strong> icon (square with arrow) tap karein → <strong>&quot;Add to Home Screen&quot;</strong> select karein.
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      padding: 16,
+                      borderRadius: 12,
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", marginBottom: 6 }}>
+                      Android (Chrome / Edge / Samsung)
+                    </div>
+                    <p style={{ fontSize: 12, color: "var(--muted)", margin: 0, lineHeight: 1.6 }}>
+                      Browser top right <strong>menu (⋮)</strong> tap karein → <strong>&quot;Install app&quot;</strong> ya <strong>&quot;Add to Home screen&quot;</strong> tap karein. DayFlow automatically phone app ki tarah install ho jayega.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── FOCUS ─────────────────────────────────── */}
           {activeTab === "pomodoro" && (
             <div
@@ -2613,6 +2849,8 @@ export default function ProfilePage() {
           {/* ── STATS ─────────────────────────────────── */}
           {activeTab === "stats" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+
+
               <div
                 style={{
                   padding: isMobile ? 24 : 32,
@@ -3029,6 +3267,8 @@ export default function ProfilePage() {
           {/* ── BADGES ─────────────────────────────────── */}
           {activeTab === "badges" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+
+
               <div
                 style={{
                   padding: isMobile ? 24 : 32,

@@ -11,7 +11,7 @@ export const exportToCSV = (tasks) => {
 
   const headers = ['Title', 'Status', 'Priority', 'Category', 'Due Date', 'Created At', 'Description'];
   const rows = tasks.map(task => [
-    `"${task.title.replace(/"/g, '""')}"`,
+    `"${(task.title || '').replace(/"/g, '""')}"`,
     task.status,
     task.priority,
     task.category || 'General',
@@ -46,7 +46,7 @@ export const exportToPDF = (tasks) => {
 
   tasks.forEach(task => {
     const taskData = [
-      task.title,
+      task.title || 'Untitled',
       task.status,
       task.priority,
       task.category || 'General',

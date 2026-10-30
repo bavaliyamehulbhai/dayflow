@@ -50,9 +50,31 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import AuraOrb from "../components/common/AuraOrb";
 import { getSafeId } from "../utils/idUtils";
 
-// ─── Sound Engine ─────────────────────────────────────────────────────────────
+// ─── Sound Engine (Memoized Audio Buffers) ──────────────────────────────────
+let cachedRainBuffer = null;
+let cachedBrownBuffer = null;
 const createRainSound = (ctx) => {
-  const bufferSize = 2 * ctx.sampleRate,
+  if (!cachedRainBuffer) {
+    const bs = 2 * ctx.sampleRate;
+    cachedRainBuffer = ctx.createBuffer(1, bs, ctx.sampleRate);
+    const out = cachedRainBuffer.getChannelData(0);
+    for (let i = 0; i < bs; i++) out[i] = Math.random() * 2 - 1;
+  }
+  const whiteNoise = ctx.createBufferSource();
+  whiteNoise.buffer = cachedRainBuffer;
+  whiteNoise.loop = true;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 400;
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  whiteNoise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  return { source: whiteNoise, gain, filter };
+};
+// legacy buffer generation removed
+/*
     noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate),
     output = noiseBuffer.getChannelData(0);
   for (let i = 0; i < bufferSize; i++) {
@@ -76,8 +98,31 @@ const createRainSound = (ctx) => {
   return { source: whiteNoise, gain, filter };
 };
 
+*/
 const createBrownNoiseSound = (ctx) => {
-  const bufferSize = 2 * ctx.sampleRate;
+  if (!cachedBrownBuffer) {
+    const bs = 2 * ctx.sampleRate;
+    cachedBrownBuffer = ctx.createBuffer(1, bs, ctx.sampleRate);
+    const out = cachedBrownBuffer.getChannelData(0);
+    let lastOut = 0.0;
+    for (let i = 0; i < bs; i++) {
+      const white = Math.random() * 2 - 1;
+      out[i] = (lastOut + 0.02 * white) / 1.02;
+      lastOut = out[i];
+      out[i] *= 3.5;
+    }
+  }
+  const source = ctx.createBufferSource();
+  source.buffer = cachedBrownBuffer;
+  source.loop = true;
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  return { source, gain };
+};
+// legacy buffer generation removed
+/*
   const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const output = noiseBuffer.getChannelData(0);
   let lastOut = 0.0;
@@ -97,6 +142,7 @@ const createBrownNoiseSound = (ctx) => {
   return { source, gain };
 };
 
+*/
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
@@ -297,7 +343,7 @@ export default function PomodoroPage() {
     queryKey: ["tasks-for-pomo"],
     queryFn: () =>
       tasksAPI
-        .getAll({ status: "pending", limit: 20 })
+        .getAll({ status: "pending", date: safeFormat(new Date(), "yyyy-MM-dd"), limit: 20 })
         .then((r) => r.data.tasks),
   });
 
@@ -309,18 +355,18 @@ export default function PomodoroPage() {
   const completeMutation = useMutation({
     mutationFn: ({ id, data }) => pomodoroAPI.complete(id, data),
     onSuccess: () => {
-      qc.invalidateQueries(["pomo-stats"]);
-      qc.invalidateQueries(["pomo-history"]);
-      qc.invalidateQueries(["dashboard"]);
+      qc.invalidateQueries({ queryKey: ["pomo-stats"] });
+      qc.invalidateQueries({ queryKey: ["pomo-history"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 
   const recordMutation = useMutation({
     mutationFn: (data) => pomodoroAPI.record(data),
     onSuccess: () => {
-      qc.invalidateQueries(["pomo-stats"]);
-      qc.invalidateQueries(["pomo-history"]);
-      qc.invalidateQueries(["dashboard"]);
+      qc.invalidateQueries({ queryKey: ["pomo-stats"] });
+      qc.invalidateQueries({ queryKey: ["pomo-history"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 
@@ -328,9 +374,9 @@ export default function PomodoroPage() {
     mutationFn: (id) => pomodoroAPI.delete(id),
     onSuccess: () => {
       addToast("Session removed from records", "info");
-      qc.invalidateQueries(["pomo-stats"]);
-      qc.invalidateQueries(["pomo-history"]);
-      qc.invalidateQueries(["dashboard"]);
+      qc.invalidateQueries({ queryKey: ["pomo-stats"] });
+      qc.invalidateQueries({ queryKey: ["pomo-history"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: () => addToast("Failed to remove session", "error")
   });
@@ -462,9 +508,9 @@ export default function PomodoroPage() {
             <strong
               style={{ textDecoration: "underline", cursor: "pointer", marginLeft: 4 }}
               onClick={() => {
-                tasksAPI.update(linkedTask, { status: "completed" }).then(() => {
-                  qc.invalidateQueries(["tasks-for-pomo"]);
-                  qc.invalidateQueries(["dashboard"]);
+                tasksAPI.update(linkedTask, { status: "completed", clientDate: safeFormat(new Date(), "yyyy-MM-dd") }).then(() => {
+                  qc.invalidateQueries({ queryKey: ["tasks-for-pomo"] });
+                  qc.invalidateQueries({ queryKey: ["dashboard"] });
                   addToast("Objective marked complete!", "success");
                 });
               }}
@@ -764,20 +810,31 @@ export default function PomodoroPage() {
         <div style={{ position: "relative" }}>
           <select
             className="auth-input"
-            style={{ height: 50, fontSize: 14, borderRadius: 14 }}
+            style={{ height: 50, fontSize: 14, borderRadius: 14, background: "#18181b", color: "#f4f4f5", colorScheme: "dark", border: "1px solid rgba(255, 255, 255, 0.12)", paddingRight: 38, cursor: "pointer" }}
             value={linkedTask}
             onChange={(e) => setLinkedTask(e.target.value)}
           >
-            <option value="">— Unlinked Session —</option>
+            <option value="" style={{ background: "#18181b", color: "#a1a1aa" }}>— Unlinked Session —</option>
             {tasksData?.map((t, index) => {
               const tid = getSafeId(t, `task-${index}`);
               return (
-                <option key={tid} value={tid}>
+                <option key={tid} value={tid} style={{ background: "#18181b", color: "#f4f4f5" }}>
                   {t.title}
                 </option>
               );
             })}
           </select>
+          <ChevronDown
+            size={16}
+            style={{
+              position: "absolute",
+              right: 14,
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--muted)",
+              pointerEvents: "none",
+            }}
+          />
         </div>
       </motion.div>
 

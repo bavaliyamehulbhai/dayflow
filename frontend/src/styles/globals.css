@@ -179,7 +179,12 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+html, body {
+  color-scheme: dark;
+}
+
 :root {
+  color-scheme: dark;
   /* Core Colors - Apple/iOS Premium Glass Style */
   --bg: #000000; /* True black background */
   --surface: rgba(28, 28, 30, 0.65); /* iOS elevated surface with transparency */
@@ -284,7 +289,12 @@ body {
 
 /* Responsive Typography Adjustments */
 @media (max-width: 768px) {
-  :root {
+  html, body {
+  color-scheme: dark;
+}
+
+:root {
+  color-scheme: dark;
     --fs-xs: 0.65rem;
     --fs-sm: 0.72rem;
     --fs-base: 0.82rem;
@@ -313,7 +323,12 @@ body {
   }
 
   @media (max-width: 768px) {
-    :root {
+    html, body {
+  color-scheme: dark;
+}
+
+:root {
+  color-scheme: dark;
       --fs-display: clamp(2.2rem, 10vw, 3rem);
       --fs-v-lg: clamp(1.8rem, 8vw, 2.5rem);
       --mobile-pad: 16px;
@@ -334,7 +349,12 @@ body {
   }
 
   @media (max-width: 400px) {
-    :root {
+    html, body {
+  color-scheme: dark;
+}
+
+:root {
+  color-scheme: dark;
       --mobile-pad: 12px;
     }
 
@@ -2138,7 +2158,47 @@ a:hover {
   padding-right: 32px;
 }
 
-.select option {
+select {
+  color-scheme: dark !important;
+}
+
+/* Select and Options dark mode support */
+select,
+.select {
+  color-scheme: dark !important;
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+}
+
+select option,
+.select option,
+option,
+optgroup {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+  color-scheme: dark !important;
+}
+
+.select-legacy-container {
+display: block; }
+select,
+.select {
+  color-scheme: dark !important;
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+}
+
+select option,
+.select option,
+option,
+optgroup {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+  color-scheme: dark !important;
+}
+
+.select-legacy-container {
+
   background: var(--surface2);
 }
 
@@ -2539,8 +2599,11 @@ a:hover {
 .auth-input::placeholder {
   color: rgba(255,255,255,0.3);
 }
-select.auth-input,
-.auth-input option {
+select.auth-input {
+  background: var(--surface2, #161824);
+  color: var(--text, #ffffff);
+}
+.auth-input {
   background: var(--surface2, #161824);
   color: var(--text, #ffffff);
 }
@@ -2658,7 +2721,12 @@ select.auth-input,
 
 /* ── Tablet (769px – 1024px): Icon sidebar ───────────────────────── */
 @media (max-width: 1024px) and (min-width: 769px) {
-  :root {
+  html, body {
+  color-scheme: dark;
+}
+
+:root {
+  color-scheme: dark;
     --sidebar-w: 68px;
   }
 
@@ -3704,7 +3772,12 @@ a:hover {
     width: 280px;
   }
 
-  :root {
+  html, body {
+  color-scheme: dark;
+}
+
+:root {
+  color-scheme: dark;
     --sidebar-w: 280px;
   }
 
@@ -5255,6 +5328,7 @@ img {
   font-weight: 700 !important;
   background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%) !important;
   -webkit-background-clip: text !important;
+  background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   text-shadow: none !important;
   letter-spacing: -0.5px !important;
@@ -5374,4 +5448,18 @@ img {
   content-visibility: auto;
   contain-intrinsic-size: auto 120px;
   contain: layout style paint;
+}
+
+/* 100% Lag-Free & Zero Freeze Performance Rules */
+html, body, button, a, input, select, textarea, .haptic-tap {
+  touch-action: manipulation;
+}
+
+html {
+  scroll-behavior: smooth;
+  overscroll-behavior-y: none;
+}
+
+img, svg {
+  transform: translateZ(0);
 }

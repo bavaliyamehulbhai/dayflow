@@ -3,9 +3,11 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Pomodoro = require('../models/Pomodoro');
 const User = require('../models/User');
+const Task = require('../models/Task');
 const { protect } = require('../middleware/auth');
 const { awardBadges } = require('../services/badgeService');
 const { logActivity } = require('../services/activityService');
+const { updateStreak } = require('../services/streakService');
 
 router.use(protect);
 
@@ -28,7 +30,8 @@ router.get('/', async (req, res) => {
     const pomodoros = await Pomodoro.find(filter)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit) || 50)
-      .populate('linkedTask', 'title');
+      .populate('linkedTask', 'title')
+      .lean();
 
     res.json({ success: true, pomodoros });
   } catch (err) {
@@ -48,13 +51,22 @@ router.post('/start', async (req, res) => {
       'long-break': user?.preferences?.pomodoroLong || 15
     };
 
-    const validLinkedTask = linkedTask && mongoose.Types.ObjectId.isValid(linkedTask)
-      ? linkedTask
-      : null;
-
+    const todayStr = getLocalDate();
+    const clientDate = (typeof req.body?.clientDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.body.clientDate)) ? req.body.clientDate : todayStr;
+    const maxAllowed = clientDate > todayStr ? clientDate : todayStr;
     const sessionDate = (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))
       ? date
-      : getLocalDate();
+      : todayStr;
+
+    if (sessionDate > maxAllowed) {
+      return res.status(400).json({ error: 'Focus session date cannot be in the future.' });
+    }
+
+    let validLinkedTask = null;
+    if (linkedTask && mongoose.Types.ObjectId.isValid(linkedTask)) {
+      const taskDoc = await Task.findOne({ _id: linkedTask, user: req.user._id });
+      if (taskDoc) validLinkedTask = taskDoc._id;
+    }
 
     const pomo = await Pomodoro.create({
       user: req.user._id,
@@ -84,15 +96,25 @@ router.post('/record', async (req, res) => {
       'long-break': user?.preferences?.pomodoroLong || 15
     };
 
-    const validLinkedTask = linkedTask && mongoose.Types.ObjectId.isValid(linkedTask)
-      ? linkedTask
-      : null;
-
-    const baseDuration = duration || durationMap[type] || 25;
-    const totalSeconds = actualDuration || baseDuration * 60;
+    const todayStr = getLocalDate();
+    const clientDate = (typeof req.body?.clientDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.body.clientDate)) ? req.body.clientDate : todayStr;
+    const maxAllowed = clientDate > todayStr ? clientDate : todayStr;
     const sessionDate = (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))
       ? date
-      : getLocalDate();
+      : todayStr;
+
+    if (sessionDate > maxAllowed) {
+      return res.status(400).json({ error: 'Focus session date cannot be in the future.' });
+    }
+
+    let validLinkedTask = null;
+    if (linkedTask && mongoose.Types.ObjectId.isValid(linkedTask)) {
+      const taskDoc = await Task.findOne({ _id: linkedTask, user: req.user._id });
+      if (taskDoc) validLinkedTask = taskDoc._id;
+    }
+
+    const baseDuration = Math.min(1440, Math.max(1, duration || durationMap[type] || 25));
+    const totalSeconds = Math.min(86400, Math.max(1, actualDuration || baseDuration * 60));
 
     const pomo = await Pomodoro.create({
       user: req.user._id,
@@ -118,7 +140,8 @@ router.post('/record', async (req, res) => {
       await logActivity(req.user._id, {
         pomodoros: 1,
         focusMinutes: minutesSpent
-      });
+      }, sessionDate);
+      await updateStreak(req.user._id, sessionDate);
     }
 
     const newBadges = type === 'work' ? await awardBadges(req.user._id) : [];
@@ -155,6 +178,7 @@ router.patch('/:id/complete', async (req, res) => {
     // Update user stats if it's a work session
     if (pomo.type === 'work') {
       const minutesSpent = Math.max(1, Math.floor(pomo.actualDuration / 60));
+      const pomoDate = pomo.date || getLocalDate(new Date());
       await User.findByIdAndUpdate(req.user._id, {
         $inc: {
           'stats.totalPomodoros': 1,
@@ -164,7 +188,8 @@ router.patch('/:id/complete', async (req, res) => {
       await logActivity(req.user._id, {
         pomodoros: 1,
         focusMinutes: minutesSpent
-      });
+      }, pomoDate);
+      await updateStreak(req.user._id, pomoDate);
     }
 
     // Award badges (non-blocking for work sessions)
@@ -202,7 +227,7 @@ router.delete('/:id', async (req, res) => {
       await logActivity(req.user._id, {
         pomodoros: -1,
         focusMinutes: -minutes
-      });
+      }, pomo.date);
     }
 
     res.json({ success: true, message: 'Session deleted.' });

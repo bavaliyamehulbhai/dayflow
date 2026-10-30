@@ -25,6 +25,8 @@ import {
   Eye,
   EyeOff,
   Sliders,
+  Plus,
+  Timer,
   LayoutGrid
 } from "lucide-react";
 import { motion, Reorder, AnimatePresence } from "framer-motion";
@@ -205,9 +207,26 @@ export default function DashboardPage() {
     }
   });
 
+  const handleTourDismiss = useCallback(() => {
+    setShowTour(false);
+    try {
+      const uId = user?._id || "anon";
+      localStorage.setItem(`df_onboarding_completed_${uId}`, "true");
+      localStorage.setItem("df_onboarding_completed", "true");
+    } catch (e) {}
+    updateUser({ onboardingCompleted: true });
+    authAPI.completeOnboarding().catch((err) => {
+      console.warn("Failed to sync onboarding to backend:", err);
+    });
+  }, [user, updateUser]);
+
   useEffect(() => {
-    if (user && !user.onboardingCompleted) {
+    const uId = user?._id || "anon";
+    const isLocallyDone = localStorage.getItem(`df_onboarding_completed_${uId}`) === "true" || localStorage.getItem("df_onboarding_completed") === "true";
+    if (user && !user.onboardingCompleted && !isLocallyDone) {
       setShowTour(true);
+    } else {
+      setShowTour(false);
     }
     if (
       user?.preferences?.dashboardLayout &&
@@ -221,8 +240,8 @@ export default function DashboardPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
-    queryFn: () => dashboardAPI.get().then((r) => r.data.dashboard),
-    staleTime: 5 * 60 * 1000,
+    queryFn: () => dashboardAPI.get({ date: safeFormat(new Date(), "yyyy-MM-dd") }).then((r) => r.data.dashboard),
+    staleTime: 10 * 1000, refetchOnMount: true,
   });
 
   const { data: activityData } = useQuery({
@@ -319,9 +338,9 @@ export default function DashboardPage() {
         "Customize your workspace by dragging widgets to rearrange them.",
     },
     {
-      target: ".drag-handle",
-      title: "Drag & Drop",
-      content: "Use these handles to reorganize your dashboard.",
+      target: "#tour-customize",
+      title: "Customize Workspace",
+      content: "Use this panel to reorder widgets, adjust density, and toggle focus presets.",
     },
   ];
 
@@ -369,7 +388,7 @@ export default function DashboardPage() {
             <GreetingIcon size={24} style={{ color: "var(--accent)" }} />
           </div>
           <div>
-            <h1
+            <h1 id="tour-welcome"
               style={{
                 fontSize: isMobile ? "1.6rem" : "2.1rem",
                 fontWeight: 800,
@@ -388,8 +407,51 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "16px", alignItems: "center", zIndex: 1 }}>
+        <div style={{ display: "flex", gap: isMobile ? "8px" : "12px", alignItems: "center", flexWrap: "wrap", zIndex: 1 }}>
           <button
+            onClick={() => navigate('/tasks')}
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#fff",
+              padding: "10px 16px",
+              borderRadius: "12px",
+              fontSize: "12px",
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: "pointer",
+            }}
+            className="haptic-tap hover-lift"
+            title="Go to Tasks"
+          >
+            <Plus size={15} style={{ color: "var(--green)" }} />
+            <span>Task</span>
+          </button>
+          <button
+            onClick={() => navigate('/pomodoro')}
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#fff",
+              padding: "10px 16px",
+              borderRadius: "12px",
+              fontSize: "12px",
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: "pointer",
+            }}
+            className="haptic-tap hover-lift"
+            title="Start Focus Session"
+          >
+            <Timer size={15} style={{ color: "var(--accent)" }} />
+            <span>Focus</span>
+          </button>
+          <button
+            id="tour-customize"
             onClick={() => setCustomizeOpen(true)}
             style={{
               background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
@@ -664,12 +726,8 @@ export default function DashboardPage() {
       <GuidedTour
         show={showTour}
         steps={tourSteps}
-        onComplete={() =>
-          authAPI.completeOnboarding().then((r) => updateUser(r.data.user))
-        }
-        onSkip={() =>
-          authAPI.completeOnboarding().then((r) => updateUser(r.data.user))
-        }
+        onComplete={handleTourDismiss}
+        onSkip={handleTourDismiss}
       />
     </div>
   );

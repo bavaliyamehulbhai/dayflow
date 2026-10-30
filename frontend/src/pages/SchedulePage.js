@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useLocation } from "react-router-dom";
 import { scheduleAPI, tasksAPI } from "../utils/api";
 import { useNotifications } from "../context/NotificationContext";
 import { format, addDays, subDays, isValid, parseISO } from "date-fns";
@@ -20,6 +21,7 @@ import {
   Pencil,
   Activity,
   Target,
+  Lock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -44,12 +46,30 @@ const CAT_COLORS = {
   other: "#a3a3a3",
 };
 
-function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, tasks, isMobile }) {
+function EventModal({
+  event,
+  date,
+  todayStr: propTodayStr,
+  onClose,
+  onSave,
+  onDelete,
+  onToggleComplete,
+  tasks,
+  isMobile,
+  getStatus,
+  checkCanComplete,
+}) {
+  const todayStr = propTodayStr || safeFormat(new Date(), "yyyy-MM-dd");
+  const isTodayEvent = (event?.date || date) === todayStr;
+  const status = event && getStatus ? getStatus(event) : "future";
+  const isCurrent = status === "current";
+  const check =
+    event && checkCanComplete ? checkCanComplete(event) : { allowed: true };
   const { addToast } = useNotifications();
   const [form, setForm] = useState({
     title: event?.title || "",
     description: event?.description || "",
-    date: event?.date || date,
+    date: event?.date || (date < todayStr ? todayStr : date),
     startTime: event?.startTime || "",
     endTime: event?.endTime || "",
     category: event?.category || "other",
@@ -68,7 +88,7 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
         background: "rgba(0,0,0,0.6)",
         display: "flex",
         alignItems: "center",
-        justifyContent: "center"
+        justifyContent: "center",
       }}
     >
       <motion.div
@@ -87,7 +107,8 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
           background: "var(--surface-solid)",
           border: "1px solid var(--border)",
           borderRadius: 12,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)"
+          boxShadow:
+            "0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
         }}
       >
         <div
@@ -96,18 +117,30 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
             borderBottom: "1px solid var(--border)",
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center"
+            alignItems: "center",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontWeight: 700, fontSize: 18, color: "var(--text)" }}>
+            <span
+              style={{ fontWeight: 700, fontSize: 18, color: "var(--text)" }}
+            >
               {event ? "Edit Event" : "New Event"}
             </span>
             {event && onToggleComplete && (
               <button
                 type="button"
                 className="haptic-tap"
-                onClick={() => onToggleComplete(getSafeId(event))}
+                onClick={() => {
+                  if (!isTodayEvent) {
+                    addToast("Only today's scheduled events can be completed or modified.", "warning");
+                    return;
+                  }
+                  if (!event.isCompleted && !check.allowed) {
+                    addToast(check.reason, "warning");
+                    return;
+                  }
+                  onToggleComplete(event);
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -116,14 +149,64 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
                   borderRadius: 8,
                   fontSize: 12,
                   fontWeight: 600,
-                  background: event.isCompleted ? "rgba(34, 197, 94, 0.15)" : "rgba(255, 255, 255, 0.05)",
-                  border: `1px solid ${event.isCompleted ? "rgba(34, 197, 94, 0.3)" : "rgba(255, 255, 255, 0.1)"}`,
-                  color: event.isCompleted ? "var(--green)" : "var(--muted)",
-                  cursor: "pointer"
+                  background: !isTodayEvent
+                    ? "rgba(255, 255, 255, 0.03)"
+                    : event.isCompleted
+                      ? "rgba(34, 197, 94, 0.15)"
+                      : isCurrent
+                        ? "rgba(124, 109, 250, 0.15)"
+                        : "rgba(255, 255, 255, 0.05)",
+                  border: `1px solid ${
+                    !isTodayEvent
+                      ? "rgba(255, 255, 255, 0.08)"
+                      : event.isCompleted
+                        ? "rgba(34, 197, 94, 0.3)"
+                        : isCurrent
+                          ? "rgba(124, 109, 250, 0.4)"
+                          : "rgba(255, 255, 255, 0.1)"
+                  }`,
+                  color: !isTodayEvent
+                    ? "var(--muted)"
+                    : event.isCompleted
+                      ? "var(--green)"
+                      : isCurrent
+                        ? "var(--accent)"
+                        : "var(--muted)",
+                  cursor: isTodayEvent && (event.isCompleted || isCurrent) ? "pointer" : "not-allowed",
+                  opacity: isTodayEvent && (event.isCompleted || isCurrent) ? 1 : 0.6,
                 }}
+                title={
+                  !isTodayEvent
+                    ? "Locked: Only today's events can be completed"
+                    : event.isCompleted
+                      ? "Mark Incomplete"
+                      : isCurrent
+                        ? "Mark Complete (Active Now)"
+                        : status === "future"
+                          ? `Locked: Available at ${event.startTime}`
+                          : `Locked: Time passed (${event.startTime}${event.endTime ? " - " + event.endTime : ""})`
+                }
               >
-                <CheckCircle2 size={14} />
-                <span>{event.isCompleted ? "Completed" : "Mark Complete"}</span>
+                {!isTodayEvent ? (
+                  <Lock size={14} />
+                ) : event.isCompleted ? (
+                  <CheckCircle2 size={14} />
+                ) : isCurrent ? (
+                  <CheckCircle2 size={14} />
+                ) : (
+                  <Clock size={14} />
+                )}
+                <span>
+                  {!isTodayEvent
+                    ? event.isCompleted
+                      ? "Completed (Locked)"
+                      : "Locked (Not Today)"
+                    : event.isCompleted
+                      ? "Completed"
+                      : isCurrent
+                        ? "Mark Complete"
+                        : "Time Locked"}
+                </span>
               </button>
             )}
           </div>
@@ -136,7 +219,7 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
               padding: 6,
               border: "none",
               color: "var(--text2)",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             <X size={20} />
@@ -146,7 +229,7 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
           style={{
             padding: "24px",
             overflowY: "auto",
-            flex: 1
+            flex: 1,
           }}
         >
           <div className="form-group mb-6">
@@ -171,7 +254,7 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
                 borderRadius: 8,
                 background: "var(--bg)",
                 border: "1px solid var(--border)",
-                padding: "0 16px"
+                padding: "0 16px",
               }}
               value={form.title}
               onChange={(e) =>
@@ -238,12 +321,27 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
               </label>
               <input
                 type="date"
+                min={todayStr}
                 className="auth-input"
-                style={{ height: 42, fontSize: 13, borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
+                style={{
+                  height: 42,
+                  fontSize: 13,
+                  borderRadius: 6,
+                  background: "#18181b",
+                  border: "1px solid var(--border)",
+                  padding: "0 12px",
+                  color: "#f4f4f5",
+                  colorScheme: "dark",
+                }}
                 value={form.date}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, date: e.target.value }))
-                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && val < todayStr) {
+                    addToast("Events cannot be scheduled for past dates.", "warning");
+                    return;
+                  }
+                  setForm((f) => ({ ...f, date: val }));
+                }}
               />
             </div>
             <div className="form-group">
@@ -263,7 +361,14 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
               <input
                 type="time"
                 className="auth-input"
-                style={{ height: 42, fontSize: 13, borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
+                style={{
+                  height: 42,
+                  fontSize: 13,
+                  borderRadius: 6,
+                  background: "var(--bg)",
+                  border: "1px solid var(--border)",
+                  padding: "0 12px",
+                }}
                 value={form.startTime}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, startTime: e.target.value }))
@@ -287,7 +392,14 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
               <input
                 type="time"
                 className="auth-input"
-                style={{ height: 42, fontSize: 13, borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
+                style={{
+                  height: 42,
+                  fontSize: 13,
+                  borderRadius: 6,
+                  background: "var(--bg)",
+                  border: "1px solid var(--border)",
+                  padding: "0 12px",
+                }}
                 value={form.endTime}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, endTime: e.target.value }))
@@ -315,14 +427,24 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
               </label>
               <select
                 className="select"
-                style={{ height: 42, borderRadius: 6, fontSize: 13, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px", width: "100%" }}
+                style={{
+                  height: 42,
+                  borderRadius: 6,
+                  fontSize: 13,
+                  background: "#18181b",
+                  border: "1px solid var(--border)",
+                  padding: "0 12px",
+                  width: "100%",
+                  color: "#f4f4f5",
+                  colorScheme: "dark",
+                }}
                 value={form.category}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, category: e.target.value }))
                 }
               >
                 {CATEGORIES.map((c, cIdx) => (
-                  <option key={`cat-${cIdx}`} value={c}>
+                  <option key={`cat-${cIdx}`} value={c} style={{ background: "#18181b", color: "#f4f4f5" }}>
                     {c.toUpperCase()}
                   </option>
                 ))}
@@ -344,17 +466,27 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
               </label>
               <select
                 className="select"
-                style={{ height: 42, borderRadius: 6, fontSize: 13, background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px", width: "100%" }}
+                style={{
+                  height: 42,
+                  borderRadius: 6,
+                  fontSize: 13,
+                  background: "#18181b",
+                  border: "1px solid var(--border)",
+                  padding: "0 12px",
+                  width: "100%",
+                  color: "#f4f4f5",
+                  colorScheme: "dark",
+                }}
                 value={form.linkedTask}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, linkedTask: e.target.value }))
                 }
               >
-                <option value="">NO LINK</option>
+                <option value="" style={{ background: "#18181b", color: "#f4f4f5" }}>NO LINK</option>
                 {tasks?.map((t, tIdx) => {
                   const tid = getSafeId(t, `task-${tIdx}`);
                   return (
-                    <option key={tid} value={tid}>
+                    <option key={tid} value={tid} style={{ background: "#18181b", color: "#f4f4f5" }}>
                       {t.title} ({t.priority?.toUpperCase() || "NORMAL"})
                     </option>
                   );
@@ -370,7 +502,7 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
             display: "flex",
             justifyContent: event && onDelete ? "space-between" : "flex-end",
             alignItems: "center",
-            gap: 12
+            gap: 12,
           }}
         >
           {event && onDelete && (
@@ -389,7 +521,7 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
                 background: "rgba(239, 68, 68, 0.1)",
                 border: "1px solid rgba(239, 68, 68, 0.25)",
                 color: "var(--red)",
-                cursor: "pointer"
+                cursor: "pointer",
               }}
             >
               <Trash2 size={15} />
@@ -401,7 +533,12 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
               type="button"
               onClick={onClose}
               className="btn btn-ghost"
-              style={{ padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600 }}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+              }}
             >
               Cancel
             </button>
@@ -412,12 +549,17 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
                 padding: "8px 20px",
                 borderRadius: 8,
                 fontSize: 13,
-                fontWeight: 700
+                fontWeight: 700,
               }}
               onClick={() => {
-                if (!form.title.trim()) return addToast("Please enter an event title", "error");
-                if (!form.date) return addToast("Please select a date", "error");
-                if (!form.startTime) return addToast("Please enter a start time", "error");
+                if (!form.title.trim())
+                  return addToast("Please enter an event title", "error");
+                if (!form.date)
+                  return addToast("Please select a date", "error");
+                if (form.date < todayStr)
+                  return addToast("Events cannot be scheduled for past dates.", "warning");
+                if (!form.startTime)
+                  return addToast("Please enter a start time", "error");
                 if (form.endTime && form.endTime <= form.startTime) {
                   return addToast("End time must be after start time", "error");
                 }
@@ -425,7 +567,7 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
                   ...form,
                   title: form.title.trim(),
                   linkedTask: form.linkedTask || null,
-                  endTime: form.endTime || null
+                  endTime: form.endTime || null,
                 });
               }}
             >
@@ -441,9 +583,16 @@ function EventModal({ event, date, onClose, onSave, onDelete, onToggleComplete, 
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
   useEffect(() => {
-    const h = () => setW(window.innerWidth);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
+    let tid = null;
+    const h = () => {
+      clearTimeout(tid);
+      tid = setTimeout(() => setW(window.innerWidth), 150);
+    };
+    window.addEventListener("resize", h, { passive: true });
+    return () => {
+      window.removeEventListener("resize", h);
+      clearTimeout(tid);
+    };
   }, []);
   return w;
 }
@@ -460,10 +609,26 @@ export default function SchedulePage() {
   const qc = useQueryClient();
   const { addToast } = useNotifications();
   const [currentDate, setCurrentDate] = useState(
-    format(new Date(), "yyyy-MM-dd"),
+    safeToLocalISO(new Date()),
   );
   const [modal, setModal] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false });
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("action") === "create") {
+      setModal("create");
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
+
+  useEffect(() => {
+    const handler = () => setModal("create");
+    window.addEventListener("df_open_create_modal", handler);
+    return () => window.removeEventListener("df_open_create_modal", handler);
+  }, []);
   const width = useWindowWidth();
   const isMobile = width <= 768;
 
@@ -481,7 +646,119 @@ export default function SchedulePage() {
         .then((r) => r.data.tasks),
   });
 
-  const invalidate = () => qc.invalidateQueries(["schedule"]);
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["schedule"] });
+
+  const [now, setNow] = useState(new Date());
+
+  // 30s ticker to keep current time line indicator live
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const todayStr = safeToLocalISO(now);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  const getStatus = (ev) => {
+    if (!ev?.startTime || typeof ev.startTime !== "string") return "future";
+    const evDate = ev.date || currentDate;
+    if (evDate < todayStr) return "past";
+    if (evDate > todayStr) return "future";
+
+    const [sh = 0, sm = 0] = ev.startTime.split(":").map(Number);
+    const startMin = sh * 60 + sm;
+    let endMin;
+    if (ev.endTime && typeof ev.endTime === "string") {
+      const [eh = 0, em = 0] = ev.endTime.split(":").map(Number);
+      endMin = eh * 60 + em;
+    } else {
+      endMin = Math.min(startMin + 60, 24 * 60 - 1);
+    }
+
+    if (nowMin >= startMin && nowMin <= endMin) return "current";
+    if (nowMin > endMin) return "past";
+    return "future";
+  };
+
+  const checkCanComplete = (ev) => {
+    if (!ev) return { allowed: false, reason: "Invalid event" };
+    if (ev.date !== todayStr) {
+      return {
+        allowed: false,
+        reason:
+          ev.date < todayStr
+            ? "Past scheduled events are read-only and cannot be modified."
+            : "Future events cannot be completed until their scheduled date.",
+      };
+    }
+    if (ev.isCompleted) return { allowed: true };
+    const status = getStatus(ev);
+    if (status === "current") return { allowed: true };
+    if (status === "future") {
+      return {
+        allowed: false,
+        reason: `Event cannot be completed before its scheduled time (${ev.startTime || ""}).`,
+      };
+    }
+    return {
+      allowed: false,
+      reason: `Event scheduled time has passed (${ev.startTime || ""}${ev.endTime ? " - " + ev.endTime : ""}). It can only be completed during its scheduled time.`,
+    };
+  };
+
+  const toggleMutation = useMutation({
+    mutationFn: (variables) => {
+      const id = typeof variables === "object" ? variables.id : variables;
+      const payload = typeof variables === "object" ? variables : { id };
+      return scheduleAPI.toggleComplete(id, {
+        clientDate: todayStr,
+        clientTime: safeFormat(now, "HH:mm"),
+        ...payload,
+      });
+    },
+    onSuccess: () => invalidate(),
+    onError: (err) => {
+      addToast(
+        err?.response?.data?.error ||
+          "Cannot complete event outside its scheduled time.",
+        "error",
+      );
+      // Revert modal state if it was toggled
+      setModal((prev) =>
+        prev && typeof prev === "object"
+          ? { ...prev, isCompleted: !prev.isCompleted }
+          : prev,
+      );
+    },
+  });
+
+  const handleToggleEvent = (ev) => {
+    const evId = getSafeId(ev);
+    if (!evId) return;
+    if (ev.date !== todayStr) {
+      addToast(
+        ev.date < todayStr
+          ? "Past scheduled events are read-only and cannot be modified."
+          : "Future events cannot be completed until their scheduled date.",
+        "warning"
+      );
+      return;
+    }
+    if (!ev.isCompleted) {
+      const check = checkCanComplete(ev);
+      if (!check.allowed) {
+        addToast(check.reason, "warning");
+        return;
+      }
+    }
+    toggleMutation.mutate({
+      id: evId,
+      clientDate: todayStr,
+      clientTime: safeFormat(now, "HH:mm"),
+    });
+  };
 
   const createMutation = useMutation({
     mutationFn: scheduleAPI.create,
@@ -503,48 +780,21 @@ export default function SchedulePage() {
     mutationFn: scheduleAPI.delete,
     onSuccess: () => {
       addToast("Alignment banished", "info");
+      setModal(null);
       invalidate();
     },
   });
-  const toggleMutation = useMutation({
-    mutationFn: scheduleAPI.toggleComplete,
-    onSuccess: () => invalidate(),
-  });
 
   const events = data || [];
-  const [now, setNow] = useState(new Date());
-
-  // 30s ticker to keep current time line indicator live
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(new Date());
-    }, 30000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const todayStr = safeToLocalISO(now);
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-
-  const getStatus = (ev) => {
-    if (!ev?.startTime || typeof ev.startTime !== "string") return "future";
-    if (currentDate < todayStr) return "past";
-    if (currentDate > todayStr) return "future";
-
-    const [sh = 0, sm = 0] = ev.startTime.split(":").map(Number);
-    const startMin = sh * 60 + sm;
-    if (!ev.endTime || typeof ev.endTime !== "string") {
-      return startMin <= nowMin ? "past" : "future";
-    }
-    const [eh = 0, em = 0] = ev.endTime.split(":").map(Number);
-    const endMin = eh * 60 + em;
-    if (nowMin >= startMin && nowMin < endMin) return "current";
-    if (nowMin >= endMin) return "past";
-    return "future";
-  };
 
   const handleSave = (data) => {
+    if (data.date && data.date < todayStr) {
+      addToast("Events cannot be scheduled for past dates.", "warning");
+      return;
+    }
     const mid = getSafeId(modal);
-    if (modal && mid && modal !== "create") updateMutation.mutate({ id: mid, data });
+    if (modal && mid && modal !== "create")
+      updateMutation.mutate({ id: mid, data });
     else createMutation.mutate(data);
   };
 
@@ -554,7 +804,7 @@ export default function SchedulePage() {
     setConfirmDialog({
       open: true,
       title: "Delete Event",
-      message: `Are you sure you want to delete "${ev.title || 'this event'}"?`,
+      message: `Are you sure you want to delete "${ev.title || "this event"}"?`,
       confirmText: "Delete",
       danger: true,
       onConfirm: () => {
@@ -563,7 +813,7 @@ export default function SchedulePage() {
         if (modal && getSafeId(modal) === evId) {
           setModal(null);
         }
-      }
+      },
     });
   };
 
@@ -604,101 +854,135 @@ export default function SchedulePage() {
       className="responsive-container page-shell"
       style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}
     >
-
-
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         style={{ position: "relative", zIndex: 1 }}
       >
-      <div
-        className="premium-card"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "16px",
-          padding: isMobile ? "20px" : "28px 32px",
-          marginBottom: "32px",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Subtle background glow */}
-        <div style={{
-          position: 'absolute',
-          top: '-50%',
-          left: '-10%',
-          width: '50%',
-          height: '200%',
-          background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
-          opacity: 0.05,
-          filter: 'blur(40px)',
-          pointerEvents: 'none'
-        }} />
-
-        <div style={{ display: "flex", alignItems: "center", gap: "20px", zIndex: 1 }}>
-          <div style={{
-            width: "48px",
-            height: "48px",
-            borderRadius: "16px",
-            background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))",
-            border: "1px solid rgba(255,255,255,0.1)",
+        <div
+          className="premium-card"
+          style={{
             display: "flex",
+            justifyContent: "space-between",
             alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
-          }}>
-            <CalendarIcon size={24} style={{ color: "var(--accent)" }} />
-          </div>
-          <div>
-            <h1
-              style={{
-                fontSize: isMobile ? "1.6rem" : "2.1rem",
-                fontWeight: 800,
-                margin: 0,
-                background: "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                letterSpacing: "-0.04em"
-              }}
-            >
-              Schedule
-            </h1>
-            <p style={{ fontSize: "0.95rem", color: "var(--muted)", margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.2px" }}>
-              Plan and align your calendar events
-            </p>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
-          <button
-            onClick={() => setModal("create")}
+            flexWrap: "wrap",
+            gap: "16px",
+            padding: isMobile ? "20px" : "28px 32px",
+            marginBottom: "32px",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Subtle background glow */}
+          <div
             style={{
-              background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "#fff",
-              padding: "10px 20px",
-              borderRadius: "12px",
-              fontSize: "13px",
-              fontWeight: 600,
+              position: "absolute",
+              top: "-50%",
+              left: "-10%",
+              width: "50%",
+              height: "200%",
+              background:
+                "radial-gradient(circle, var(--accent) 0%, transparent 70%)",
+              opacity: 0.05,
+              filter: "blur(40px)",
+              pointerEvents: "none",
+            }}
+          />
+
+          <div
+            style={{
               display: "flex",
               alignItems: "center",
-              gap: 8,
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
-              backdropFilter: "blur(10px)",
-              transition: "all 0.2s ease"
+              gap: "20px",
+              zIndex: 1,
             }}
-            className="haptic-tap hover-lift"
           >
-            <Plus size={16} style={{ color: "var(--accent)" }} />
-            <span style={{ letterSpacing: "0.5px" }}>New Event</span>
-          </button>
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "16px",
+                background:
+                  "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))",
+                border: "1px solid rgba(255,255,255,0.1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 8px 16px rgba(0,0,0,0.2)",
+              }}
+            >
+              <CalendarIcon size={24} style={{ color: "var(--accent)" }} />
+            </div>
+            <div>
+              <h1
+                style={{
+                  fontSize: isMobile ? "1.6rem" : "2.1rem",
+                  fontWeight: 800,
+                  margin: 0,
+                  background:
+                    "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  letterSpacing: "-0.04em",
+                }}
+              >
+                Schedule
+              </h1>
+              <p
+                style={{
+                  fontSize: "0.95rem",
+                  color: "var(--muted)",
+                  margin: "4px 0 0",
+                  fontWeight: 500,
+                  letterSpacing: "0.2px",
+                }}
+              >
+                Plan and align your calendar events
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              zIndex: 1,
+            }}
+          >
+            <button
+              onClick={() => {
+                if (currentDate < todayStr) {
+                  addToast("Opening event creation for today (past days are read-only).", "info");
+                }
+                setModal("create");
+              }}
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "#fff",
+                padding: "10px 20px",
+                borderRadius: "12px",
+                fontSize: "13px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+                boxShadow:
+                  "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+                backdropFilter: "blur(10px)",
+                transition: "all 0.2s ease",
+              }}
+              className="haptic-tap hover-lift"
+            >
+              <Plus size={16} style={{ color: "var(--accent)" }} />
+              <span style={{ letterSpacing: "0.5px" }}>New Event</span>
+            </button>
+          </div>
         </div>
-      </div>
 
         {/* Date navigation */}
         <div
@@ -733,7 +1017,10 @@ export default function SchedulePage() {
               <ChevronLeft size={20} />
             </motion.button>
             <div
-              style={{ textAlign: "center", minWidth: isMobile ? "auto" : 200 }}
+              style={{
+                textAlign: "center",
+                minWidth: isMobile ? "auto" : 200,
+              }}
             >
               <div
                 style={{
@@ -742,9 +1029,19 @@ export default function SchedulePage() {
                   color: "white",
                   lineHeight: 1,
                   letterSpacing: "-0.02em",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  flexWrap: "wrap",
                 }}
               >
-                {safeFormat(new Date(currentDate + "T12:00:00"), "EEEE")}
+                <span>{currentDate === todayStr ? "Today" : safeFormat(new Date(currentDate + "T12:00:00"), "EEEE")}</span>
+                {currentDate < todayStr && (
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: "rgba(255,255,255,0.04)", color: "var(--muted)", fontWeight: 700, border: "1px solid rgba(255,255,255,0.08)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <Lock size={10} /> PAST RECORD (READ-ONLY)
+                  </span>
+                )}
               </div>
               <div
                 style={{
@@ -756,7 +1053,10 @@ export default function SchedulePage() {
                   textTransform: "uppercase",
                 }}
               >
-                {safeFormat(new Date(currentDate + "T12:00:00"), "MMMM d, yyyy")}
+                {safeFormat(
+                  new Date(currentDate + "T12:00:00"),
+                  "MMMM d, yyyy",
+                )}
               </div>
             </div>
             <motion.button
@@ -854,13 +1154,16 @@ export default function SchedulePage() {
                   key={h}
                   onClick={() => {
                     const padHour = String(h).padStart(2, "0");
-                    const endHour = h === 23 ? "23:59" : `${String(h + 1).padStart(2, "0")}:00`;
+                    const endHour =
+                      h === 23
+                        ? "23:59"
+                        : `${String(h + 1).padStart(2, "0")}:00`;
                     setModal({
                       title: "",
                       description: "",
                       startTime: `${padHour}:00`,
                       endTime: endHour,
-                      category: "other"
+                      category: "other",
                     });
                   }}
                   style={{
@@ -868,7 +1171,7 @@ export default function SchedulePage() {
                     height: isMobile ? 48 : 64,
                     borderBottom: "1px solid rgba(255,255,255,0.02)",
                     zIndex: 1,
-                    cursor: "pointer"
+                    cursor: "pointer",
                   }}
                 >
                   <div
@@ -924,10 +1227,7 @@ export default function SchedulePage() {
               <AnimatePresence>
                 {events.length > 0
                   ? events.map((ev, idx) => {
-                      const status =
-                        currentDate === safeFormat(new Date(), "yyyy-MM-dd")
-                          ? getStatus(ev)
-                          : "future";
+                      const status = getStatus(ev);
                       const top = getEventTop(ev.startTime);
                       const height = getEventHeight(ev.startTime, ev.endTime);
                       const color = CAT_COLORS[ev.category] || "var(--accent)";
@@ -962,7 +1262,8 @@ export default function SchedulePage() {
                                 ? 0.7
                                 : 1,
                             zIndex: 10,
-                            boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+                            boxShadow:
+                              "inset 0 1px 0 rgba(255, 255, 255, 0.05)",
                             backdropFilter: "blur(10px)",
                           }}
                           whileHover={{ scale: 1.01, zIndex: 11 }}
@@ -1069,11 +1370,10 @@ export default function SchedulePage() {
               >
                 {events.map((ev, i) => {
                   const color = CAT_COLORS[ev.category] || "var(--accent)";
-                  const status =
-                    currentDate === safeFormat(new Date(), "yyyy-MM-dd")
-                      ? getStatus(ev)
-                      : "future";
-                  const evListKey = getSafeId(ev, `ev-side-${i}`);
+                  const status = getStatus(ev);
+                  const isCurrent = status === "current";
+                  const isToday = ev.date === todayStr;
+                  const canComplete = isToday && (ev.isCompleted || isCurrent);
                   return (
                     <motion.div
                       key={getSafeId(ev, `ev-list-${i}`)}
@@ -1128,6 +1428,7 @@ export default function SchedulePage() {
                             }}
                           >
                             <Clock size={12} /> {ev.startTime}
+                            {ev.endTime ? ` — ${ev.endTime}` : ""}
                           </div>
                         </div>
                         <div
@@ -1142,12 +1443,36 @@ export default function SchedulePage() {
                               borderRadius: 8,
                               color: ev.isCompleted
                                 ? "var(--green)"
-                                : "var(--muted)",
+                                : isCurrent
+                                  ? "var(--accent)"
+                                  : "var(--muted)",
+                              opacity: canComplete ? 1 : 0.45,
+                              cursor: canComplete ? "pointer" : "not-allowed",
                             }}
-                            title={ev.isCompleted ? "Mark Incomplete" : "Mark Complete"}
-                            onClick={() => toggleMutation.mutate(getSafeId(ev))}
+                            title={
+                              !isToday
+                                ? ev.date < todayStr
+                                  ? "Past Record (Read-Only)"
+                                  : "Future Event (Locked)"
+                                : ev.isCompleted
+                                  ? "Mark Incomplete"
+                                  : isCurrent
+                                    ? "Mark Complete (Active Now)"
+                                    : status === "future"
+                                      ? `Locked: Available at ${ev.startTime}`
+                                      : `Locked: Time passed (${ev.startTime}${ev.endTime ? " - " + ev.endTime : ""})`
+                            }
+                            onClick={() => handleToggleEvent(ev)}
                           >
-                            <CheckCircle2 size={16} />
+                            {!isToday ? (
+                              <Lock size={15} />
+                            ) : ev.isCompleted ? (
+                              <CheckCircle2 size={16} />
+                            ) : isCurrent ? (
+                              <CheckCircle2 size={16} />
+                            ) : (
+                              <Clock size={16} />
+                            )}
                           </button>
                           <button
                             className="btn glass btn-sm haptic-tap"
@@ -1156,7 +1481,7 @@ export default function SchedulePage() {
                               height: 32,
                               borderRadius: 8,
                               color: "var(--red)",
-                              opacity: 0.8
+                              opacity: 0.8,
                             }}
                             title="Delete Event"
                             onClick={() => handleDeleteRequest(ev)}
@@ -1205,20 +1530,37 @@ export default function SchedulePage() {
         {modal && (
           <EventModal
             event={modal === "create" ? null : modal}
-            date={currentDate}
+            date={currentDate < todayStr ? todayStr : currentDate}
+            todayStr={todayStr}
             onClose={() => setModal(null)}
             onSave={handleSave}
             onDelete={handleDeleteRequest}
-            onToggleComplete={(id) => {
-              toggleMutation.mutate(id);
+            onToggleComplete={(targetEv) => {
+              const evToToggle = targetEv || modal;
+              const evId = getSafeId(evToToggle);
+              if (!evId) return;
+              if (!evToToggle.isCompleted) {
+                const check = checkCanComplete(evToToggle);
+                if (!check.allowed) {
+                  addToast(check.reason, "warning");
+                  return;
+                }
+              }
+              toggleMutation.mutate({
+                id: evId,
+                clientDate: todayStr,
+                clientTime: safeFormat(now, "HH:mm"),
+              });
               setModal((prev) =>
                 prev && typeof prev === "object"
                   ? { ...prev, isCompleted: !prev.isCompleted }
-                  : prev
+                  : prev,
               );
             }}
             tasks={tasks}
             isMobile={isMobile}
+            getStatus={getStatus}
+            checkCanComplete={checkCanComplete}
           />
         )}
       </AnimatePresence>

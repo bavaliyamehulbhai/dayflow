@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 const Note = require("../models/Note");
+const Task = require("../models/Task");
 const { protect } = require("../middleware/auth");
 const { sanitizeFields } = require("../middleware/sanitizer");
 const { logActivity } = require("../services/activityService");
@@ -42,7 +43,7 @@ const noteValidation = [
 ];
 
 // GET all notes
-router.get("/", cacheMiddleware(60), async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { search, tag, archived = "false", page = 1, limit = 50 } = req.query;
     const isArchivedBool = archived === "true";
@@ -88,7 +89,7 @@ router.get("/", cacheMiddleware(60), async (req, res) => {
 });
 
 // GET single note
-router.get("/:id", cacheMiddleware(300), async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ error: "Invalid note ID format." });
@@ -110,8 +111,11 @@ router.post("/", noteValidation, async (req, res) => {
       return res.status(400).json({ error: errors.array()[0].msg });
 
     const { title, content, color, tags, linkedTask } = req.body;
-    const sanitizedLinkedTask =
-      linkedTask && mongoose.Types.ObjectId.isValid(linkedTask) ? linkedTask : null;
+    let sanitizedLinkedTask = null;
+    if (linkedTask && mongoose.Types.ObjectId.isValid(linkedTask)) {
+      const taskDoc = await Task.findOne({ _id: linkedTask, user: req.user._id });
+      if (taskDoc) sanitizedLinkedTask = taskDoc._id;
+    }
 
     const note = await Note.create({
       title: title || "Untitled Note",
@@ -158,8 +162,12 @@ router.put("/:id", noteValidation, async (req, res) => {
     if (color !== undefined) note.color = color;
     if (tags !== undefined) note.tags = Array.isArray(tags) ? tags : [];
     if (linkedTask !== undefined) {
-      note.linkedTask =
-        linkedTask && mongoose.Types.ObjectId.isValid(linkedTask) ? linkedTask : null;
+      let sanitizedLinkedTask = null;
+      if (linkedTask && mongoose.Types.ObjectId.isValid(linkedTask)) {
+        const taskDoc = await Task.findOne({ _id: linkedTask, user: req.user._id });
+        if (taskDoc) sanitizedLinkedTask = taskDoc._id;
+      }
+      note.linkedTask = sanitizedLinkedTask;
     }
     if (isPinned !== undefined) note.isPinned = Boolean(isPinned);
     if (isArchived !== undefined) note.isArchived = Boolean(isArchived);

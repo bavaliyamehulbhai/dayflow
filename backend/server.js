@@ -29,6 +29,18 @@ const app = express();
 // Trust proxy for rate limiting (essential for Render/CRA proxies)
 app.set("trust proxy", 1);
 
+// ─── Observability: Response Time & Slow Request Detection ───────────────────
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (duration > 500) {
+      console.warn(`⚠️ [SLOW REQUEST] ${req.method} ${req.originalUrl} took ${duration}ms (status: ${res.statusCode})`);
+    }
+  });
+  next();
+});
+
 // ─── Query Sanitizer (Deep NoSQL Defense) ────────────────────────────────────
 app.use(querySanitizer);
 
@@ -138,6 +150,7 @@ app.use(
       "Authorization",
       "X-CSRF-Token",
       "X-Client-Version",
+      "X-Client-Date",
       "X-Requested-With",
     ],
   }),
@@ -302,6 +315,12 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     message: "DayFlow API is running",
     timestamp: new Date().toISOString(),
+    uptimeSeconds: Math.floor(process.uptime()),
+    workerPid: process.pid,
+    memory: {
+      heapUsedMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      rssMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    },
     mongodb:
       mongoose.connection.readyState === 1 ? "connected" : "disconnected",
     environment: process.env.NODE_ENV || "development",

@@ -72,5 +72,6 @@ const habitSchema = new mongoose.Schema({
 habitSchema.index({ user: 1, isActive: 1 });
 habitSchema.index({ user: 1, order: 1 });
 habitSchema.index({ user: 1, createdAt: -1 });
+habitSchema.index({ user: 1, 'completions.date': 1 });
 
 module.exports = mongoose.model('Habit', habitSchema);

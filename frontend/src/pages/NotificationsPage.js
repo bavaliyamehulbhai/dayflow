@@ -95,6 +95,27 @@ export default function NotificationsPage() {
     completeTaskMutation.mutate(taskId);
   };
 
+  const moveToTodayMutation = useMutation({
+    mutationFn: (taskId) => tasksAPI.update(taskId, { date: todayStr, dueDate: todayStr }),
+    onSuccess: () => {
+      addToast('Task rescheduled to Today! 📅', 'success');
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      setProcessingId(null);
+    },
+    onError: (err) => {
+      addToast(err?.response?.data?.error || 'Failed to reschedule task', 'error');
+      setProcessingId(null);
+    }
+  });
+
+  const handleMoveToToday = (e, taskId) => {
+    e.stopPropagation();
+    setProcessingId(taskId);
+    moveToTodayMutation.mutate(taskId);
+  };
+
   const handleCompleteHabit = (e, habitId) => {
     e.stopPropagation();
     setProcessingId(habitId);
@@ -115,7 +136,7 @@ export default function NotificationsPage() {
         return d && isBefore(d, now);
       })
       .map(t => ({
-        id: t._id,
+        id: getSafeId(t),
         type: 'task',
         urgency: 'overdue',
         title: t.title,
@@ -139,7 +160,7 @@ export default function NotificationsPage() {
         const d = parseDueDate(t.dueDate);
         const isImminent = isBefore(d, threshold12h);
         return {
-          id: t._id,
+          id: getSafeId(t),
           type: 'task',
           urgency: isImminent ? 'imminent' : 'upcoming',
           title: t.title,
@@ -159,7 +180,7 @@ export default function NotificationsPage() {
     return habitList
       .filter(h => !h.completedToday)
       .map(h => ({
-        id: h._id,
+        id: getSafeId(h),
         type: 'habit',
         urgency: 'habit',
         title: h.name,
@@ -175,7 +196,7 @@ export default function NotificationsPage() {
   const todaySchedule = useMemo(() => {
     const events = dashData?.schedule?.today || [];
     return events.map(e => ({
-      id: e._id,
+      id: getSafeId(e),
       type: 'schedule',
       urgency: 'schedule',
       title: e.title,
@@ -665,15 +686,14 @@ export default function NotificationsPage() {
                     {signal.type === 'task' && (
                       <>
                         <button
-                          onClick={(e) => handleCompleteTask(e, signal.id)}
+                          onClick={(e) => isOverdue ? handleMoveToToday(e, signal.id) : handleCompleteTask(e, signal.id)}
                           disabled={isBusy}
                           className="haptic-tap hover-lift"
                           style={{
                             padding: '8px 16px',
                             borderRadius: 10,
-                            background: 'rgba(124, 109, 250, 0.15)',
-                            border: '1px solid rgba(124, 109, 250, 0.3)',
-                            color: 'var(--accent)',
+                            background: isOverdue ? 'rgba(255, 77, 77, 0.15)' : 'rgba(124, 109, 250, 0.15)',
+                            color: isOverdue ? '#ff6b6b' : 'var(--accent)',
                             fontSize: 12,
                             fontWeight: 700,
                             cursor: 'pointer',
@@ -683,8 +703,8 @@ export default function NotificationsPage() {
                             transition: 'all 0.2s'
                           }}
                         >
-                          <Check size={14} />
-                          {isBusy ? 'Saving...' : 'Mark Done'}
+                          {isOverdue ? <Calendar size={14} /> : <Check size={14} />}
+                          {isBusy ? (isOverdue ? 'Moving...' : 'Saving...') : isOverdue ? 'Move to Today' : 'Mark Done'}
                         </button>
                         <button
                           onClick={() => navigate('/tasks')}

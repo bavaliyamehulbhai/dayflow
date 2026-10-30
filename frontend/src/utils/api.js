@@ -1,16 +1,40 @@
 import axios from 'axios';
+import { safeToLocalISO } from './dateUtils';
 
 const API_BASE = process.env.REACT_APP_API_URL || '/api';
 const CLIENT_VERSION = '1.0.0';
 
 const api = axios.create({
   baseURL: API_BASE,
+  timeout: 15000, // 15s timeout prevents requests from hanging or freezing the UI indefinitely
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     'X-Client-Version': CLIENT_VERSION,
   }
 });
+
+// Global request interceptor — automatically synchronizes clientDate
+api.interceptors.request.use(
+  config => {
+    try {
+      const localToday = safeToLocalISO(new Date());
+      config.headers['X-Client-Date'] = localToday;
+      const method = config.method?.toLowerCase();
+      if (['post', 'put', 'patch'].includes(method)) {
+        if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
+          if (!config.data.clientDate) {
+            config.data.clientDate = localToday;
+          }
+        }
+      }
+    } catch {
+      // safe fallback
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
 
 // Global 401 handler — uses custom event so AuthContext can react cleanly
 api.interceptors.response.use(
@@ -65,7 +89,7 @@ export const tasksAPI = {
   update: (id, data) => api.put(`/tasks/${id}`, data),
   delete: (id) => api.delete(`/tasks/${id}`),
   bulkDelete: (ids) => api.post('/tasks/bulk/delete', { ids }),
-  bulkStatus: (ids, status) => api.post('/tasks/bulk/status', { ids, status }),
+  bulkStatus: (ids, status, clientDate) => api.post('/tasks/bulk/status', { ids, status, clientDate }),
   toggleSubtask: (taskId, subtaskId) => api.patch(`/tasks/${taskId}/subtasks/${subtaskId}`),
   stats: () => api.get('/tasks/stats/summary')
 };
@@ -87,7 +111,11 @@ export const scheduleAPI = {
   create: (data) => api.post('/schedule', data),
   update: (id, data) => api.put(`/schedule/${id}`, data),
   delete: (id) => api.delete(`/schedule/${id}`),
-  toggleComplete: (id) => api.patch(`/schedule/${id}/complete`)
+  toggleComplete: (id, data) => {
+    const payload = (typeof id === 'object' && id !== null && id.id) ? id : data;
+    const targetId = (typeof id === 'object' && id !== null && id.id) ? id.id : id;
+    return api.patch(`/schedule/${targetId}/complete`, payload);
+  }
 };
 
 // ─── Pomodoro ─────────────────────────────────────────────────────────────────
@@ -113,7 +141,7 @@ export const notesAPI = {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export const dashboardAPI = {
-  get: () => api.get('/dashboard'),
+  get: (params) => api.get('/dashboard', { params }),
   getActivity12m: () => api.get('/dashboard/activity/12m').then(r => ({ data: { activity: r.data.logs, analytics: r.data.analytics } }))
 };
 

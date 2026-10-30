@@ -42,10 +42,17 @@ export const SecurityProvider = ({ children }) => {
 
   useEffect(() => {
     const events = ["mousedown", "keydown", "scroll", "touchstart"];
-    const handleActivity = () => resetTimer();
+    let lastActivity = 0;
+    const handleActivity = () => {
+      const now = Date.now();
+      if (now - lastActivity > 5000) {
+        lastActivity = now;
+        resetTimer();
+      }
+    };
 
     if (user && !isLocked) {
-      events.forEach((e) => window.addEventListener(e, handleActivity));
+      events.forEach((e) => window.addEventListener(e, handleActivity, { passive: true }));
       resetTimer();
     }
 

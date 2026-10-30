@@ -39,6 +39,14 @@ const taskSchema = new mongoose.Schema({
     trim: true,
     maxlength: [30, 'Tag cannot exceed 30 characters']
   }],
+  date: {
+    type: String, // YYYY-MM-DD
+    default: () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+    index: true
+  },
   dueDate: {
     type: Date,
     default: null
@@ -86,10 +94,14 @@ const taskSchema = new mongoose.Schema({
 
 // Compound indexes for efficient user-scoped queries
 taskSchema.index({ user: 1, status: 1 });
+taskSchema.index({ user: 1, date: 1 });
 taskSchema.index({ user: 1, dueDate: 1 });
 taskSchema.index({ user: 1, priority: 1 });
 taskSchema.index({ user: 1, createdAt: -1 });
 taskSchema.index({ user: 1, completedAt: -1 });
+taskSchema.index({ user: 1, date: 1, status: 1 });
+taskSchema.index({ user: 1, status: 1, priority: -1 });
+taskSchema.index({ user: 1, status: 1, dueDate: 1 });
 
 // Text index for fast search
 taskSchema.index({ title: 'text', description: 'text', tags: 'text' });

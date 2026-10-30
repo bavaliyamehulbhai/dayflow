@@ -26,9 +26,13 @@ import {
   Layers,
   Zap,
   Trophy,
+  ChevronLeft,
   ChevronRight,
   FileText,
   FileSpreadsheet,
+  ArrowRight,
+  RotateCcw,
+  Lock,
 } from "lucide-react";
 import {
   motion,
@@ -63,9 +67,16 @@ const CATEGORIES = [
 function useWindowWidth() {
   const [w, setW] = useState(window.innerWidth);
   useEffect(() => {
-    const h = () => setW(window.innerWidth);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
+    let tid = null;
+    const h = () => {
+      clearTimeout(tid);
+      tid = setTimeout(() => setW(window.innerWidth), 150);
+    };
+    window.addEventListener("resize", h, { passive: true });
+    return () => {
+      window.removeEventListener("resize", h);
+      clearTimeout(tid);
+    };
   }, []);
   return w;
 }
@@ -76,10 +87,13 @@ function useWindowSize() {
     height: window.innerHeight,
   });
   useEffect(() => {
-    const h = () =>
-      setSize({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
+    let tid = null; const h = () => { clearTimeout(tid); tid = setTimeout(() => {
+      setSize({ width: window.innerWidth, height: window.innerHeight }); }, 150); };
+    window.addEventListener("resize", h, { passive: true });
+    return () => {
+      window.removeEventListener("resize", h);
+      clearTimeout(tid);
+    };
   }, []);
   return size;
 }
@@ -97,6 +111,8 @@ const TaskItem = React.memo(
         setConfirmState,
         isMobile,
         deleteMutation,
+        onMoveToToday,
+        todayStr,
       },
       ref,
     ) => {
@@ -109,8 +125,27 @@ const TaskItem = React.memo(
       const opacity = useTransform(x, [-100, -50, 0, 50, 100], [1, 0, 0, 0, 1]);
       const scale = useTransform(x, [-100, 0, 100], [1.1, 1, 1.1]);
 
+      const { addToast } = useNotifications();
+      const taskDate = task.date || (task.dueDate ? safeFormat(task.dueDate, "yyyy-MM-dd", "") : "");
+      const isToday = Boolean(taskDate && taskDate === todayStr);
+      const isOverdue = Boolean(
+        taskDate &&
+        todayStr &&
+        taskDate < todayStr &&
+        task.status !== "completed"
+      );
+
       const handleDragEnd = (event, info) => {
         if (info.offset.x > 100) {
+          if (!isToday) {
+            addToast(
+              taskDate && taskDate < todayStr
+                ? "Past tasks cannot be completed/uncompleted. Only today's tasks can be modified."
+                : "Upcoming tasks cannot be completed early. Only today's tasks can be modified.",
+              "warning"
+            );
+            return;
+          }
           toggleComplete(task);
         } else if (info.offset.x < -100) {
           setConfirmState({
@@ -121,17 +156,6 @@ const TaskItem = React.memo(
           });
         }
       };
-
-      const isOverdue =
-        task.dueDate &&
-        new Date(task.dueDate) < new Date() &&
-        task.status !== "completed";
-      const priorityAura = {
-        urgent: "0 0 30px rgba(248, 113, 113, 0.12)",
-        high: "0 0 20px rgba(251, 146, 60, 0.08)",
-        medium: "none",
-        low: "none",
-      }[task.priority];
 
       return (
         <motion.div
@@ -198,7 +222,10 @@ const TaskItem = React.memo(
               boxShadow: selected
                 ? `inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px var(--accent)`
                 : "inset 0 1px 0 rgba(255,255,255,0.05)",
-              border: "1px solid var(--border)",
+              border: isOverdue
+                ? "1px solid rgba(239, 68, 68, 0.3)"
+                : "1px solid var(--border)",
+              borderLeft: isOverdue ? "3px solid var(--red)" : "1px solid var(--border)",
               background: selected ? "rgba(255,255,255,0.03)" : "var(--surface-solid)",
               borderRadius: 12,
             }}
@@ -218,26 +245,42 @@ const TaskItem = React.memo(
                 onClick={(e) => e.stopPropagation()}
               >
                 <motion.button
-                  whileTap={{ scale: 0.8 }}
+                  whileTap={{ scale: isToday ? 0.8 : 1 }}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!isToday) {
+                      addToast(
+                        taskDate && taskDate < todayStr
+                          ? "Past tasks cannot be completed/uncompleted. Only today's tasks can be modified."
+                          : "Upcoming tasks cannot be completed early. Only today's tasks can be modified.",
+                        "warning"
+                      );
+                      return;
+                    }
                     toggleComplete(task);
                   }}
+                  title={
+                    isToday
+                      ? "Mark complete/uncomplete"
+                      : "Locked: Only today's tasks can be completed or uncompleted"
+                  }
                   style={{
                     width: 24,
                     height: 24,
                     borderRadius: 6,
-                    border: `2px solid ${task.status === "completed" ? "#22c55e" : "rgba(255,255,255,0.15)"}`,
+                    border: `2px solid ${task.status === "completed" ? "#22c55e" : !isToday ? "rgba(255,255,255,0.1)" : isOverdue ? "rgba(239, 68, 68, 0.4)" : "rgba(255,255,255,0.15)"}`,
                     background:
-                      task.status === "completed" ? "#22c55e" : "transparent",
+                      task.status === "completed" ? (isToday ? "#22c55e" : "rgba(34, 197, 94, 0.7)") : "transparent",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     boxShadow: "none",
+                    cursor: isToday ? "pointer" : "not-allowed",
+                    opacity: isToday ? 1 : 0.8,
                   }}
                 >
                   <AnimatePresence>
-                    {task.status === "completed" && (
+                    {task.status === "completed" ? (
                       <motion.div
                         initial={{ scale: 0, rotate: -20 }}
                         animate={{ scale: 1, rotate: 0 }}
@@ -245,7 +288,9 @@ const TaskItem = React.memo(
                       >
                         <Check size={18} color="white" strokeWidth={4} />
                       </motion.div>
-                    )}
+                    ) : !isToday ? (
+                      <Lock size={11} style={{ color: "var(--muted)", opacity: 0.6 }} />
+                    ) : null}
                   </AnimatePresence>
                 </motion.button>
               </div>
@@ -269,13 +314,14 @@ const TaskItem = React.memo(
                 <div
                   style={{
                     display: "flex",
-                    gap: 10,
+                    gap: 8,
                     flexWrap: "wrap",
+                    alignItems: "center",
                     fontSize: 9,
-                    fontWeight: 900,
+                    fontWeight: 800,
                     color: "var(--muted)",
                     textTransform: "uppercase",
-                    letterSpacing: "0.1em",
+                    letterSpacing: "0.08em",
                   }}
                 >
                   {task.category && (
@@ -295,17 +341,21 @@ const TaskItem = React.memo(
                       {task.priority}
                     </span>
                   )}
-                  {task.dueDate && (
+                  {taskDate && (
                     <span
                       style={{
-                        color: isOverdue ? "var(--red)" : "inherit",
+                        color: isOverdue ? "var(--red)" : isToday ? "var(--accent)" : "inherit",
                         display: "flex",
                         alignItems: "center",
                         gap: 4,
+                        fontWeight: isOverdue || isToday ? 900 : 600,
+                        background: isOverdue ? "rgba(239, 68, 68, 0.1)" : isToday ? "rgba(124, 109, 250, 0.1)" : "transparent",
+                        padding: isOverdue || isToday ? "1px 6px" : 0,
+                        borderRadius: 4,
                       }}
                     >
                       <Clock size={10} />{" "}
-                      {safeFormat(task.dueDate, "MMM d", "PENDING")}
+                      {isToday ? "TODAY" : isOverdue ? `OVERDUE (${safeFormat(taskDate, "MMM d", "")})` : safeFormat(taskDate, "MMM d", "PENDING")}
                     </span>
                   )}
                 </div>
@@ -313,9 +363,32 @@ const TaskItem = React.memo(
 
               <div
                 className="task-row-actions"
-                style={{ display: "flex", gap: 4 }}
+                style={{ display: "flex", gap: 6, alignItems: "center" }}
                 onClick={(e) => e.stopPropagation()}
               >
+                {isOverdue && onMoveToToday && (
+                  <button
+                    className="btn btn-sm glass haptic-tap"
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "3px 8px",
+                      borderRadius: 6,
+                      color: "var(--accent)",
+                      border: "1px solid rgba(124,109,250,0.3)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveToToday(task);
+                    }}
+                    title="Reschedule to Today"
+                  >
+                    <Calendar size={11} /> Move to Today
+                  </button>
+                )}
                 <button
                   className={`btn btn-icon btn-sm haptic-tap ${selected ? "text-accent" : "text-muted"}`}
                   onClick={() => toggleSelect(getSafeId(task))}
@@ -333,20 +406,25 @@ const TaskItem = React.memo(
     return (
       JSON.stringify(prev.task) === JSON.stringify(next.task) &&
       prev.selected === next.selected &&
-      prev.isMobile === next.isMobile
+      prev.isMobile === next.isMobile &&
+      prev.todayStr === next.todayStr
     );
   },
 );
 
 // ─── Kanban Card Component ──────────────────────────────────────────
-const KanbanCard = React.memo(({ task, toggleComplete, setModal, deleteMutation, updateMutation, setConfirmState }) => {
+const KanbanCard = React.memo(({ task, toggleComplete, setModal, deleteMutation, updateMutation, setConfirmState, onMoveToToday, todayStr }) => {
   const tid = getSafeId(task);
   const priorityColor = {
     urgent: "var(--red)",
     high: "var(--orange)",
     medium: "var(--yellow)",
-    low: "var(--green)"
+    low: "var(--green)",
   }[task.priority] || "var(--muted)";
+
+  const taskDate = task.date || (task.dueDate ? safeFormat(task.dueDate, "yyyy-MM-dd", "") : "");
+  const isOverdue = Boolean(taskDate && todayStr && taskDate < todayStr && task.status !== "completed");
+  const isToday = taskDate === todayStr;
 
   return (
     <motion.div
@@ -361,8 +439,8 @@ const KanbanCard = React.memo(({ task, toggleComplete, setModal, deleteMutation,
         padding: "12px 16px",
         background: "rgba(255, 255, 255, 0.02)",
         borderRadius: 8,
-        border: "1px solid rgba(255, 255, 255, 0.05)",
-        borderLeft: `3px solid ${priorityColor}`,
+        border: isOverdue ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(255, 255, 255, 0.05)",
+        borderLeft: `3px solid ${isOverdue ? "var(--red)" : priorityColor}`,
         cursor: "pointer",
         position: "relative",
         display: "flex",
@@ -370,7 +448,7 @@ const KanbanCard = React.memo(({ task, toggleComplete, setModal, deleteMutation,
         gap: 8,
         boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.02)",
         backdropFilter: "blur(10px)",
-        transition: "border-color 0.2s ease, background 0.2s ease"
+        transition: "border-color 0.2s ease, background 0.2s ease",
       }}
       className="hover-lift"
     >
@@ -381,7 +459,7 @@ const KanbanCard = React.memo(({ task, toggleComplete, setModal, deleteMutation,
           color: task.status === "completed" ? "var(--muted)" : "white",
           textDecoration: task.status === "completed" ? "line-through" : "none",
           lineHeight: 1.4,
-          wordBreak: "break-word"
+          wordBreak: "break-word",
         }}>
           {task.title}
         </div>
@@ -411,48 +489,83 @@ const KanbanCard = React.memo(({ task, toggleComplete, setModal, deleteMutation,
       })()}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
           {task.category && (
             <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: "rgba(255,255,255,0.05)", color: "var(--text2)", fontWeight: 700, letterSpacing: 0.5 }}>
               {task.category.toUpperCase()}
             </span>
           )}
-          {task.dueDate && (
-            <span style={{ fontSize: 9, color: "var(--muted)", display: "flex", alignItems: "center", gap: 3, fontWeight: 600 }}>
+          {taskDate && (
+            <span style={{
+              fontSize: 9,
+              color: isOverdue ? "var(--red)" : isToday ? "var(--accent)" : "var(--muted)",
+              display: "flex",
+              alignItems: "center",
+              gap: 3,
+              fontWeight: 700,
+            }}>
               <Clock size={10} />
-              {safeFormat(task.dueDate, "MMM d", "")}
+              {isToday ? "TODAY" : isOverdue ? `OVERDUE (${safeFormat(taskDate, "MMM d", "")})` : safeFormat(taskDate, "MMM d", "")}
             </span>
           )}
         </div>
 
         <div style={{ display: "flex", gap: 4, alignItems: "center" }} onClick={e => e.stopPropagation()}>
-          {/* Quick status transition actions */}
-          {task.status === "pending" && (
+          {isOverdue && onMoveToToday && (
             <button
-              onClick={() => updateMutation.mutate({ id: tid, data: { status: "in-progress" }, suppressToast: true })}
+              onClick={() => onMoveToToday(task)}
+              style={{ padding: "3px 6px", fontSize: 9, fontWeight: 700, color: "var(--accent)", background: "rgba(124,109,250,0.1)", borderRadius: 4, border: "1px solid rgba(124,109,250,0.2)" }}
+              className="haptic-tap"
+              title="Reschedule to Today"
+            >
+              Today
+            </button>
+          )}
+          {isToday && task.status === "pending" && (
+            <button
+              onClick={() => updateMutation.mutate({ id: tid, data: { status: "in-progress", clientDate: todayStr }, suppressToast: true })}
               style={{ padding: "4px 8px", fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "rgba(99,102,241,0.1)", borderRadius: 6 }}
               className="haptic-tap"
             >
               START
             </button>
           )}
-          {task.status === "in-progress" && (
+          {isToday && task.status === "in-progress" && (
             <button
-              onClick={() => updateMutation.mutate({ id: tid, data: { status: "completed" }, suppressToast: true })}
+              onClick={() => updateMutation.mutate({ id: tid, data: { status: "completed", clientDate: todayStr }, suppressToast: true })}
               style={{ padding: "4px 8px", fontSize: 10, fontWeight: 700, color: "var(--green)", background: "rgba(34,197,94,0.1)", borderRadius: 6 }}
               className="haptic-tap"
             >
               COMPLETE
             </button>
           )}
-          {task.status === "completed" && (
+          {isToday && task.status === "completed" && (
             <button
-              onClick={() => updateMutation.mutate({ id: tid, data: { status: "pending" }, suppressToast: true })}
+              onClick={() => updateMutation.mutate({ id: tid, data: { status: "pending", clientDate: todayStr }, suppressToast: true })}
               style={{ padding: "4px 8px", fontSize: 10, fontWeight: 700, color: "var(--muted)", background: "rgba(255,255,255,0.05)", borderRadius: 6 }}
               className="haptic-tap"
             >
               REOPEN
             </button>
+          )}
+          {!isToday && (
+            <span
+              style={{
+                padding: "3px 8px",
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--muted)",
+                background: "rgba(255,255,255,0.03)",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,0.06)",
+                display: "flex",
+                alignItems: "center",
+                gap: 4
+              }}
+              title="Locked: Status can only be modified for today's tasks"
+            >
+              <Lock size={10} /> {task.status.toUpperCase()}
+            </span>
           )}
 
           <button
@@ -460,7 +573,7 @@ const KanbanCard = React.memo(({ task, toggleComplete, setModal, deleteMutation,
               open: true,
               title: "Remove Objective?",
               message: `Delete "${task.title}"?`,
-              onConfirm: () => deleteMutation.mutate(tid)
+              onConfirm: () => deleteMutation.mutate(tid),
             })}
             style={{ padding: 6, color: "var(--red)", opacity: 0.5, borderRadius: 6 }}
             className="haptic-tap hover-lift"
@@ -530,21 +643,30 @@ function TasksSkeleton() {
 }
 
 // ─── Task modal ───────────────────────────────────────────────────────────────
-function TaskModal({ task, onClose, onSave, onDelete }) {
+function TaskModal({ task, onClose, onSave, onDelete, defaultDate }) {
   const { addToast } = useNotifications();
   const isMobile = window.innerWidth <= 768;
+  const todayStr = safeFormat(new Date(), "yyyy-MM-dd");
+  const rawInitialDate = task?.dueDate
+    ? safeFormat(task.dueDate, "yyyy-MM-dd", "")
+    : task?.date || defaultDate || todayStr;
+  const initialDate = (!task && rawInitialDate < todayStr) ? todayStr : rawInitialDate;
+
   const [form, setForm] = useState({
     title: task?.title || "",
     description: task?.description || "",
     priority: task?.priority || "medium",
     status: task?.status || "pending",
     category: task?.category || "General",
-    dueDate: task?.dueDate ? safeFormat(task.dueDate, "yyyy-MM-dd", "") : "",
+    dueDate: initialDate,
     estimatedMinutes: task?.estimatedMinutes || "",
     tags: task?.tags?.join(", ") || "",
     subtasks: task?.subtasks || [],
   });
   const [newSubtask, setNewSubtask] = useState("");
+
+  const isFormToday = (form.dueDate || initialDate) === todayStr;
+  const canModifyStatus = !task || isFormToday;
 
   const addSubtask = () => {
     if (!newSubtask.trim()) return;
@@ -565,15 +687,24 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
     e.preventDefault();
     if (!form.title.trim())
       return addToast("Objective title is required", "error");
+    const chosenDate = form.dueDate || defaultDate || todayStr;
+    if (chosenDate < todayStr) {
+      return addToast("Tasks cannot be created for past dates.", "error");
+    }
+    if (task && form.status !== task.status && chosenDate !== todayStr) {
+      return addToast("Only tasks scheduled for today can have their status changed.", "warning");
+    }
     onSave({
       ...form,
       title: form.title.trim(),
-      description: form.description.trim(),
-      tags: form.tags
+      description: form.description ? form.description.trim() : "",
+      date: chosenDate,
+      dueDate: chosenDate,
+      clientDate: todayStr,
+      tags: (typeof form.tags === 'string' ? form.tags : (Array.isArray(form.tags) ? form.tags.join(', ') : ''))
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
-      dueDate: form.dueDate || null,
       estimatedMinutes: form.estimatedMinutes
         ? parseInt(form.estimatedMinutes)
         : null,
@@ -615,11 +746,11 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
               background: "var(--bg)",
               border: "1px solid var(--border)",
               borderRadius: 8,
-              padding: "0 14px"
+              padding: "0 14px",
             }}
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="E.g., Complete the Q4 financial audit"
+            placeholder="E.g., Complete project review"
             autoFocus
           />
         </div>
@@ -648,12 +779,12 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
               border: "1px solid var(--border)",
               borderRadius: 8,
               width: "100%",
-              resize: "vertical"
+              resize: "vertical",
             }}
             rows={3}
             value={form.description}
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Add any specific context, milestones or links..."
+            placeholder="Add specific context, notes or deliverables..."
           />
         </div>
 
@@ -673,14 +804,23 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
             </label>
             <select
               className="select"
-              style={{ height: 42, borderRadius: 6, width: "100%", background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
+              style={{
+                height: 42,
+                borderRadius: 6,
+                width: "100%",
+                background: "#18181b",
+                border: "1px solid var(--border)",
+                padding: "0 12px",
+                color: "#f4f4f5",
+                colorScheme: "dark",
+              }}
               value={form.priority}
               onChange={(e) =>
                 setForm((f) => ({ ...f, priority: e.target.value }))
               }
             >
               {PRIORITIES.map((p) => (
-                <option key={p} value={p}>
+                <option key={p} value={p} style={{ background: "#18181b", color: "#f4f4f5" }}>
                   {p.toUpperCase()}
                 </option>
               ))}
@@ -697,18 +837,31 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
                 display: "block",
               }}
             >
-              Status
+              Status {!canModifyStatus && <span style={{ color: "var(--orange)", textTransform: "none", fontSize: 10, marginLeft: 6 }}>(Locked: Not Today)</span>}
             </label>
             <select
               className="select"
-              style={{ height: 42, borderRadius: 6, width: "100%", background: "var(--bg)", border: "1px solid var(--border)", padding: "0 12px" }}
+              disabled={!canModifyStatus}
+              style={{
+                height: 42,
+                borderRadius: 6,
+                width: "100%",
+                background: !canModifyStatus ? "rgba(255,255,255,0.03)" : "#18181b",
+                border: "1px solid var(--border)",
+                padding: "0 12px",
+                cursor: !canModifyStatus ? "not-allowed" : "pointer",
+                opacity: !canModifyStatus ? 0.6 : 1,
+                color: "#f4f4f5",
+                colorScheme: "dark",
+              }}
               value={form.status}
               onChange={(e) =>
                 setForm((f) => ({ ...f, status: e.target.value }))
               }
+              title={!canModifyStatus ? "Status can only be modified for today's tasks" : ""}
             >
               {STATUSES.map((s) => (
-                <option key={s} value={s}>
+                <option key={s} value={s} style={{ background: "#18181b", color: "#f4f4f5" }}>
                   {s.replace("-", " ").toUpperCase()}
                 </option>
               ))}
@@ -764,10 +917,11 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
                 display: "block",
               }}
             >
-              Due Date
+              Scheduled Date
             </label>
             <input
               type="date"
+              min={todayStr}
               className="auth-input"
               style={{
                 height: 42,
@@ -775,12 +929,17 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
                 background: "var(--bg)",
                 border: "1px solid var(--border)",
                 padding: "0 12px",
-                width: "100%"
+                width: "100%",
               }}
               value={form.dueDate}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, dueDate: e.target.value }))
-              }
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val && val < todayStr) {
+                  addToast("Tasks cannot be created for past dates.", "warning");
+                  return;
+                }
+                setForm((f) => ({ ...f, dueDate: val }));
+              }}
             />
           </div>
           <div className="form-group">
@@ -806,7 +965,7 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
                 background: "var(--bg)",
                 border: "1px solid var(--border)",
                 padding: "0 12px",
-                width: "100%"
+                width: "100%",
               }}
               value={form.estimatedMinutes}
               onChange={(e) =>
@@ -850,7 +1009,12 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
                   <input
                     type="checkbox"
                     checked={st.completed}
+                    disabled={!canModifyStatus}
                     onChange={() => {
+                      if (!canModifyStatus) {
+                        addToast("Checklist items can only be completed/uncompleted on today's tasks.", "warning");
+                        return;
+                      }
                       setForm((f) => ({
                         ...f,
                         subtasks: f.subtasks.map((s, i) =>
@@ -858,7 +1022,13 @@ function TaskModal({ task, onClose, onSave, onDelete }) {
                         ),
                       }));
                     }}
-                    style={{ width: 16, height: 16, accentColor: "var(--accent)", cursor: "pointer" }}
+                    style={{
+                      width: 16,
+                      height: 16,
+                      accentColor: "var(--accent)",
+                      cursor: canModifyStatus ? "pointer" : "not-allowed",
+                      opacity: canModifyStatus ? 1 : 0.6,
+                    }}
                   />
                   <span
                     style={{
@@ -1065,6 +1235,11 @@ export default function TasksPage() {
   const isMobile = width <= 768;
   const { width: windowWidth, height: windowHeight } = useWindowSize();
   const [modal, setModal] = useState(null);
+
+  const todayStr = safeFormat(new Date(), "yyyy-MM-dd");
+  const [currentDate, setCurrentDate] = useState(todayStr);
+  const [dayTab, setDayTab] = useState("today"); // "today" | "upcoming" | "overdue" | "completed" | "all"
+
   const [filters, setFilters] = useState({
     status: "",
     priority: "",
@@ -1075,11 +1250,39 @@ export default function TasksPage() {
   const [confirmState, setConfirmState] = useState({ open: false, task: null });
   const [viewMode, setViewMode] = useState("list");
 
+  const prevDay = () => {
+    const [y, m, d] = currentDate.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() - 1);
+    setCurrentDate(safeFormat(dateObj, "yyyy-MM-dd"));
+  };
+
+  const nextDay = () => {
+    const [y, m, d] = currentDate.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() + 1);
+    setCurrentDate(safeFormat(dateObj, "yyyy-MM-dd"));
+  };
+
   const deferredSearch = useDeferredValue(filters.search);
-  const activeFilters = useMemo(() => ({
-    ...filters,
-    search: deferredSearch,
-  }), [filters.status, filters.priority, filters.sortBy, deferredSearch]);
+  const activeFilters = useMemo(() => {
+    const base = {
+      ...filters,
+      search: deferredSearch,
+    };
+    if (dayTab === "today") {
+      base.date = currentDate;
+    } else if (dayTab === "upcoming") {
+      base.dayFilter = "upcoming";
+    } else if (dayTab === "overdue") {
+      base.dayFilter = "overdue";
+    } else if (dayTab === "completed") {
+      base.dayFilter = "completed";
+    } else if (dayTab === "all") {
+      base.dayFilter = "all";
+    }
+    return base;
+  }, [filters, deferredSearch, dayTab, currentDate]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["tasks", activeFilters],
@@ -1091,9 +1294,14 @@ export default function TasksPage() {
     const action = params.get("action");
     const status = params.get("status");
     const priority = params.get("priority");
+    const tabParam = params.get("tab");
 
     if (action === "create") {
       setModal("create");
+    }
+
+    if (tabParam && ["today", "upcoming", "overdue", "completed", "all"].includes(tabParam)) {
+      setDayTab(tabParam);
     }
 
     if (status || priority) {
@@ -1104,8 +1312,7 @@ export default function TasksPage() {
       }));
     }
 
-    if (action || status || priority) {
-      // Clear URL params to avoid persistent filtering on refresh
+    if (action || status || priority || tabParam) {
       navigate(location.pathname, { replace: true });
     }
   }, [location, navigate]);
@@ -1116,8 +1323,9 @@ export default function TasksPage() {
   });
 
   const invalidate = () => {
-    qc.invalidateQueries(["tasks"]);
-    qc.invalidateQueries(["task-stats"]);
+    qc.invalidateQueries({ queryKey: ["tasks"] });
+    qc.invalidateQueries({ queryKey: ["task-stats"] });
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
   };
 
   const createMutation = useMutation({
@@ -1133,18 +1341,18 @@ export default function TasksPage() {
     mutationFn: ({ id, data }) => tasksAPI.update(id, data),
     onMutate: async ({ id, data }) => {
       await qc.cancelQueries({ queryKey: ["tasks"] });
-      const previousState = qc.getQueryData(["tasks", filters]);
-      if (previousState) {
-        qc.setQueryData(["tasks", filters], {
+      const previousState = qc.getQueryData(["tasks", activeFilters]);
+      if (previousState && Array.isArray(previousState.tasks)) {
+        qc.setQueryData(["tasks", activeFilters], {
           ...previousState,
-          tasks: previousState.tasks.map(t => t._id === id || (t.id && t.id === id) ? { ...t, ...data } : t)
+          tasks: previousState.tasks.map(t => (t._id === id || (t.id && t.id === id) ? { ...t, ...data } : t)),
         });
       }
       return { previousState };
     },
     onError: (err, variables, context) => {
       if (context?.previousState) {
-        qc.setQueryData(["tasks", filters], context.previousState);
+        qc.setQueryData(["tasks", activeFilters], context.previousState);
       }
       addToast(err.response?.data?.error || "Failed to update objective", "error");
     },
@@ -1167,19 +1375,19 @@ export default function TasksPage() {
     },
     onError: () => {
       addToast("Failed to delete objective", "error");
-    }
+    },
   });
 
   const bulkStatusMutation = useMutation({
-    mutationFn: ({ ids, status }) => tasksAPI.bulkStatus(ids, status),
+    mutationFn: ({ ids, status, clientDate }) => tasksAPI.bulkStatus(ids, status, clientDate),
     onSuccess: (res, variables) => {
       addToast(`${variables.ids.length} objectives updated in bulk`, "success");
       setSelected([]);
       invalidate();
     },
-    onError: () => {
-      addToast("Failed to update objectives in bulk", "error");
-    }
+    onError: (err) => {
+      addToast(err?.response?.data?.error || "Failed to update objectives in bulk", "error");
+    },
   });
 
   const bulkDeleteMutation = useMutation({
@@ -1192,18 +1400,70 @@ export default function TasksPage() {
     },
     onError: () => {
       addToast("Failed to delete objectives in bulk", "error");
-    }
+    },
   });
 
   const tasks = data?.tasks || [];
 
+  const visibleTasks = useMemo(() => {
+    if (!tasks || !Array.isArray(tasks)) return [];
+    if (dayTab === "today") {
+      // In Today tab: strictly show tasks belonging to currentDate.
+      // Past overdue tasks MUST NOT appear in Today!
+      return tasks.filter((t) => {
+        const tDate = t.date || (t.dueDate ? safeFormat(t.dueDate, "yyyy-MM-dd", "") : "");
+        return tDate === currentDate;
+      });
+    }
+    if (dayTab === "upcoming") {
+      return tasks.filter((t) => {
+        const tDate = t.date || (t.dueDate ? safeFormat(t.dueDate, "yyyy-MM-dd", "") : "");
+        return tDate && tDate > todayStr;
+      });
+    }
+    if (dayTab === "overdue") {
+      return tasks.filter((t) => {
+        const tDate = t.date || (t.dueDate ? safeFormat(t.dueDate, "yyyy-MM-dd", "") : "");
+        return tDate && tDate < todayStr && t.status !== "completed";
+      });
+    }
+    if (dayTab === "completed") {
+      return tasks.filter((t) => t.status === "completed");
+    }
+    return tasks;
+  }, [tasks, dayTab, currentDate, todayStr]);
+
+  const todayActiveCount = useMemo(() => {
+    if (Array.isArray(tasks) && dayTab === "today") {
+      return tasks.filter(t => {
+        const tDate = t.date || (t.dueDate ? safeFormat(t.dueDate, "yyyy-MM-dd", "") : "");
+        return tDate === todayStr && t.status !== "completed";
+      }).length;
+    }
+    return statsData?.todayActive ?? 0;
+  }, [tasks, dayTab, todayStr, statsData]);
+
+  const todayCompletedCount = useMemo(() => {
+    if (Array.isArray(tasks) && dayTab === "today") {
+      return tasks.filter(t => {
+        const tDate = t.date || (t.dueDate ? safeFormat(t.dueDate, "yyyy-MM-dd", "") : "");
+        return tDate === todayStr && t.status === "completed";
+      }).length;
+    }
+    return statsData?.todayCompleted ?? 0;
+  }, [tasks, dayTab, todayStr, statsData]);
+
+  const overdueCount = useMemo(() => {
+    return statsData?.overdue ?? 0;
+  }, [statsData]);
+
   const kanbanColumns = useMemo(() => {
     return [
-      { id: "pending", title: "To Do", tasks: tasks.filter(t => t.status === "pending" || t.status === "cancelled"), color: "var(--accent)" },
-      { id: "in-progress", title: "In Progress", tasks: tasks.filter(t => t.status === "in-progress"), color: "var(--orange)" },
-      { id: "completed", title: "Done", tasks: tasks.filter(t => t.status === "completed"), color: "var(--green)" }
+      { id: "pending", title: "To Do", tasks: visibleTasks.filter(t => t.status === "pending" || t.status === "cancelled"), color: "var(--accent)" },
+      { id: "in-progress", title: "In Progress", tasks: visibleTasks.filter(t => t.status === "in-progress"), color: "var(--orange)" },
+      { id: "completed", title: "Done", tasks: visibleTasks.filter(t => t.status === "completed"), color: "var(--green)" },
     ];
-  }, [tasks]);
+  }, [visibleTasks]);
 
   useEffect(() => {
     const handler = () => setModal("create");
@@ -1221,11 +1481,34 @@ export default function TasksPage() {
     }
   };
 
+  const onMoveToToday = (task) => {
+    const tid = getSafeId(task);
+    if (!tid) return;
+    updateMutation.mutate({
+      id: tid,
+      data: { date: todayStr, dueDate: todayStr },
+      suppressToast: false,
+    });
+    addToast(`"${task.title}" rescheduled to Today`, "success");
+  };
+
   const toggleInFlight = useRef(new Set());
 
   const toggleComplete = (task) => {
     const taskId = getSafeId(task);
     if (toggleInFlight.current.has(taskId)) return;
+
+    const taskDate = task.date || (task.dueDate ? safeFormat(task.dueDate, "yyyy-MM-dd", "") : "");
+    if (taskDate && taskDate !== todayStr) {
+      addToast(
+        taskDate < todayStr
+          ? "Past tasks cannot be completed/uncompleted. Only today's tasks can be modified."
+          : "Upcoming tasks cannot be completed early. Only today's tasks can be modified.",
+        "warning"
+      );
+      feedback("error");
+      return;
+    }
 
     const newStatus = task.status === "completed" ? "pending" : "completed";
     if (newStatus === "completed") {
@@ -1237,7 +1520,7 @@ export default function TasksPage() {
 
     toggleInFlight.current.add(taskId);
     updateMutation.mutate(
-      { id: taskId, data: { status: newStatus }, suppressToast: true },
+      { id: taskId, data: { status: newStatus, clientDate: todayStr }, suppressToast: true },
       {
         onSettled: () => {
           toggleInFlight.current.delete(taskId);
@@ -1265,13 +1548,23 @@ export default function TasksPage() {
         if (modal && getSafeId(modal) === tid) {
           setModal(null);
         }
-      }
+      },
     });
   };
 
   const handleBulkComplete = () => {
     if (selected.length === 0) return;
-    bulkStatusMutation.mutate({ ids: selected, status: "completed" });
+    const selectedTasks = tasks.filter(t => selected.includes(getSafeId(t)));
+    const nonTodayTasks = selectedTasks.filter(t => {
+      const tDate = t.date || (t.dueDate ? safeFormat(t.dueDate, "yyyy-MM-dd", "") : "");
+      return tDate !== todayStr;
+    });
+    if (nonTodayTasks.length > 0) {
+      addToast("Only today's tasks can be marked complete in bulk.", "warning");
+      feedback("error");
+      return;
+    }
+    bulkStatusMutation.mutate({ ids: selected, status: "completed", clientDate: todayStr });
     feedback("success");
   };
 
@@ -1322,6 +1615,7 @@ export default function TasksPage() {
         />
       </div>
 
+      {/* Header Banner */}
       <div
         className="premium-card"
         style={{
@@ -1331,23 +1625,24 @@ export default function TasksPage() {
           flexWrap: "wrap",
           gap: "16px",
           padding: isMobile ? "20px" : "28px 32px",
-          marginBottom: "32px",
+          marginBottom: "24px",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Subtle background glow */}
-        <div style={{
-          position: 'absolute',
-          top: '-50%',
-          left: '-10%',
-          width: '50%',
-          height: '200%',
-          background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
-          opacity: 0.05,
-          filter: 'blur(40px)',
-          pointerEvents: 'none'
-        }} />
+        <div
+          style={{
+            position: 'absolute',
+            top: '-50%',
+            left: '-10%',
+            width: '50%',
+            height: '200%',
+            background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
+            opacity: 0.05,
+            filter: 'blur(40px)',
+            pointerEvents: 'none',
+          }}
+        />
 
         <div style={{ display: "flex", alignItems: "center", gap: "20px", zIndex: 1 }}>
           <div style={{
@@ -1359,7 +1654,7 @@ export default function TasksPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
+            boxShadow: "0 8px 16px rgba(0,0,0,0.2)",
           }}>
             <ClipboardList size={24} style={{ color: "var(--accent)" }} />
           </div>
@@ -1372,25 +1667,25 @@ export default function TasksPage() {
                 background: "linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
-                letterSpacing: "-0.04em"
+                letterSpacing: "-0.04em",
               }}
             >
               Tasks
             </h1>
             <p style={{ fontSize: "0.95rem", color: "var(--muted)", margin: "4px 0 0", fontWeight: 500, letterSpacing: "0.2px" }}>
-              Manage and track your objectives
+              Day-wise daily execution & task planning
             </p>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "16px", alignItems: "center", zIndex: 1 }}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", zIndex: 1 }}>
           <div style={{
             display: "flex",
             background: "rgba(0, 0, 0, 0.3)",
             borderRadius: "12px",
             padding: "4px",
             border: "1px solid rgba(255,255,255,0.05)",
-            boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5)"
+            boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5)",
           }}>
             <button
               onClick={() => setViewMode("list")}
@@ -1402,7 +1697,7 @@ export default function TasksPage() {
                 background: viewMode === "list" ? "var(--accent)" : "transparent",
                 color: viewMode === "list" ? "white" : "var(--muted)",
                 transition: "all 0.2s ease",
-                letterSpacing: "0.5px"
+                letterSpacing: "0.5px",
               }}
               type="button"
             >
@@ -1418,7 +1713,7 @@ export default function TasksPage() {
                 background: viewMode === "kanban" ? "var(--accent)" : "transparent",
                 color: viewMode === "kanban" ? "white" : "var(--muted)",
                 transition: "all 0.2s ease",
-                letterSpacing: "0.5px"
+                letterSpacing: "0.5px",
               }}
               type="button"
             >
@@ -1426,7 +1721,12 @@ export default function TasksPage() {
             </button>
           </div>
           <button
-            onClick={() => setModal("create")}
+            onClick={() => {
+              if (currentDate < todayStr) {
+                addToast("Viewing past date. New task will be created for Today.", "info");
+              }
+              setModal("create");
+            }}
             style={{
               background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
               border: "1px solid rgba(255,255,255,0.1)",
@@ -1441,7 +1741,7 @@ export default function TasksPage() {
               cursor: "pointer",
               boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
               backdropFilter: "blur(10px)",
-              transition: "all 0.2s ease"
+              transition: "all 0.2s ease",
             }}
             className="haptic-tap hover-lift"
           >
@@ -1451,101 +1751,247 @@ export default function TasksPage() {
         </div>
       </div>
 
+      {/* Day-wise Stat Cards */}
       {statsData && (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
+            gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
             gap: 12,
-            marginBottom: 24,
+            marginBottom: 20,
           }}
         >
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
             className="app-module-entrance"
             style={{
-              padding: "16px 20px",
+              padding: "14px 18px",
               borderRadius: 12,
               background: "rgba(255,255,255,0.02)",
               border: "1px solid rgba(255,255,255,0.05)",
               backdropFilter: "blur(20px)",
             }}
           >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 900,
-                color: "var(--muted)",
-                letterSpacing: 1.5,
-                marginBottom: 4,
-                textTransform: "uppercase",
-              }}
-            >
-              Active Tasks
+            <div style={{ fontSize: 10, fontWeight: 900, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4 }}>
+              Today's Active
             </div>
-            <div
-              style={{
-                fontSize: "24px",
-                fontWeight: 700,
-                fontFamily: "Inter, sans-serif",
-                color: "white",
-              }}
-            >
-              {statsData.total}
+            <div style={{ fontSize: "22px", fontWeight: 800, color: "white" }}>
+              {todayActiveCount}
             </div>
           </motion.div>
+
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.05 }}
             className="app-module-entrance"
             style={{
-              padding: "16px 20px",
+              padding: "14px 18px",
               borderRadius: 12,
               background: "rgba(255,255,255,0.02)",
               border: "1px solid rgba(255,255,255,0.05)",
               backdropFilter: "blur(20px)",
             }}
           >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 900,
-                color: "var(--muted)",
-                letterSpacing: 1.5,
-                marginBottom: 4,
-                textTransform: "uppercase",
-              }}
-            >
-              Secured
+            <div style={{ fontSize: 10, fontWeight: 900, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4 }}>
+              Secured Today
             </div>
-            <div
-              style={{
-                fontSize: "24px",
-                fontWeight: 700,
-                fontFamily: "Inter, sans-serif",
-                color: "var(--green)",
-              }}
-            >
-              {statsData.completed}
+            <div style={{ fontSize: "22px", fontWeight: 800, color: "var(--green)" }}>
+              {todayCompletedCount}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="app-module-entrance hover-lift"
+            style={{
+              padding: "14px 18px",
+              borderRadius: 12,
+              background: overdueCount > 0 ? "rgba(239, 68, 68, 0.08)" : "rgba(255,255,255,0.02)",
+              border: overdueCount > 0 ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(255,255,255,0.05)",
+              backdropFilter: "blur(20px)",
+              cursor: overdueCount > 0 ? "pointer" : "default",
+            }}
+            onClick={() => {
+              if (overdueCount > 0) setDayTab("overdue");
+            }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 900, color: overdueCount > 0 ? "var(--red)" : "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4 }}>
+              Overdue
+            </div>
+            <div style={{ fontSize: "22px", fontWeight: 800, color: overdueCount > 0 ? "var(--red)" : "white" }}>
+              {overdueCount}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="app-module-entrance"
+            style={{
+              padding: "14px 18px",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.05)",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 900, color: "var(--muted)", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4 }}>
+              All Time
+            </div>
+            <div style={{ fontSize: "22px", fontWeight: 800, color: "var(--text2)" }}>
+              {statsData.completed || 0} / {statsData.total || 0}
             </div>
           </motion.div>
         </div>
       )}
 
-      {/* Filter and Action Bar */}
+      {/* Day Filter Pills */}
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          marginBottom: 16,
+          alignItems: "center",
+        }}
+      >
+        {[
+          { id: "today", label: "Today" },
+          { id: "upcoming", label: "Upcoming" },
+          { id: "overdue", label: `Overdue ${overdueCount > 0 ? `(${overdueCount})` : ""}` },
+          { id: "completed", label: "Done" },
+          { id: "all", label: "All Tasks" },
+        ].map((tab) => {
+          const isActive = dayTab === tab.id;
+          const isOverdueTab = tab.id === "overdue" && (statsData?.overdue || 0) > 0;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setDayTab(tab.id)}
+              className="haptic-tap"
+              style={{
+                padding: "8px 16px",
+                borderRadius: 10,
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: "0.4px",
+                cursor: "pointer",
+                border: isActive
+                  ? "1px solid var(--accent)"
+                  : isOverdueTab
+                    ? "1px solid rgba(239, 68, 68, 0.4)"
+                    : "1px solid rgba(255,255,255,0.07)",
+                background: isActive
+                  ? "rgba(124, 109, 250, 0.15)"
+                  : isOverdueTab
+                    ? "rgba(239, 68, 68, 0.1)"
+                    : "rgba(255,255,255,0.02)",
+                color: isActive
+                  ? "var(--accent)"
+                  : isOverdueTab
+                    ? "var(--red)"
+                    : "var(--muted)",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Day Navigator Bar (shown in Today tab) */}
+      {dayTab === "today" && (
+        <div
+          style={{
+            padding: isMobile ? "12px 16px" : "14px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+            borderRadius: 12,
+            background: "rgba(255, 255, 255, 0.02)",
+            border: "1px solid rgba(255,255,255,0.05)",
+            backdropFilter: "blur(20px)",
+            marginBottom: 20,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              className="btn btn-icon glass haptic-tap"
+              onClick={prevDay}
+              style={{ borderRadius: 8, width: 34, height: 34 }}
+              title="Previous Day"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div>
+              <span style={{ fontSize: 16, fontWeight: 800, color: "white" }}>
+                {currentDate === todayStr ? "Today" : safeFormat(new Date(currentDate + "T12:00:00"), "EEEE")}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", marginLeft: 8 }}>
+                {safeFormat(new Date(currentDate + "T12:00:00"), "MMMM d, yyyy")}
+              </span>
+              {currentDate < todayStr && (
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: "rgba(255,255,255,0.04)", color: "var(--muted)", fontWeight: 700, border: "1px solid rgba(255,255,255,0.08)", display: "inline-flex", alignItems: "center", gap: 4, marginLeft: 10 }}>
+                  <Lock size={10} /> PAST RECORD (READ-ONLY)
+                </span>
+              )}
+            </div>
+            <button
+              className="btn btn-icon glass haptic-tap"
+              onClick={nextDay}
+              style={{ borderRadius: 8, width: 34, height: 34 }}
+              title="Next Day"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {currentDate !== todayStr && (
+              <button
+                className="btn glass btn-sm haptic-tap"
+                onClick={() => setCurrentDate(todayStr)}
+                style={{ fontSize: 11, fontWeight: 700, height: 34, padding: "0 14px", borderRadius: 8 }}
+              >
+                TODAY
+              </button>
+            )}
+            <input
+              type="date"
+              className="auth-input"
+              style={{
+                height: 34,
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "0 12px",
+                width: 140,
+              }}
+              value={currentDate}
+              onChange={(e) => setCurrentDate(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Filter and Search Bar */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        style={{ marginBottom: 24 }}
+        style={{ marginBottom: 20 }}
       >
         <div
           style={{
             padding: "8px",
-            borderRadius: 8,
+            borderRadius: 10,
             background: "var(--surface-solid)",
             border: "1px solid var(--border)",
           }}
@@ -1560,18 +2006,18 @@ export default function TasksPage() {
           >
             <div style={{
               position: "relative",
-              flex: "1 1 280px",
+              flex: "1 1 240px",
               display: "flex",
               alignItems: "center",
               background: "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 10,
-              height: 42,
-              padding: "0 14px",
-              gap: 10
+              borderRadius: 8,
+              height: 38,
+              padding: "0 12px",
+              gap: 8,
             }}>
               <Search
-                size={16}
+                size={15}
                 color="var(--muted)"
                 style={{ flexShrink: 0 }}
               />
@@ -1584,7 +2030,7 @@ export default function TasksPage() {
                   fontSize: 13,
                   width: "100%",
                   fontWeight: 500,
-                  padding: 0
+                  padding: 0,
                 }}
                 placeholder="Search objectives..."
                 value={filters.search}
@@ -1593,81 +2039,90 @@ export default function TasksPage() {
                 }
               />
             </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <select
                 style={{
-                  height: 42,
-                  borderRadius: 10,
-                  minWidth: 130,
+                  height: 38,
+                  borderRadius: 8,
+                  minWidth: 125,
                   fontSize: 12,
                   fontWeight: 600,
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#e4e4e7",
-                  padding: "0 12px",
+                  background: "#18181b",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  color: "#f4f4f5",
+                  padding: "0 10px",
                   cursor: "pointer",
-                  outline: "none"
-                }}
-                value={filters.status}
-                onChange={(e) =>
-                  setFilters((f) => ({ ...f, status: e.target.value }))
-                }
-              >
-                <option value="">STATUS: ALL</option>
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s.replace("-", " ").toUpperCase()}
-                  </option>
-                ))}
-              </select>
-              <select
-                style={{
-                  height: 42,
-                  borderRadius: 10,
-                  minWidth: 130,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#e4e4e7",
-                  padding: "0 12px",
-                  cursor: "pointer",
-                  outline: "none"
+                  outline: "none",
+                  colorScheme: "dark",
                 }}
                 value={filters.priority}
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, priority: e.target.value }))
                 }
               >
-                <option value="">PRIORITY: ALL</option>
+                <option value="" style={{ background: "#18181b", color: "#f4f4f5" }}>
+                  PRIORITY: ALL
+                </option>
                 {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
+                  <option key={p} value={p} style={{ background: "#18181b", color: "#f4f4f5" }}>
                     {p.toUpperCase()}
                   </option>
                 ))}
               </select>
+              {(dayTab === "all" || dayTab === "today") && (
+                <select
+                  style={{
+                    height: 38,
+                    borderRadius: 8,
+                    minWidth: 125,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    background: "#18181b",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    color: "#f4f4f5",
+                    padding: "0 10px",
+                    cursor: "pointer",
+                    outline: "none",
+                    colorScheme: "dark",
+                  }}
+                  value={filters.status}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, status: e.target.value }))
+                  }
+                >
+                  <option value="" style={{ background: "#18181b", color: "#f4f4f5" }}>
+                    STATUS: ALL
+                  </option>
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s} style={{ background: "#18181b", color: "#f4f4f5" }}>
+                      {s.replace("-", " ").toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
         </div>
       </motion.div>
 
+      {/* Task List / Board */}
       {isLoading ? (
         <TasksSkeleton />
       ) : (
         <div className="tasks-list" style={{ paddingBottom: 20 }}>
-          {tasks.length > 0 ? (
+          {visibleTasks.length > 0 ? (
             viewMode === "list" ? (
               <div className="tasks-container">
                 <List
-                  height={isMobile ? Math.max(300, windowHeight - 300) : 700}
-                  itemCount={tasks.length}
-                  itemSize={isMobile ? 80 : 72}
+                  height={isMobile ? Math.max(300, windowHeight - 340) : 680}
+                  itemCount={visibleTasks.length}
+                  itemSize={isMobile ? 86 : 76}
                   width="100%"
-                  itemData={tasks}
+                  itemData={visibleTasks}
                   itemKey={(index, data) => getSafeId(data[index]) || index}
                 >
                   {({ index, style }) => {
-                    const task = tasks[index];
+                    const task = visibleTasks[index];
                     return (
                       <div style={{ ...style, paddingTop: 4 }}>
                         <TaskItem
@@ -1679,6 +2134,8 @@ export default function TasksPage() {
                           setModal={setModal}
                           setConfirmState={setConfirmState}
                           deleteMutation={deleteMutation}
+                          onMoveToToday={onMoveToToday}
+                          todayStr={todayStr}
                         />
                       </div>
                     );
@@ -1691,7 +2148,7 @@ export default function TasksPage() {
                 gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
                 gap: 20,
                 alignItems: "start",
-                marginTop: 8
+                marginTop: 8,
               }}>
                 {kanbanColumns.map(col => (
                   <div key={col.id} style={{
@@ -1702,7 +2159,7 @@ export default function TasksPage() {
                     border: "1px solid var(--border)",
                     borderRadius: 12,
                     padding: 16,
-                    minHeight: 300
+                    minHeight: 300,
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: 12 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1722,6 +2179,8 @@ export default function TasksPage() {
                           deleteMutation={deleteMutation}
                           updateMutation={updateMutation}
                           setConfirmState={setConfirmState}
+                          onMoveToToday={onMoveToToday}
+                          todayStr={todayStr}
                         />
                       ))}
                       {col.tasks.length === 0 && (
@@ -1738,14 +2197,40 @@ export default function TasksPage() {
             <EmptyState
               key="tasks-empty"
               icon={ClipboardList}
-              title="No Missions Found"
-              description="Adjust filters or manifest a new objective."
+              title={
+                dayTab === "today"
+                  ? currentDate === todayStr
+                    ? "All Clean For Today! ✨"
+                    : currentDate < todayStr
+                      ? `Past Record: ${safeFormat(new Date(currentDate + "T12:00:00"), "MMMM d, yyyy")}`
+                      : `Upcoming: ${safeFormat(new Date(currentDate + "T12:00:00"), "MMMM d, yyyy")}`
+                  : dayTab === "overdue"
+                    ? "Zero Overdue Tasks! 🎯"
+                    : "No Tasks Found"
+              }
+              description={
+                dayTab === "today"
+                  ? currentDate === todayStr
+                    ? "Manifest a new objective to plan your day."
+                    : currentDate < todayStr
+                      ? "No tasks recorded for this past day. Tasks cannot be created for past dates."
+                      : "Plan objectives ahead for this upcoming day."
+                  : "Adjust filters or create a new objective."
+              }
+              action={
+                dayTab === "today" && currentDate >= todayStr
+                  ? {
+                      label: "+ New Task",
+                      onClick: () => setModal("create"),
+                    }
+                  : undefined
+              }
             />
           )}
         </div>
       )}
 
-      {/* Floating Bulk Actions - Adjusted for App Dock */}
+      {/* Floating Bulk Actions */}
       <AnimatePresence>
         {selected.length > 0 && (
           <motion.div
@@ -1806,6 +2291,7 @@ export default function TasksPage() {
             onClose={() => setModal(null)}
             onSave={handleSave}
             onDelete={handleDelete}
+            defaultDate={currentDate < todayStr ? todayStr : currentDate}
           />
         )}
       </AnimatePresence>

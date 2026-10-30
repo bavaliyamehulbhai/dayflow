@@ -10,13 +10,15 @@ import { useAuth } from '../../context/AuthContext';
 import { createPortal } from 'react-dom';
 
 const ACTIONS = [
-    { id: 'dash', label: 'Go to Dashboard', icon: LayoutDashboard, path: '/', section: 'Navigation' },
+    { id: 'dash', label: 'Go to Dashboard', icon: LayoutDashboard, path: '/dashboard', section: 'Navigation' },
     { id: 'tasks', label: 'Manage Tasks', icon: CheckCircle2, path: '/tasks', section: 'Navigation' },
     { id: 'schedule', label: 'View Timeline', icon: Calendar, path: '/schedule', section: 'Navigation' },
     { id: 'habits', label: 'Track Rituals', icon: RefreshCw, path: '/habits', section: 'Navigation' },
     { id: 'focus', label: 'Pomodoro Timer', icon: Timer, path: '/pomodoro', section: 'Navigation' },
     { id: 'notes', label: 'Knowledge Base', icon: FileText, path: '/notes', section: 'Navigation' },
     { id: 'new-task', label: 'New Objective', icon: Plus, path: '/tasks', search: 'create', section: 'Quick Actions' },
+    { id: 'new-habit', label: 'New Habit', icon: Plus, path: '/habits', search: 'create', section: 'Quick Actions' },
+    { id: 'new-event', label: 'New Event', icon: Plus, path: '/schedule', search: 'create', section: 'Quick Actions' },
     { id: 'new-note', label: 'New Essence', icon: Plus, path: '/notes', search: 'create', section: 'Quick Actions' },
     { id: 'profile', label: 'User Profile', icon: User, path: '/profile', section: 'Account' },
     { id: 'settings', label: 'Account Settings', icon: Settings, path: '/profile', section: 'Account' },

@@ -28,5 +28,6 @@ const sessionSchema = new mongoose.Schema({
 
 // TTL index to automatically remove expired sessions
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+sessionSchema.index({ user: 1, lastActive: -1 });
 
 module.exports = mongoose.model('Session', sessionSchema);

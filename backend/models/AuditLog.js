@@ -40,5 +40,6 @@ const auditLogSchema = new mongoose.Schema({
 
 // TTL index to keep logs for 90 days
 auditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+auditLogSchema.index({ user: 1, createdAt: -1 });
 
 module.exports = mongoose.model('AuditLog', auditLogSchema);

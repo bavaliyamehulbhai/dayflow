@@ -18,9 +18,9 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 router.use(protect);
 
 // ─── GET all tasks ────────────────────────────────────────────────────────────
-router.get('/', cacheMiddleware(60), async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const { status, priority, category, search, sortBy = 'createdAt', order = 'desc', page = 1, limit = 50, dueDate } = req.query;
+    const { status, priority, category, search, sortBy = 'createdAt', order = 'desc', page = 1, limit = 50, dueDate, date, dayFilter } = req.query;
 
     const filter = { user: req.user._id };
     if (status) filter.status = status;
@@ -37,7 +37,55 @@ router.get('/', cacheMiddleware(60), async (req, res) => {
       ];
     }
 
-    if (dueDate) {
+    const d = new Date();
+    const serverTodayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const clientDate = (typeof req.query.clientDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.clientDate))
+      ? req.query.clientDate
+      : (typeof req.headers['x-client-date'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.headers['x-client-date']))
+        ? req.headers['x-client-date']
+        : serverTodayStr;
+    const [cYear, cMonth, cDay] = clientDate.split('-').map(Number);
+    const clientDayStart = new Date(cYear, cMonth - 1, cDay, 0, 0, 0, 0);
+    const clientDayEnd = new Date(cYear, cMonth - 1, cDay, 23, 59, 59, 999);
+
+    if (date) {
+      filter.$and = filter.$and || [];
+      const targetStart = new Date(date + 'T00:00:00.000Z');
+      const targetEnd = new Date(date + 'T23:59:59.999Z');
+      filter.$and.push({
+        $or: [
+          { date: date },
+          { date: null, dueDate: { $gte: targetStart, $lte: targetEnd } }
+        ]
+      });
+    } else if (dayFilter === 'today') {
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { date: clientDate },
+          { date: null, dueDate: { $gte: clientDayStart, $lte: clientDayEnd } }
+        ]
+      });
+    } else if (dayFilter === 'upcoming') {
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { date: { $gt: clientDate } },
+          { date: null, dueDate: { $gt: clientDayEnd } }
+        ]
+      });
+    } else if (dayFilter === 'overdue') {
+      filter.status = { $in: ['pending', 'in-progress'] };
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { date: { $lt: clientDate } },
+          { date: null, dueDate: { $lt: clientDayStart } }
+        ]
+      });
+    } else if (dayFilter === 'completed') {
+      filter.status = 'completed';
+    } else if (dueDate) {
       const date = new Date(dueDate);
       if (!isNaN(date.getTime())) {
         const nextDay = new Date(date);
@@ -77,6 +125,7 @@ router.get('/:id', cacheMiddleware(300), async (req, res) => {
 
     const task = await Task.findOne({ _id: req.params.id, user: req.user._id });
     if (!task) return res.status(404).json({ error: 'Task not found.' });
+
     res.json({ success: true, task });
   } catch (err) {
     console.error('[TASK GET ONE ERROR]', err);
@@ -101,14 +150,26 @@ router.post('/',
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
-      const { title, description, priority, status, category, dueDate, estimatedMinutes, tags, subtasks } = req.body;
+      const { title, description, priority, status, category, dueDate, estimatedMinutes, tags, subtasks, date, clientDate: passedClientDate } = req.body;
+      const d = new Date();
+      const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const clientDate = (typeof passedClientDate === 'string' && passedClientDate) ? passedClientDate : todayStr;
+      const taskDate = date || (dueDate ? (typeof dueDate === 'string' && dueDate.includes('T') ? dueDate.split('T')[0] : String(dueDate).slice(0, 10)) : clientDate);
+
+      // Block creating tasks for past dates
+      if (taskDate < clientDate) {
+        return res.status(400).json({ error: 'Tasks cannot be created for past dates.' });
+      }
+
+      const parsedDueDate = dueDate ? new Date(dueDate) : new Date(taskDate + 'T23:59:59.999Z');
       const task = await Task.create({
         title,
         description: description ? description.trim() : '',
         priority: priority || 'medium',
         status: status || 'pending',
         category: category || 'General',
-        dueDate: dueDate ? new Date(dueDate) : null,
+        date: taskDate,
+        dueDate: parsedDueDate,
         estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
         tags: Array.isArray(tags) ? tags.map(t => String(t).trim()).filter(Boolean) : [],
         subtasks: Array.isArray(subtasks) ? subtasks.map(s => ({ title: String(s.title || '').trim(), completed: Boolean(s.completed) })) : [],
@@ -144,14 +205,33 @@ router.put('/:id',
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
-      const { title, description, priority, status, category, dueDate, estimatedMinutes, tags, subtasks } = req.body;
+      const { title, description, priority, status, category, dueDate, estimatedMinutes, tags, subtasks, date, clientDate: passedClientDate } = req.body;
+      const d = new Date();
+      const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const clientDate = (typeof passedClientDate === 'string' && passedClientDate) ? passedClientDate : todayStr;
+      const taskDate = date || (dueDate ? (typeof dueDate === 'string' && dueDate.includes('T') ? dueDate.split('T')[0] : String(dueDate).slice(0, 10)) : clientDate);
+
+      // Block moving tasks to past dates
+      if (date !== undefined && date && date < clientDate) {
+        return res.status(400).json({ error: 'Tasks cannot be moved to past dates.' });
+      }
+
       const updates = {};
       if (title !== undefined) updates.title = title.trim();
       if (description !== undefined) updates.description = description ? description.trim() : '';
       if (priority !== undefined) updates.priority = priority;
       if (status !== undefined) updates.status = status;
       if (category !== undefined) updates.category = category;
-      if (dueDate !== undefined) updates.dueDate = dueDate ? new Date(dueDate) : null;
+      if (date !== undefined) {
+        updates.date = date;
+        if (dueDate === undefined) updates.dueDate = new Date(date + 'T23:59:59.999Z');
+      }
+      if (dueDate !== undefined) {
+        updates.dueDate = dueDate ? new Date(dueDate) : null;
+        if (date === undefined && dueDate) {
+          updates.date = typeof dueDate === 'string' && dueDate.includes('T') ? dueDate.split('T')[0] : String(dueDate).slice(0, 10);
+        }
+      }
       if (estimatedMinutes !== undefined) updates.estimatedMinutes = estimatedMinutes ? parseInt(estimatedMinutes) : null;
       if (tags !== undefined) updates.tags = Array.isArray(tags) ? tags.map(t => String(t).trim()).filter(Boolean) : [];
       if (subtasks !== undefined && Array.isArray(subtasks)) {
@@ -164,6 +244,36 @@ router.put('/:id',
 
       const existingTask = await Task.findOne({ _id: req.params.id, user: req.user._id });
       if (!existingTask) return res.status(404).json({ error: 'Task not found.' });
+
+      const effectiveDate = updates.date || existingTask.date || (existingTask.dueDate ? new Date(existingTask.dueDate).toISOString().slice(0, 10) : clientDate);
+
+      // Enforce status change rule: Only tasks scheduled for today can be completed, uncompleted, or have status changed
+      if (updates.status !== undefined && updates.status !== existingTask.status) {
+        if (effectiveDate !== clientDate) {
+          if (effectiveDate < clientDate) {
+            return res.status(400).json({
+              error: `Past tasks (${effectiveDate}) cannot be completed or uncompleted. Only today's tasks can be modified.`
+            });
+          } else {
+            return res.status(400).json({
+              error: `Upcoming tasks (${effectiveDate}) cannot be completed early. Only today's tasks can be modified.`
+            });
+          }
+        }
+      }
+
+      // Checklist completion rule: Only today's tasks can have subtasks toggled
+      if (updates.subtasks !== undefined && effectiveDate !== clientDate && existingTask.subtasks && existingTask.subtasks.length > 0) {
+        const anySubtaskChanged = updates.subtasks.some((s, idx) => {
+          const ex = existingTask.subtasks[idx];
+          return ex && ex.completed !== Boolean(s.completed);
+        });
+        if (anySubtaskChanged) {
+          return res.status(400).json({
+            error: `Checklist items on past/upcoming tasks cannot be toggled. Only today's tasks can be completed.`
+          });
+        }
+      }
 
       const wasCompleted = existingTask.status === 'completed';
 
@@ -186,10 +296,10 @@ router.put('/:id',
       let newBadges = [];
       if (updates.status === 'completed' && !wasCompleted) {
         newBadges = await awardBadges(req.user._id);
-        await logActivity(req.user._id, { tasksCompleted: 1 });
-        await updateStreak(req.user._id);
+        await logActivity(req.user._id, { tasksCompleted: 1 }, clientDate);
+        await updateStreak(req.user._id, clientDate);
       } else if (wasCompleted && updates.status && updates.status !== 'completed') {
-        await logActivity(req.user._id, { tasksCompleted: -1 });
+        await logActivity(req.user._id, { tasksCompleted: -1 }, clientDate);
       }
 
       clearCache(req.user._id);
@@ -270,7 +380,7 @@ router.post('/bulk/delete', async (req, res) => {
 
 router.post('/bulk/status', async (req, res) => {
   try {
-    const { ids, status } = req.body;
+    const { ids, status, clientDate: passedClientDate } = req.body;
     if (!ids || !Array.isArray(ids) || ids.length === 0 || !status) {
       return res.status(400).json({ error: 'IDs array and status required.' });
     }
@@ -278,6 +388,23 @@ router.post('/bulk/status', async (req, res) => {
     const validIds = ids.filter(isValidObjectId);
     if (validIds.length === 0) {
       return res.status(400).json({ error: 'No valid task IDs provided.' });
+    }
+
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const clientDate = (typeof passedClientDate === 'string' && passedClientDate) ? passedClientDate : todayStr;
+
+    // Check if any of the tasks belong to other dates
+    const nonTodayTasks = await Task.find({
+      _id: { $in: validIds },
+      user: req.user._id,
+      date: { $ne: clientDate }
+    }).select('_id title date');
+
+    if (nonTodayTasks.length > 0) {
+      return res.status(400).json({
+        error: `Only tasks scheduled for today (${clientDate}) can be completed or uncompleted. Some selected tasks belong to other dates.`
+      });
     }
 
     const update = { status };
@@ -333,6 +460,17 @@ router.patch('/:id/subtasks/:subtaskId', async (req, res) => {
     const task = await Task.findOne({ _id: req.params.id, user: req.user._id });
     if (!task) return res.status(404).json({ error: 'Task not found.' });
 
+    const d = new Date();
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const clientDate = (typeof req.body?.clientDate === 'string' && req.body.clientDate) ? req.body.clientDate : todayStr;
+    const taskDate = task.date || (task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : clientDate);
+
+    if (taskDate !== clientDate) {
+      return res.status(400).json({
+        error: `Only checklist items on today's tasks can be toggled. This task belongs to ${taskDate}.`
+      });
+    }
+
     const subtask = task.subtasks.id(req.params.subtaskId);
     if (!subtask) return res.status(404).json({ error: 'Subtask not found.' });
 
@@ -348,31 +486,56 @@ router.patch('/:id/subtasks/:subtaskId', async (req, res) => {
 });
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
-router.get('/stats/summary', cacheMiddleware(300), async (req, res) => {
+router.get('/stats/summary', async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    const [statusCounts, overdueCount, todayCompletedCount] = await Promise.all([
+    const [statusCounts, overdueCount, todayActiveCount, todayCompletedCount] = await Promise.all([
       Task.aggregate([
         { $match: { user: req.user._id } },
         { $group: { _id: '$status', count: { $sum: 1 } } }
       ]),
       Task.countDocuments({
         user: req.user._id,
-        status: { $ne: 'completed' },
-        dueDate: { $lt: today }
+        status: { $in: ['pending', 'in-progress'] },
+        $or: [
+          { date: { $lt: todayStr } },
+          { date: null, dueDate: { $lt: today } }
+        ]
+      }),
+      Task.countDocuments({
+        user: req.user._id,
+        status: { $in: ['pending', 'in-progress'] },
+        $or: [
+          { date: todayStr },
+          { date: null, dueDate: { $gte: today, $lt: tomorrow } }
+        ]
       }),
       Task.countDocuments({
         user: req.user._id,
         status: 'completed',
-        completedAt: { $gte: today, $lt: tomorrow }
+        $or: [
+          { date: todayStr },
+          { date: null, completedAt: { $gte: today, $lt: tomorrow } }
+        ]
       })
     ]);
 
-    const stats = { total: 0, completed: 0, pending: 0, inProgress: 0, cancelled: 0, overdue: overdueCount, todayCompleted: todayCompletedCount };
+    const stats = {
+      total: 0,
+      completed: 0,
+      pending: 0,
+      inProgress: 0,
+      cancelled: 0,
+      overdue: overdueCount,
+      todayCompleted: todayCompletedCount,
+      todayActive: todayActiveCount,
+      todayTotal: todayCompletedCount + todayActiveCount
+    };
     statusCounts.forEach(s => {
       const key = s._id === 'in-progress' ? 'inProgress' : s._id;
       if (key in stats) stats[key] = s.count;

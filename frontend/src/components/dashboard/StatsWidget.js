@@ -41,8 +41,12 @@ const StatsWidget = ({ data, user, navigate }) => {
   const currentStreak = user?.stats?.currentStreak || 0;
   const isHot = currentStreak >= 3;
 
+  const todayCompleted = data?.tasks?.todaySummary?.completed ?? 0;
+  const todayTotal = data?.tasks?.todaySummary?.total ?? 0;
+  const taskDisplay = todayTotal > 0 ? `${todayCompleted}/${todayTotal}` : `${data?.tasks?.summary?.completed || 0}`;
+
   const stats = [
-    { label: 'Tasks', value: data?.tasks?.summary?.completed || 0, color: 'var(--green)', icon: CheckCircle2, onClick: () => navigate('/tasks?status=completed') },
+    { label: todayTotal > 0 ? "Today's Tasks" : "Tasks Done", value: taskDisplay, color: 'var(--green)', icon: CheckCircle2, onClick: () => navigate('/tasks') },
     { 
       label: 'Streak', 
       value: currentStreak, 
@@ -50,7 +54,7 @@ const StatsWidget = ({ data, user, navigate }) => {
       icon: Zap, 
       onClick: () => navigate('/profile') 
     },
-    { label: 'Focus', value: data?.pomodoro?.todayMinutes || 0, color: 'var(--accent)', icon: Timer, onClick: () => navigate('/pomodoro') },
+    { label: 'Focus', value: `${data?.pomodoro?.todayMinutes || 0}m`, color: 'var(--accent)', icon: Timer, onClick: () => navigate('/pomodoro') },
     { label: 'Rituals', value: `${data?.habits?.completedToday || 0}/${data?.habits?.total || 0}`, color: 'var(--accent3)', icon: Trophy, onClick: () => navigate('/habits') },
   ];
 

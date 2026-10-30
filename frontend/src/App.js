@@ -210,6 +210,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route path="/settings" element={<Navigate to="/profile" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

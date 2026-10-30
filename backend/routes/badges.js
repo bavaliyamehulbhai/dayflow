@@ -8,7 +8,7 @@ const { BADGE_DEFS, awardBadges } = require('../services/badgeService');
 // Returns the full badge catalogue with earned status for the current user.
 router.get('/', protect, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select('badges');
+        const user = await User.findById(req.user._id).select('badges').lean();
         const earnedMap = new Map((user.badges || []).map(b => [b.id, b]));
 
         const catalogue = BADGE_DEFS.map(def => ({
