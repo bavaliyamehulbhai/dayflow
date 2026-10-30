@@ -13,6 +13,8 @@ const { decrypt } = require('../utils/cryptoUtils');
 
 router.use(protect);
 
+const pad = (n) => String(n).padStart(2, '0');
+
 // GET complete dashboard summary
 router.get('/', async (req, res) => {
   try {
@@ -140,7 +142,6 @@ router.get('/', async (req, res) => {
     const [tY, tM, tD] = today.split('-').map(Number);
     for (let i = 6; i >= 0; i--) {
       const d = new Date(tY, tM - 1, tD - i, 12, 0, 0);
-      const pad = (n) => String(n).padStart(2, '0');
       last7.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
     }
 

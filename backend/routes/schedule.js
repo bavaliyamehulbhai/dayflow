@@ -13,6 +13,9 @@ router.use(protect);
 // Helper to validate MongoDB ObjectId
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+// Common two-digit padding helper
+const pad = (n) => String(n).padStart(2, '0');
+
 // Clean request payload to prevent Mongoose CastErrors
 const cleanPayload = (body) => {
   const payload = { ...body };
@@ -74,7 +77,6 @@ router.get('/',
       } else {
         // Default: today (client local date or server fallback)
         const d = new Date();
-        const pad = (n) => String(n).padStart(2, '0');
         const serverToday = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
         filter.date = (typeof req.headers['x-client-date'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.headers['x-client-date']))
           ? req.headers['x-client-date']
@@ -103,7 +105,6 @@ router.post('/', eventValidation, async (req, res) => {
 
     // Prevent creating events for past dates
     const d = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
     const serverTodayStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const clientDate = (typeof req.body?.clientDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.body.clientDate))
       ? req.body.clientDate
@@ -140,7 +141,6 @@ router.put('/:id', eventValidation, async (req, res) => {
 
     // Prevent rescheduling events to past dates
     const d = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
     const serverTodayStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const clientDate = (typeof req.body?.clientDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.body.clientDate))
       ? req.body.clientDate
@@ -177,7 +177,6 @@ router.delete('/:id', async (req, res) => {
 
     // Deduct activity if event was completed today
     const d = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
     const serverToday = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const clientDate = (typeof req.headers['x-client-date'] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.headers['x-client-date']))
       ? req.headers['x-client-date']
@@ -212,7 +211,6 @@ router.patch('/:id/complete', async (req, res) => {
 
     // Strict Day & Window validation: Events can only be completed/modified on their scheduled date and time window
     const now = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
     const fallbackDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const fallbackTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
@@ -260,7 +258,6 @@ router.patch('/:id/complete', async (req, res) => {
 
     // Log activity if toggled to/from completed today
     const d = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
     const serverToday = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     if (event.date === clientDate || event.date === serverToday) {
       try {
